@@ -1,0 +1,81 @@
+---
+title: "Rule classification and review"
+description: "How RampSpec separates upstream requirements, security findings, interoperability advice, and product policy."
+keywords:
+  ["rule classification", "severity", "review", "disputes", "advisories"]
+---
+
+Every RampSpec rule carries a classification, source locator, severity rationale, and acceptance record. A failed rule is called a SEP violation only when the pinned upstream text makes the tested behavior normative and the observation proves that exact condition.
+
+## Classifications
+
+| Classification | Meaning                                                                                                                | Default gate behavior                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `MUST`         | A testable normative requirement quoted or tightly paraphrased from the pinned SEP section.                            | May block when the target, mode, and prerequisites make the rule applicable. |
+| `SHOULD`       | An upstream recommendation with documented exceptions or a non-mandatory normative statement.                          | Warn; block only through an explicit organization policy.                    |
+| `SECURITY`     | A security control derived from an upstream requirement, threat model, or clearly cited security guidance.             | Severity-based review; not automatically described as a SEP violation.       |
+| `INTEROP`      | Behavior needed for repeatable compatibility across real clients or anchors but not stated as an upstream requirement. | Warn or organization-defined gate.                                           |
+| `POLICY`       | A RampSpec or organization choice, such as redaction, network, retention, or release requirements.                     | Applied only when the named policy is selected.                              |
+| `EXPERIMENTAL` | A draft probe, research assertion, or unstable behavior with insufficient evidence for a stable rule.                  | Informational and opt-in; never blocks the default production gate.          |
+
+Classification and severity are separate. `MUST` describes source authority; severity describes the impact of the observed failure in the scoped workflow.
+
+## Severity rationale
+
+| Severity      | Required rationale                                                                                         |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| Critical      | Demonstrable loss of authorization, funds, private data, or system control under the tested preconditions. |
+| High          | A material security or protocol failure that prevents a core journey or exposes sensitive capability.      |
+| Medium        | A repeatable interoperability or correctness failure with a bounded workaround.                            |
+| Low           | A limited deviation, diagnostic weakness, or non-blocking compatibility issue.                             |
+| Informational | An observation, recommendation, or experimental result with no asserted failure impact.                    |
+
+A rule cannot gain severity from classification alone. The author records affected actors, prerequisites, reproducibility, impact, and why lower severities are insufficient.
+
+## Acceptance requirements
+
+A new or changed stable rule requires:
+
+1. a stable rule ID and classification;
+2. the exact [standards snapshot](/reference/standards-baseline), file, heading, and source text for `MUST` or `SHOULD`;
+3. a statement of testable behavior, applicability, prerequisites, and exclusions;
+4. deterministic positive, negative, skipped, and indeterminate fixtures;
+5. an evidence and redaction contract;
+6. a severity rationale and default gate effect;
+7. a protocol-maintainer approval;
+8. migration notes when an existing result can change.
+
+`SECURITY`, `INTEROP`, and `POLICY` rules cite their own authority and explicitly say that they are not upstream SEP requirements. `EXPERIMENTAL` rules include an expiry or promotion review date.
+
+## Correct result language
+
+| Observation                                                                     | Correct label                                           | Incorrect label                      |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------ |
+| A required SEP-10 field is absent and the pinned section requires it.           | “Failed `MUST` rule against the pinned SEP-10 section.” | “Anchor is not certified.”           |
+| A client rejects an additive field although the SEP does not require rejection. | “`INTEROP` finding for this client and fixture.”        | “SEP violation.”                     |
+| A target exceeds an organization-defined latency threshold.                     | “`POLICY` gate failed.”                                 | “Protocol non-conformance.”          |
+| A draft SEP-45 behavior differs from an experimental expectation.               | “`EXPERIMENTAL` observation against the pinned draft.”  | “Production authentication failure.” |
+| A remote dependency cannot be reached.                                          | “Indeterminate infrastructure result.”                  | “Target failed the rule.”            |
+
+## Review workflow
+
+1. The author opens a backend change with the rule, fixtures, source locator, and expected report diff.
+2. A protocol maintainer checks normative interpretation and applicability.
+3. A security reviewer approves `SECURITY` rules or security-sensitive evidence handling.
+4. A docs maintainer checks public wording, links, and migration guidance.
+5. CI compiles the rule pack, validates fixtures, and records the suite-lock change.
+6. The approved rule ships in a tagged backend release and is then imported into the compatible docs release.
+
+The reviewer who authored a disputed interpretation cannot be the only approver.
+
+## Disputes
+
+Open a non-sensitive issue in the backend repository with the rule ID, pinned source, target scope, redacted evidence, and proposed interpretation. Maintainers may mark the result `under-review` without rewriting the original report. Resolution records whether the rule is confirmed, narrowed, reclassified, deprecated, or corrected in a new release.
+
+If the dispute reveals a security weakness or sensitive target information, use the private process in [Security](/SECURITY.md). Public discussion begins only after disclosure coordination.
+
+## Advisories and corrections
+
+A rule advisory identifies affected rule-pack versions, suites, report IDs where known, severity change, corrected behavior, and upgrade instructions. Reports remain immutable: a correction publishes an advisory and replacement interpretation rather than editing signed evidence. Gates should fail closed when an advisory makes a previously accepted result unsafe to interpret.
+
+See [Terminology and boundaries](/reference/terminology) for result definitions and [Compatibility](/reference/release-manifest) for breaking-change controls.

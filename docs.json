@@ -89,7 +89,10 @@
           },
           {
             "group": "Standards",
-            "pages": ["reference/standards-baseline"]
+            "pages": [
+              "reference/standards-baseline",
+              "governance/rule-classification"
+            ]
           },
           {
             "group": "Governance",
