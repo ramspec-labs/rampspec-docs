@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.rampspec.dev/schemas/release-manifest.schema.json",
+  "title": "RampSpec release manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "productVersion",
+    "channel",
+    "releasedAt",
+    "components",
+    "compatibility",
+    "verification"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "productVersion": { "type": "string", "minLength": 1 },
+    "channel": { "enum": ["next", "preview", "stable"] },
+    "releasedAt": { "type": ["string", "null"], "format": "date-time" },
+    "components": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "repository",
+          "status",
+          "tag",
+          "commit",
+          "artifacts"
+        ],
+        "properties": {
+          "name": { "enum": ["frontend", "backend", "contracts", "docs"] },
+          "repository": { "type": "string", "pattern": "^rampspec-[a-z-]+$" },
+          "status": { "enum": ["unavailable", "released"] },
+          "tag": { "type": ["string", "null"] },
+          "commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "path", "sha256"],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "application",
+                    "openapi",
+                    "json-schema-bundle",
+                    "contract-spec-bundle",
+                    "deployment-manifest",
+                    "documentation-export"
+                  ]
+                },
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "apiMajor",
+        "schemaMajor",
+        "contractMajor",
+        "breakingChanges",
+        "migrationNotes"
+      ],
+      "properties": {
+        "apiMajor": { "type": ["integer", "null"], "minimum": 1 },
+        "schemaMajor": { "type": ["integer", "null"], "minimum": 1 },
+        "contractMajor": { "type": ["integer", "null"], "minimum": 1 },
+        "breakingChanges": { "type": "array", "items": { "type": "string" } },
+        "migrationNotes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "verifiedAt", "command"],
+      "properties": {
+        "status": { "enum": ["not-applicable", "verified"] },
+        "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
+        "command": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

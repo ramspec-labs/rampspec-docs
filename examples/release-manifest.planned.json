@@ -1,0 +1,53 @@
+{
+  "$schema": "../schemas/release-manifest.schema.json",
+  "schemaVersion": "1.0.0",
+  "productVersion": "unreleased",
+  "channel": "next",
+  "releasedAt": null,
+  "components": [
+    {
+      "name": "frontend",
+      "repository": "rampspec-frontend",
+      "status": "unavailable",
+      "tag": null,
+      "commit": null,
+      "artifacts": []
+    },
+    {
+      "name": "backend",
+      "repository": "rampspec-backend",
+      "status": "unavailable",
+      "tag": null,
+      "commit": null,
+      "artifacts": []
+    },
+    {
+      "name": "contracts",
+      "repository": "rampspec-contracts",
+      "status": "unavailable",
+      "tag": null,
+      "commit": null,
+      "artifacts": []
+    },
+    {
+      "name": "docs",
+      "repository": "rampspec-docs",
+      "status": "unavailable",
+      "tag": null,
+      "commit": null,
+      "artifacts": []
+    }
+  ],
+  "compatibility": {
+    "apiMajor": null,
+    "schemaMajor": null,
+    "contractMajor": null,
+    "breakingChanges": [],
+    "migrationNotes": []
+  },
+  "verification": {
+    "status": "not-applicable",
+    "verifiedAt": null,
+    "command": "npm run lint:manifests"
+  }
+}

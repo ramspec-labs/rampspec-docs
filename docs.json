@@ -81,7 +81,7 @@
           },
           {
             "group": "Reference",
-            "pages": ["reference/terminology"]
+            "pages": ["reference/terminology", "reference/release-manifest"]
           },
           {
             "group": "Governance",

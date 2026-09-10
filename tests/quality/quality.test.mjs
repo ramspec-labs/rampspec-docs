@@ -8,6 +8,7 @@ import {
   validateNavigationPages,
   validateReferenceIndex,
 } from "../../scripts/quality-core.mjs";
+import { validateReleaseManifest } from "../../scripts/manifest-core.mjs";
 
 const root = process.cwd();
 
@@ -63,4 +64,43 @@ test("snippet validation requires stored example files", () => {
   assert.deepEqual(errors, [
     "example file does not exist: examples/missing.json",
   ]);
+});
+
+test("release manifest validation rejects incomplete release claims", () => {
+  const invalid = {
+    schemaVersion: "1.0.0",
+    productVersion: "1.0.0",
+    channel: "stable",
+    releasedAt: null,
+    components: [
+      {
+        name: "backend",
+        repository: "rampspec-backend",
+        status: "released",
+        tag: null,
+        commit: "short",
+        artifacts: [],
+      },
+    ],
+    compatibility: {
+      apiMajor: 1,
+      schemaMajor: 1,
+      contractMajor: 1,
+      breakingChanges: ["changed report shape"],
+      migrationNotes: [],
+    },
+    verification: {
+      status: "verified",
+      verifiedAt: null,
+      command: "npm run lint:manifests",
+    },
+  };
+  const errors = validateReleaseManifest(invalid).join("\n");
+  assert.match(errors, /released component backend requires a tag/);
+  assert.match(errors, /requires a 40-character commit/);
+  assert.match(errors, /requires at least one artifact/);
+  assert.match(errors, /missing component: frontend/);
+  assert.match(errors, /breaking changes require migration notes/);
+  assert.match(errors, /verified manifests require verifiedAt/);
+  assert.match(errors, /a released manifest requires releasedAt/);
 });
