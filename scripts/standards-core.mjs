@@ -65,3 +65,56 @@ export function validateStandardsSnapshot(value) {
   }
   return errors;
 }
+
+/** @param {unknown} value */
+export function validateSpecSyncRecord(value) {
+  /** @type {string[]} */
+  const errors = [];
+  if (!isRecord(value)) return ["spec sync record must be an object"];
+  if (value.schemaVersion !== "1.0.0")
+    errors.push("spec sync schemaVersion must be 1.0.0");
+  if (
+    !new Set(["initial-baseline", "update"]).has(
+      /** @type {string} */ (value.status),
+    )
+  )
+    errors.push("spec sync status is invalid");
+  if (
+    typeof value.capturedAt !== "string" ||
+    Number.isNaN(Date.parse(value.capturedAt))
+  )
+    errors.push("spec sync capturedAt must be an ISO date-time");
+  if (value.sourceRepository !== "stellar/stellar-protocol")
+    errors.push("spec sync sourceRepository is invalid");
+  if (
+    value.fromCommit !== null &&
+    !/^[0-9a-f]{40}$/.test(/** @type {string} */ (value.fromCommit))
+  )
+    errors.push("spec sync fromCommit must be a full lowercase SHA or null");
+  if (!/^[0-9a-f]{40}$/.test(/** @type {string} */ (value.toCommit)))
+    errors.push("spec sync toCommit must be a full lowercase SHA");
+  if (value.hashesVerified !== true)
+    errors.push("spec sync hashes must be verified");
+  if (!isRecord(value.diff)) {
+    errors.push("spec sync diff must be an object");
+  } else {
+    for (const key of [
+      "addedDocuments",
+      "changedRequirements",
+      "deprecatedRequirements",
+      "removedRequirements",
+    ]) {
+      if (!Array.isArray(value.diff[key]))
+        errors.push("spec sync diff." + key + " must be an array");
+    }
+  }
+  if (!Array.isArray(value.artifacts) || !value.artifacts.length)
+    errors.push("spec sync artifacts must be a non-empty array");
+  if (typeof value.runtimeRulePackUpdated !== "boolean")
+    errors.push("spec sync runtimeRulePackUpdated must be boolean");
+  if (typeof value.releaseBound !== "boolean")
+    errors.push("spec sync releaseBound must be boolean");
+  if (value.releaseBound && !value.runtimeRulePackUpdated)
+    errors.push("a release-bound sync requires a runtime rule-pack update");
+  return errors;
+}

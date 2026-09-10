@@ -119,6 +119,10 @@
           {
             "group": "Guides",
             "pages": ["guides/getting-started"]
+          },
+          {
+            "group": "Maintainers",
+            "pages": ["guides/maintainers/spec-synchronization"]
           }
         ]
       },

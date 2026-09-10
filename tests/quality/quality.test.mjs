@@ -24,7 +24,10 @@ import {
   validateContractBundle,
   validateContractBundleProvenance,
 } from "../../scripts/contract-bundle-core.mjs";
-import { validateStandardsSnapshot } from "../../scripts/standards-core.mjs";
+import {
+  validateSpecSyncRecord,
+  validateStandardsSnapshot,
+} from "../../scripts/standards-core.mjs";
 
 const root = process.cwd();
 
@@ -245,4 +248,17 @@ test("standards snapshot requires the complete pinned SEP inventory", () => {
   );
   const errors = validateStandardsSnapshot(fixture).join("\n");
   assert.match(errors, /missing SEP: 45/);
+});
+
+test("spec sync records cannot bind an absent runtime update", () => {
+  const fixture = JSON.parse(
+    readFileSync(
+      path.join(root, "examples", "spec-sync-rehearsal.json"),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(validateSpecSyncRecord(fixture), []);
+  fixture.releaseBound = true;
+  const errors = validateSpecSyncRecord(fixture).join("\n");
+  assert.match(errors, /requires a runtime rule-pack update/);
 });

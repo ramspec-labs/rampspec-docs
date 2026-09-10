@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "initial-baseline",
+  "capturedAt": "2026-09-10T23:21:00.6368568Z",
+  "sourceRepository": "stellar/stellar-protocol",
+  "fromCommit": null,
+  "toCommit": "0dc4592cb44dda1943341016f076e9326874daed",
+  "hashesVerified": true,
+  "diff": {
+    "addedDocuments": [1, 6, 9, 10, 12, 24, 31, 34, 38, 45],
+    "changedRequirements": [],
+    "deprecatedRequirements": [],
+    "removedRequirements": []
+  },
+  "artifacts": [
+    "standards/snapshot.json",
+    "reference/standards-baseline.mdx",
+    "governance/rule-classification.mdx"
+  ],
+  "runtimeRulePackUpdated": false,
+  "releaseBound": false,
+  "notes": [
+    "This rehearsal records the first documentation baseline.",
+    "No backend rule-pack release existed, so no executable coverage was claimed."
+  ]
+}

@@ -1,0 +1,88 @@
+---
+title: "Synchronize a specification snapshot"
+description: "Reproducibly import upstream SEP changes, review normative diffs, update rules and fixtures, and preserve old report meaning."
+keywords: ["spec sync", "normative diff", "rule pack", "migration", "rehearsal"]
+---
+
+Specification synchronization converts a reviewed upstream Stellar protocol commit into a versioned RampSpec rule-pack change. Updating a URL or version label alone is not sufficient: every changed requirement, fixture, report impact, and compatibility decision must be reviewed together.
+
+<Warning>
+  This workflow does not authorize publishing a rule-pack release. The current
+  backend has no tagged rule pack, so the completed rehearsal covers only the
+  initial documentation baseline.
+</Warning>
+
+## Required roles and inputs
+
+The change needs a protocol maintainer, backend owner, documentation maintainer, and a security reviewer when security-sensitive behavior changes. Before starting, record:
+
+- the existing standards snapshot and backend rule-pack tag, or `none` for an initial import;
+- the proposed full upstream commit;
+- the supported SEP inventory;
+- the target backend branch and compatibility window;
+- access to deterministic positive, negative, skipped, and indeterminate fixtures.
+
+## 1. Capture immutable sources
+
+Clone `stellar/stellar-protocol`, check out the exact commit, and copy no mutable branch URLs into rules. For each supported SEP, record the repository-relative path, Preamble status/version/updated fields, exact section anchor used by each rule, and SHA-256 over the file bytes.
+
+```powershell
+git clone https://github.com/stellar/stellar-protocol.git <temporary-directory>
+git -C <temporary-directory> checkout --detach <40-character-commit>
+git -C <temporary-directory> rev-parse HEAD
+Get-FileHash -Algorithm SHA256 <temporary-directory>/ecosystem/sep-0001.md
+```
+
+Use a newly created temporary directory. Do not delete or overwrite an existing checkout as part of the synchronization script.
+
+## 2. Produce the normative diff
+
+Compare old and new files by heading and requirement, not just by line. The review record separates:
+
+| Change                     | Required decision                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------- |
+| Added requirement          | Add a classified rule or document why it is not testable.                              |
+| Changed requirement        | Update applicability, fixtures, expected evidence, and severity; assess compatibility. |
+| Deprecated requirement     | Mark the rule deprecated, identify its replacement, and set a removal window.          |
+| Removed requirement        | Stop selecting it in new suites without rewriting old suite locks or reports.          |
+| Editorial-only change      | Record it as non-semantic with reviewer rationale.                                     |
+| Draft or FCP status change | Reassess default gates and migration risk even if wording is unchanged.                |
+
+Every `MUST` and `SHOULD` rule receives an exact pinned heading and source locator. `SECURITY`, `INTEROP`, `POLICY`, and `EXPERIMENTAL` rules retain separate authority under the [classification policy](/governance/rule-classification).
+
+## 3. Update backend rules and fixtures
+
+Update rule definitions, scenario compiler inputs, suite-lock generation, and schema examples in `rampspec-backend`. Recompile a valid corpus twice and compare outputs byte-for-byte. Add negative fixtures for malformed or malicious constructs and regression fixtures for every changed result.
+
+Arbitrary JavaScript is not permitted in hosted scenarios. A source change must not silently expand network access, credential scope, mutation behavior, or evidence retention.
+
+## 4. Assess report compatibility
+
+Run old fixtures with the old suite lock and new fixtures with the proposed lock. Record outcome, score, gate, event, and canonical-report differences. A semantic change requires migration notes and a compatible [release manifest](/reference/release-manifest). Never regenerate or edit signed historical reports.
+
+Old reports remain bound to their original:
+
+- upstream commit and content hashes;
+- rule-pack and scenario versions;
+- suite lock and schemas;
+- runner and product release;
+- report hash and signature policy.
+
+A removed or corrected rule changes future interpretation through an advisory; it does not retroactively change the old evidence.
+
+## 5. Review and release
+
+1. The protocol maintainer approves source interpretation and the normative diff.
+2. The backend owner approves rule, compiler, fixture, and report changes.
+3. The security reviewer approves sensitive classifications and runner impact.
+4. CI proves deterministic compilation, schema validity, regression outcomes, and generated diffs.
+5. The backend publishes a tag containing the snapshot, rule pack, schemas, and migration notes.
+6. Docs imports the tagged artifacts, updates the baseline, and binds them in the release manifest.
+
+Rollback means selecting the last compatible rule-pack tag for new runs. It never means moving a tag, changing a published suite lock, or altering an existing report.
+
+## Rehearsal evidence
+
+The [initial synchronization rehearsal](/examples/spec-sync-rehearsal.json) records the verified Unit 14 import at upstream commit `0dc4592cb44dda1943341016f076e9326874daed`. It records ten added documents and no runtime rule-pack update or release binding. A future rehearsal is complete only when the record also includes normative changes, backend fixture/report diffs, approvals, and release identifiers.
+
+Run `npm run lint:standards` and `npm run build` after updating the record and documentation.
