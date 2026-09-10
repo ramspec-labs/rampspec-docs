@@ -1,0 +1,48 @@
+---
+title: "Generated JSON Schemas"
+description: "Versioned rule, scenario, suite-lock, event, and report schemas imported from the backend."
+keywords:
+  ["JSON Schema", "rules", "scenarios", "suite lock", "events", "reports"]
+---
+
+The backend's tagged `schemas.json` bundle is the source of truth for RampSpec rule, scenario, suite-lock, event, and report documents. This page explains the import and validation contract without reproducing unreleased fields.
+
+<Warning>
+  No backend schema release exists yet. `generated/schemas/schemas.json` is
+  intentionally absent, and no fixture identifier on this page is a product
+  schema identifier.
+</Warning>
+
+## Bundle requirements
+
+Every imported schema must:
+
+- declare `https://json-schema.org/draft/2020-12/schema`;
+- use a unique absolute HTTPS `$id`;
+- provide `x-rampspec-kind` and `x-rampspec-version` metadata;
+- belong to exactly one of `rule`, `scenario`, `suite-lock`, `event`, or `report`;
+- compile with all internal and external bundle references resolved.
+
+The bundle contains a version, migration notes, schemas, and named example documents. Every example identifies a schema `$id` and must validate against it. CI rejects missing kinds, duplicate or unresolved identifiers, invalid examples, any byte-level change, or a digest mismatch.
+
+## Versioning and migration
+
+Schema versions are independent from the bundle version. Additive optional fields may remain within a compatible major. Removing a field, changing a type or meaning, adding a required field, or changing canonical report representation requires a new schema major and migration notes in the [release manifest](/reference/release-manifest).
+
+Consumers should resolve by exact `$id` and pinned release, reject unknown required behavior, and preserve unknown optional fields when the schema allows them. They must never select a schema solely by filename.
+
+## Import procedure
+
+The manual synchronization workflow downloads `schemas.json` from a private `rampspec-backend` release, verifies the tag's full commit and the expected SHA-256, validates all schemas and examples, and opens a generated-diff pull request.
+
+```powershell
+npm run import:schemas -- `
+  --source <schemas-path-or-url> `
+  --tag <backend-tag> `
+  --commit <40-character-commit> `
+  --sha256 <64-character-digest>
+```
+
+These placeholders are not released values. After import, `generated/schemas/source.json` records provenance and `npm run lint:schemas` verifies both content and examples on every documentation build.
+
+See [API endpoints](/api-reference/endpoints) for the OpenAPI boundary and [Repository ownership](/governance/repository-ownership) for artifact authority.

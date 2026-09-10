@@ -14,6 +14,11 @@ import {
   validateOpenApiDocument,
   validateOpenApiProvenance,
 } from "../../scripts/openapi-core.mjs";
+import {
+  schemaBundleHash,
+  validateSchemaBundle,
+  validateSchemaBundleProvenance,
+} from "../../scripts/schema-bundle-core.mjs";
 
 const root = process.cwd();
 
@@ -26,6 +31,24 @@ test("content validation detects broken structure and links", () => {
   assert.match(errors, /broken local link: missing-page/);
   assert.match(errors, /image has empty alt text/);
   assert.match(errors, /heading level jumps/);
+});
+
+test("external link extraction stops at inline-code delimiters", () => {
+  const result = validateDocumentText(
+    root,
+    path.join(root, "fixture.mdx"),
+    [
+      "---",
+      'title: "Fixture"',
+      'description: "Fixture description"',
+      "---",
+      "",
+      "Use `https://json-schema.org/draft/2020-12/schema`;",
+    ].join("\n"),
+  );
+  assert.deepEqual(result.externalLinks, [
+    "https://json-schema.org/draft/2020-12/schema",
+  ]);
 });
 
 test("navigation validation detects missing and orphaned pages", () => {
@@ -136,6 +159,36 @@ test("OpenAPI provenance requires a pinned backend source", () => {
     commit: "short",
     source: "",
     sha256: sha256("fixture"),
+    importedAt: "not-a-date",
+  }).join("\n");
+  assert.match(errors, /repository must be rampspec-backend/);
+  assert.match(errors, /tag is required/);
+  assert.match(errors, /full lowercase SHA/);
+  assert.match(errors, /source is required/);
+  assert.match(errors, /ISO date-time/);
+});
+
+test("schema bundle validates all five kinds and their examples", () => {
+  const fixture = JSON.parse(
+    readFileSync(
+      path.join(root, "tests", "quality", "fixtures", "schemas.valid.json"),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(validateSchemaBundle(fixture), []);
+  fixture.schemas.pop();
+  const errors = validateSchemaBundle(fixture).join("\n");
+  assert.match(errors, /missing schema kind: report/);
+  assert.match(errors, /schemaId does not resolve/);
+});
+
+test("schema provenance requires a pinned backend source", () => {
+  const errors = validateSchemaBundleProvenance({
+    repository: "rampspec-docs",
+    tag: "",
+    commit: "short",
+    source: "",
+    sha256: schemaBundleHash("fixture"),
     importedAt: "not-a-date",
   }).join("\n");
   assert.match(errors, /repository must be rampspec-backend/);

@@ -1,0 +1,88 @@
+{
+  "bundleVersion": "0.0.0-test",
+  "migrationNotes": [],
+  "schemas": [
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://fixtures.rampspec.dev/rule.schema.json",
+      "title": "Rule fixture",
+      "x-rampspec-kind": "rule",
+      "x-rampspec-version": "0.0.0-test",
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "rule" } },
+      "additionalProperties": false
+    },
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://fixtures.rampspec.dev/scenario.schema.json",
+      "title": "Scenario fixture",
+      "x-rampspec-kind": "scenario",
+      "x-rampspec-version": "0.0.0-test",
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "scenario" } },
+      "additionalProperties": false
+    },
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://fixtures.rampspec.dev/suite-lock.schema.json",
+      "title": "Suite lock fixture",
+      "x-rampspec-kind": "suite-lock",
+      "x-rampspec-version": "0.0.0-test",
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "suite-lock" } },
+      "additionalProperties": false
+    },
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://fixtures.rampspec.dev/event.schema.json",
+      "title": "Event fixture",
+      "x-rampspec-kind": "event",
+      "x-rampspec-version": "0.0.0-test",
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "event" } },
+      "additionalProperties": false
+    },
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://fixtures.rampspec.dev/report.schema.json",
+      "title": "Report fixture",
+      "x-rampspec-kind": "report",
+      "x-rampspec-version": "0.0.0-test",
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "report" } },
+      "additionalProperties": false
+    }
+  ],
+  "examples": [
+    {
+      "name": "rule fixture",
+      "schemaId": "https://fixtures.rampspec.dev/rule.schema.json",
+      "document": { "kind": "rule" }
+    },
+    {
+      "name": "scenario fixture",
+      "schemaId": "https://fixtures.rampspec.dev/scenario.schema.json",
+      "document": { "kind": "scenario" }
+    },
+    {
+      "name": "suite lock fixture",
+      "schemaId": "https://fixtures.rampspec.dev/suite-lock.schema.json",
+      "document": { "kind": "suite-lock" }
+    },
+    {
+      "name": "event fixture",
+      "schemaId": "https://fixtures.rampspec.dev/event.schema.json",
+      "document": { "kind": "event" }
+    },
+    {
+      "name": "report fixture",
+      "schemaId": "https://fixtures.rampspec.dev/report.schema.json",
+      "document": { "kind": "report" }
+    }
+  ]
+}

@@ -25,9 +25,6 @@ const errors = [
   ...validateOpenApiDocument(document),
   ...validateOpenApiProvenance(provenance),
 ];
-const canonicalContent = JSON.stringify(document, null, 2) + "\n";
-if (content !== canonicalContent)
-  errors.push("generated OpenAPI must use canonical two-space JSON formatting");
 if (sha256(content) !== provenance.sha256)
   errors.push("generated OpenAPI content does not match its source hash");
 

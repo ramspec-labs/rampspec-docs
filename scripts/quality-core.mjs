@@ -159,7 +159,7 @@ export function validateDocumentText(root, source, text) {
     previousLevel = level;
   }
 
-  for (const match of text.matchAll(/https?:\/\/[^\s<>)"']+/g))
+  for (const match of text.matchAll(/https?:\/\/[^\s<>)"'`]+/g))
     externalLinks.push(match[0]);
   return {
     errors: [...new Set(errors)],

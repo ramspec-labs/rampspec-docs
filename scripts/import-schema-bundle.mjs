@@ -2,10 +2,10 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import {
-  sha256,
-  validateOpenApiDocument,
-  validateOpenApiProvenance,
-} from "./openapi-core.mjs";
+  schemaBundleHash,
+  validateSchemaBundle,
+  validateSchemaBundleProvenance,
+} from "./schema-bundle-core.mjs";
 
 const options = parseArgs(process.argv.slice(2));
 for (const required of ["source", "tag", "commit", "sha256"]) {
@@ -17,18 +17,17 @@ if (!/^[0-9a-f]{64}$/.test(options.sha256))
   throw new Error("--sha256 must be a lowercase SHA-256 digest");
 
 const content = await readSource(options.source);
-const actualHash = sha256(content);
+const actualHash = schemaBundleHash(content);
 if (actualHash !== options.sha256)
   throw new Error(
-    "OpenAPI hash mismatch: expected " +
+    "schema bundle hash mismatch: expected " +
       options.sha256 +
       ", received " +
       actualHash,
   );
-
-const document = JSON.parse(content);
-const documentErrors = validateOpenApiDocument(document);
-if (documentErrors.length) throw new Error(documentErrors.join("\n"));
+const bundle = JSON.parse(content);
+const bundleErrors = validateSchemaBundle(bundle);
+if (bundleErrors.length) throw new Error(bundleErrors.join("\n"));
 
 const provenance = {
   repository: "rampspec-backend",
@@ -38,17 +37,17 @@ const provenance = {
   sha256: actualHash,
   importedAt: new Date().toISOString(),
 };
-const provenanceErrors = validateOpenApiProvenance(provenance);
+const provenanceErrors = validateSchemaBundleProvenance(provenance);
 if (provenanceErrors.length) throw new Error(provenanceErrors.join("\n"));
 
-const outputDirectory = path.resolve("generated/openapi");
+const outputDirectory = path.resolve("generated/schemas");
 mkdirSync(outputDirectory, { recursive: true });
-writeFileSync(path.join(outputDirectory, "openapi.json"), content);
+writeFileSync(path.join(outputDirectory, "schemas.json"), content);
 writeFileSync(
   path.join(outputDirectory, "source.json"),
   JSON.stringify(provenance, null, 2) + "\n",
 );
-console.log("openapi-import=ok tag=" + options.tag + " sha256=" + actualHash);
+console.log("schema-import=ok tag=" + options.tag + " sha256=" + actualHash);
 
 /** @param {string[]} args */
 function parseArgs(args) {
@@ -74,6 +73,6 @@ async function readSource(source) {
     headers.Authorization = "Bearer " + process.env.GH_TOKEN;
   const response = await fetch(source, { headers });
   if (!response.ok)
-    throw new Error("OpenAPI download failed with HTTP " + response.status);
+    throw new Error("schema download failed with HTTP " + response.status);
   return response.text();
 }

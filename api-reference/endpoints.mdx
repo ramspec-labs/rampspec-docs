@@ -13,7 +13,7 @@ No backend OpenAPI release exists yet, so `generated/openapi/openapi.json` is in
 
 ## Import and integrity
 
-The synchronization workflow uses a read-only organization secret to download `openapi.json` from the named private backend release. It requires the backend release tag, verifies that tag's full commit SHA, and checks the expected SHA-256. The import rejects an invalid document or digest mismatch, writes canonical JSON, and records provenance in `generated/openapi/source.json`. CI then recomputes the digest so manual changes fail.
+The synchronization workflow uses a read-only organization secret to download `openapi.json` from the named private backend release. It requires the backend release tag, verifies that tag's full commit SHA, and checks the expected SHA-256. The import rejects an invalid document or digest mismatch, preserves the released bytes, and records provenance in `generated/openapi/source.json`. CI then recomputes the digest so manual changes fail.
 
 ```powershell
 npm run import:openapi -- `
