@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">RampSpec run sequence</title>
+  <desc id="desc">An ordered sequence from target authorization to suite lock, runner execution, redacted evidence, report verification, and an optional Soroban commitment.</desc>
+  <style>
+    .box { fill: #f8fafc; stroke: #0891b2; stroke-width: 2; }
+    .text { fill: #0f172a; font: 600 16px Arial, sans-serif; text-anchor: middle; }
+    .small { fill: #334155; font: 13px Arial, sans-serif; text-anchor: middle; }
+    .arrow { stroke: #0e7490; stroke-width: 2.5; fill: none; }
+  </style>
+  <rect width="1200" height="430" fill="#ffffff" />
+  <text x="600" y="34" class="text" font-size="22">Authorized conformance run</text>
+  <g transform="translate(30 85)">
+    <rect class="box" width="165" height="82" rx="8" />
+    <text x="82" y="32" class="text">1. Authorize</text>
+    <text x="82" y="55" class="small">target + scope</text>
+  </g>
+  <g transform="translate(220 85)">
+    <rect class="box" width="165" height="82" rx="8" />
+    <text x="82" y="32" class="text">2. Discover</text>
+    <text x="82" y="55" class="small">SEP snapshot</text>
+  </g>
+  <g transform="translate(410 85)">
+    <rect class="box" width="165" height="82" rx="8" />
+    <text x="82" y="32" class="text">3. Lock</text>
+    <text x="82" y="55" class="small">rules + runner</text>
+  </g>
+  <g transform="translate(600 85)">
+    <rect class="box" width="165" height="82" rx="8" />
+    <text x="82" y="32" class="text">4. Execute</text>
+    <text x="82" y="55" class="small">requests + events</text>
+  </g>
+  <g transform="translate(790 85)">
+    <rect class="box" width="165" height="82" rx="8" />
+    <text x="82" y="32" class="text">5. Redact</text>
+    <text x="82" y="55" class="small">remove secrets</text>
+  </g>
+  <g transform="translate(980 85)">
+    <rect class="box" width="165" height="82" rx="8" />
+    <text x="82" y="32" class="text">6. Report</text>
+    <text x="82" y="55" class="small">hash + signature</text>
+  </g>
+  <g class="arrow">
+    <path d="M195 126h25m165 0h25m165 0h25m165 0h25m165 0h25" />
+    <path d="m213 119 8 7-8 7m190-7 8 7-8 7m190-7 8 7-8 7m190-7 8 7-8 7m190-7 8 7-8 7" />
+  </g>
+  <g transform="translate(150 250)">
+    <rect class="box" width="210" height="86" rx="8" />
+    <text x="105" y="34" class="text">7. Verify</text>
+    <text x="105" y="58" class="small">manifest + suite lock</text>
+  </g>
+  <g transform="translate(495 250)">
+    <rect class="box" width="210" height="86" rx="8" />
+    <text x="105" y="34" class="text">8. Decide</text>
+    <text x="105" y="58" class="small">gate + scoped result</text>
+  </g>
+  <g transform="translate(840 250)">
+    <rect class="box" width="210" height="86" rx="8" />
+    <text x="105" y="34" class="text">9. Commit (optional)</text>
+    <text x="105" y="58" class="small">compact Soroban hash</text>
+  </g>
+  <g class="arrow">
+    <path d="M1062 167v45H255v38M360 293h135m210 0h135" />
+    <path d="m247 242 8 8 8-8m232 35 8 8-8 8m345-8 8 8-8 8" />
+  </g>
+</svg>

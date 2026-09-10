@@ -1,12 +1,84 @@
 ---
 title: "Architecture overview"
 description: "The planned RampSpec components, data planes, and evidence flow."
+keywords: ["architecture", "runner", "evidence", "workflow", "data plane"]
 ---
 
-The RampSpec architecture separates the browser application, backend orchestration, Soroban evidence contracts, and documentation source of truth.
+RampSpec separates the browser application, backend orchestration, isolated runners, Soroban evidence contracts, and documentation source of truth. The names and boundaries on this page are the design contract for the four repositories; they are not a claim that the runtime repositories have released these components.
 
-## Status
+<Info>
+  The runtime repositories currently have no tagged release or deployment
+  manifest. Treat this page as an architecture baseline until a compatibility
+  manifest names the exact implementation versions.
+</Info>
 
-This landing page reserves the architecture path. The detailed system diagram, run lifecycle, trust boundaries, and external dependencies are added after the runtime repository contracts are released.
+![RampSpec system boundary diagram showing the browser, API and workflow services, isolated runners, target services, Stellar networks, and evidence storage](/assets/diagrams/architecture.svg)
 
-See [repository ownership](/governance/repository-ownership) for the current source-of-truth boundaries.
+## Repository boundaries
+
+| Boundary             | Planned responsibility                                                                                             | Must not become                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `rampspec-frontend`  | Operator and evidence-consumer views, target configuration, run status, and report rendering.                      | A rule-pack source, private-key vault, or substitute for backend authorization.             |
+| `rampspec-backend`   | Authentication boundary, target registry, suite selection, workflow orchestration, redaction, and report assembly. | An unrestricted network proxy or an authority to contact targets without authorization.     |
+| `rampspec-contracts` | Soroban interfaces for compact integrity commitments and independently verifiable metadata.                        | A store for raw traffic, identity records, secrets, or an unreviewed production deployment. |
+| `rampspec-docs`      | Human-readable guidance, generated-reference wrappers, release evidence, and governance.                           | A second source of truth for API, schema, rule, or contract definitions.                    |
+
+The [ownership model](/governance/repository-ownership) is authoritative when a repository boundary and an implementation detail disagree.
+
+## Data planes
+
+### Public plane
+
+The public plane contains documented SEP sources, target metadata that an operator has chosen to publish, release manifests, and redacted report summaries. It is suitable for discovery and comparison, not for secrets or personal data.
+
+### Control plane
+
+The control plane authenticates operators, authorizes a target and runner, selects a [suite lock](/reference/terminology#suite-lock), dispatches work, applies gates, and records lifecycle transitions. A control-plane decision must include its policy and release identifiers so it can be reproduced.
+
+### Data plane
+
+The data plane performs protocol requests, callbacks, browser steps, and authorized testnet observations. It emits structured events and redacted evidence. Local runners are outbound-only by default; public runners are sandboxed and rate-limited.
+
+## Run lifecycle
+
+![Run sequence from target authorization through suite lock, runner execution, evidence redaction, report verification, and optional Soroban commitment](/assets/diagrams/run-sequence.svg)
+
+1. **Authorize:** an operator records the target, network, asset policy, runner, and credential scope.
+2. **Discover:** the workflow captures the target's published SEP documents and records source identifiers.
+3. **Lock:** the control plane resolves the rule pack, scenarios, schemas, runner image, and target configuration into a suite lock.
+4. **Dispatch:** the selected runner receives only the capabilities and credentials needed for the selected checks.
+5. **Execute:** the runner performs passive checks, stateful journeys, browser work, or evidence-only verification and emits event records.
+6. **Correlate:** the workflow compares off-chain responses with callbacks and Horizon or RPC observations, preserving skipped and indeterminate outcomes.
+7. **Redact:** secrets, tokens, identity attributes, and unnecessary payload fields are removed before evidence leaves the runner boundary.
+8. **Report:** the backend assembles a canonical report, computes its content hash, and optionally signs it.
+9. **Verify:** an independent consumer checks the report, suite lock, release manifest, hash, and signature before treating it as a [verified run](/reference/terminology#verified-run).
+10. **Commit (optional):** a future reviewed Soroban publisher may record a compact integrity commitment; raw traffic remains off-chain.
+
+## Runner models
+
+| Model                      | Network boundary                                                                             | Suitable use                                             | Required controls                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Public sandbox             | Egress allowlist, no inbound target access, rate limits, synthetic credentials.              | Reproducible examples and non-sensitive checks.          | Ephemeral storage, redaction, quotas, and visible testnet-only scope.                     |
+| Local outbound-only runner | Operator-controlled host, outbound connections only, no public callback listener by default. | Private targets and controlled integration environments. | Signed runner release, local secret injection, audit log, and operator authorization.     |
+| Evidence-only verifier     | No target calls; reads a report, manifest, and referenced hashes.                            | Independent report validation and archival checks.       | Canonical serialization, hash algorithm, signature policy, and failure-closed validation. |
+
+No runner model authorizes scanning an unrelated third-party system. See [Terminology and boundaries](/reference/terminology) for the target and evidence definitions.
+
+## Evidence path
+
+The report should preserve enough context to reproduce a decision without preserving unnecessary data: target identifier, source snapshot, suite lock, rule outcomes, timestamps, runner and release identifiers, redaction summary, evidence references, hash, and signature metadata. Raw credentials, private keys, identity documents, and full customer payloads are outside the report contract.
+
+The evidence path is deliberately layered. A conformance result describes an evaluation, an evidence report packages observations and provenance, and a verified run records that those artifacts were checked. None of these labels means certification, regulatory approval, security audit, custody, or universal compatibility.
+
+## External dependencies
+
+| Dependency                       | Observed or imported                                                         | Boundary and failure handling                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Stellar SEP documents            | Source snapshots and version metadata.                                       | Record URL, retrieval time, and content hash; preserve indeterminate status when unavailable. |
+| Target anchor APIs and callbacks | Authorized protocol requests and responses.                                  | Apply target-specific credentials and redaction; never infer success from a missing callback. |
+| Stellar Horizon or RPC           | Testnet ledger and transaction observations.                                 | Pin network and endpoint; distinguish infrastructure failure from a protocol failure.         |
+| Identity and wallet services     | Controlled test fixtures or explicitly authorized integrations.              | Use synthetic identities by default; do not persist raw identity data.                        |
+| Soroban contracts                | Optional compact integrity commitments after contract and deployment review. | Treat absent contract IDs or mismatched hashes as verification failures.                      |
+| Object or artifact storage       | Report and manifest retention outside the runner.                            | Encrypt, restrict access, expire temporary artifacts, and keep only redacted data.            |
+
+Until a release manifest exists, these dependencies remain design inputs. The [roadmap](/roadmap) is the source for their implementation status.
