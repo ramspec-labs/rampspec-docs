@@ -13,4 +13,45 @@ RampSpec is a planned testing and observability platform for repeatable Stellar 
   is in the `next` channel and does not claim a live deployment.
 </Info>
 
-Use [Getting started](/getting-started) for the shortest entry path, [Architecture](/architecture/overview) for system boundaries, and [Roadmap](/roadmap) for the current evidence state. Detailed guides, SDK material, and generated references are organized in the tabs above.
+RampSpec tests the boundaries between Stellar anchor endpoints, wallets, identity services, payment flows, runners, and ledger evidence. It is designed to produce a reproducible conformance result, an evidence report, or a verified run. It is not an official Stellar Development Foundation certification service, a regulatory review, a security audit, or a custody system.
+
+![RampSpec architecture showing the browser, API and workers, isolated runners, target services, Stellar networks, and evidence storage](/assets/diagrams/architecture.svg)
+
+## End-to-end flow
+
+1. An organization selects a target, network, asset policy, and authorized runner.
+2. RampSpec discovers the target's published SEP information and records the pinned source snapshot.
+3. A locked rule and scenario suite selects passive checks, stateful journeys, interactive browser work, or evidence-only verification.
+4. The backend dispatches work to a public sandbox or outbound-only local runner with explicit credentials and network limits.
+5. Workers execute protocol requests, callbacks, browser steps, and authorized Stellar testnet actions while recording redacted evidence.
+6. The workflow correlates off-chain records with Horizon or RPC observations, applies rule classifications, and records indeterminate infrastructure states separately from failures.
+7. RampSpec emits a canonical report with a hash and optional signature. A future Soroban publisher may commit a compact integrity record without placing raw traffic or identity data on-chain.
+
+## Capability status
+
+| Capability                                                      | Status                       | Evidence boundary                                                                                   |
+| --------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| Mintlify site, navigation, and quality CI                       | Implemented; locally checked | `npm run build` in this repository                                                                  |
+| Four-repository ownership and release policy                    | Implemented; locally checked | [Ownership](/governance/repository-ownership) and [release policy](/governance/docs-release-policy) |
+| SEP rule packs and generated API/schema references              | Planned                      | Requires tagged backend artifacts                                                                   |
+| Stateful deposit, withdrawal, KYC, quote, and corridor journeys | Planned                      | Requires released backend workers and controlled fixtures                                           |
+| Public and local runner isolation                               | Planned                      | Requires runner implementation and security tests                                                   |
+| Signed reports and independent verification                     | Planned                      | Requires the report schema and verifier release                                                     |
+| Soroban evidence commitments                                    | Planned                      | Requires reviewed contract specs, hashes, and deployment manifests                                  |
+| Testnet or pubnet deployment                                    | Not deployed                 | No deployment record exists                                                                         |
+| External review or adoption                                     | Not claimed                  | No review or pilot record exists                                                                    |
+
+## Choose a path
+
+| Reader                        | Start here                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Anchor or wallet integrator   | [Getting started](/getting-started), then the [guided setup path](/guides/getting-started)                                       |
+| QA or release engineer        | [API endpoints](/api-reference/endpoints) and the [roadmap](/roadmap)                                                            |
+| Security or privacy reviewer  | [Repository ownership](/governance/repository-ownership) and the release-status pages in the Governance tab                      |
+| Auditor or evidence consumer  | [Contract storage](/reference/contract-storage) and the future generated report references                                       |
+| SDK or application integrator | [SDK overview](/sdk/overview)                                                                                                    |
+| Contributor                   | [Contributing](https://github.com/rampspec-labs/rampspec-docs/blob/main/CONTRIBUTING.md) and [Getting started](/getting-started) |
+
+## Documentation map
+
+Use [Architecture](/architecture/overview) for component boundaries, [Contracts](/contracts/overview) for on-chain interfaces, [Guides](/guides/getting-started) for executable workflows, and [API Reference](/api-reference/endpoints) for generated HTTP contracts. The [Roadmap](/roadmap) is the status source for unreleased runtime behavior.

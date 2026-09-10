@@ -2,6 +2,7 @@
   "timeoutMs": 12000,
   "retries": 2,
   "ignore": [
-    "https://github.com/rampspec-labs/rampspec-docs/security/advisories/new"
+    "https://github.com/rampspec-labs/rampspec-docs/security/advisories/new",
+    "https://github.com/rampspec-labs/rampspec-docs/blob/main/CONTRIBUTING.md"
   ]
 }

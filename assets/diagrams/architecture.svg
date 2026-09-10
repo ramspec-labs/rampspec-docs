@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" role="img" aria-labelledby="title description">
+  <title id="title">RampSpec architecture</title>
+  <desc id="description">Browser and API clients call backend workflows, which dispatch to isolated runners and authorized target services. Reports are verified off-chain and optionally committed to Soroban.</desc>
+  <defs>
+    <marker id="arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+      <path d="M0 0 8 4 0 8z" fill="#0891b2"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="640" fill="#f8fafc"/>
+  <g font-family="Inter, Arial, sans-serif" fill="#0f172a">
+    <text x="40" y="48" font-size="28" font-weight="700">RampSpec system and evidence flow</text>
+    <text x="40" y="76" font-size="16" fill="#475569">Boundaries are explicit; raw identity data and credentials stay outside the docs surface.</text>
+    <g stroke="#0e7490" stroke-width="2">
+      <rect x="50" y="130" width="210" height="108" rx="8" fill="#ecfeff"/>
+      <rect x="50" y="292" width="210" height="108" rx="8" fill="#ecfeff"/>
+      <rect x="50" y="454" width="210" height="108" rx="8" fill="#ecfeff"/>
+      <rect x="370" y="210" width="250" height="172" rx="8" fill="#cffafe"/>
+      <rect x="730" y="130" width="200" height="108" rx="8" fill="#f0fdfa"/>
+      <rect x="730" y="292" width="200" height="108" rx="8" fill="#f0fdfa"/>
+      <rect x="730" y="454" width="200" height="108" rx="8" fill="#f0fdfa"/>
+      <rect x="1010" y="210" width="145" height="172" rx="8" fill="#fefce8"/>
+    </g>
+    <g font-size="18" font-weight="700">
+      <text x="75" y="170">Browser UI</text>
+      <text x="75" y="332">CLI and SDK</text>
+      <text x="75" y="494">CI and schedules</text>
+      <text x="395" y="250">Backend workflows</text>
+      <text x="395" y="278">API, rules, reports,</text>
+      <text x="395" y="306">workers, and policy</text>
+      <text x="395" y="334">tenant boundary</text>
+      <text x="755" y="170">Public runner</text>
+      <text x="755" y="332">Local runner</text>
+      <text x="755" y="494">Target services</text>
+      <text x="1028" y="250">Evidence</text>
+      <text x="1028" y="278">report and</text>
+      <text x="1028" y="306">optional</text>
+      <text x="1028" y="334">Soroban</text>
+    </g>
+    <g font-size="14" fill="#334155">
+      <text x="75" y="198">configuration and reports</text>
+      <text x="75" y="360">read-only verification</text>
+      <text x="75" y="522">gates and monitoring</text>
+      <text x="755" y="198">sandboxed egress</text>
+      <text x="755" y="360">outbound-only mTLS</text>
+      <text x="755" y="522">authorized SEP endpoints</text>
+      <text x="1028" y="362">hashes and status</text>
+    </g>
+    <g stroke="#0891b2" stroke-width="3" marker-end="url(#arrow)" fill="none">
+      <path d="M260 184h105"/>
+      <path d="M260 346h105"/>
+      <path d="M260 508h105"/>
+      <path d="M620 250h100"/>
+      <path d="M620 332h100"/>
+      <path d="M620 470h100"/>
+      <path d="M930 184h70"/>
+      <path d="M930 346h70"/>
+      <path d="M930 508h70"/>
+    </g>
+  </g>
+</svg>
