@@ -1,34 +1,65 @@
 ---
 title: "Documentation repository ownership"
 description: "The authoritative content, generated inputs, and review boundaries owned by rampspec-docs."
+keywords: ["ownership", "source of truth", "generated artifacts", "release"]
 ---
 
-The `rampspec-docs` repository is the authoritative source for RampSpec's published documentation experience and release-specific documentation set.
+The four repositories have separate ownership boundaries. A repository may consume another repository's released artifact, but it must not silently redefine it. The `rampspec-docs` repository is the authoritative source for the published documentation experience and its release-specific documentation set.
 
-## Owned here
+## Ownership matrix
 
-- authored product, protocol, integration, security, operations, contributor, governance, and funding guides;
-- `docs.json`, navigation, presentation configuration, and documentation assets;
-- executable documentation examples and their validation harness;
-- import and rendering tools for released OpenAPI, JSON Schema, and contract artifacts;
-- documentation version archives, release notes, and freshness metadata.
+| Repository           | Owns                                                                                                                                                                           | Must not own                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `rampspec-frontend`  | Web application, operator interaction, browser wallet integration, and API/SDK consumption.                                                                                    | Protocol execution, canonical scoring, private-key custody, contract source, or API definitions.                 |
+| `rampspec-backend`   | HTTP API, orchestration, rule engine, workers, CLI, local runner, reports, integrations, persistence, and machine-readable schemas.                                            | Product UI, Soroban contract source, long-form documentation, or unscoped network access.                        |
+| `rampspec-contracts` | Soroban evidence and fixture contracts, generated specs, bindings, deployment manifests, and contract verification metadata.                                                   | Hosted API state, complete reports, PII, secrets, or frontend pages.                                             |
+| `rampspec-docs`      | Product, protocol, integration, security, operations, contributor, governance, and funding documentation; site configuration; generated-reference wrappers; and release notes. | Runtime business logic, secret configuration, or hand-edited copies of another repository's generated artifacts. |
 
-## Owned elsewhere
+## Source-of-truth rules
 
-Runtime behavior is never defined by prose in this repository. The backend owns API and protocol artifacts, contracts owns on-chain interfaces and deployment manifests, and frontend owns application behavior. This repository imports tagged artifacts and explains them.
+| Artifact or decision                                              | Authoritative source                           | Docs responsibility                                                                      |
+| ----------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| HTTP operations, models, errors, pagination, and events           | Backend tagged OpenAPI artifact                | Import the exact release, render a navigable wrapper, and link the source commit.        |
+| Rule, scenario, suite-lock, event, and report schemas             | Backend tagged JSON Schema bundle              | Import and validate the bundle; describe usage without duplicating schemas.              |
+| Contract methods, events, spec hashes, addresses, and network IDs | Contracts tagged specs and deployment manifest | Render the tagged artifact and label absent deployments as unavailable.                  |
+| Browser behavior and user-facing routes                           | Frontend tagged release                        | Document the released behavior and require frontend review for screenshots or workflows. |
+| Product policy, guides, navigation, and contribution workflow     | Docs repository                                | Keep prose, examples, and release notes internally consistent.                           |
 
-When authored text conflicts with a released machine-readable interface, treat the owning repository's tagged artifact as authoritative, fail the docs check, and correct the documentation or coordinate a runtime release.
+Runtime behavior is never defined by prose here. When authored text conflicts with a released machine-readable interface, the owning artifact wins, the docs check must fail, and the discrepancy is fixed or coordinated as a runtime release.
 
-## Review routing
+## Generated-artifact flow
 
-| Change                                          | Required review                              |
-| ----------------------------------------------- | -------------------------------------------- |
-| Navigation, prose, or assets                    | Documentation maintainer                     |
-| API, schema, CLI, rule, or report claims        | Backend owner and documentation maintainer   |
-| Contract method, hash, address, or event claims | Contracts owner and documentation maintainer |
-| UI workflow or screenshot                       | Frontend owner and documentation maintainer  |
-| Security, privacy, or network-safety guidance   | Security reviewer                            |
+1. The owning runtime repository produces a machine-readable artifact as part of its release job.
+2. The release records repository, tag, commit, artifact path, content hash, schema version, and generation command.
+3. A docs import script fetches only that pinned artifact and verifies its hash before writing under `generated/`.
+4. Authored reference pages link to generated output and identify the source release; they do not redefine operations, fields, or methods.
+5. Documentation CI validates navigation, schema shape, generated diffs, links, and freshness metadata.
+6. A maintainer reviews the generated change with the owning repository before publishing the docs release.
+
+No generated artifact is authoritative merely because it exists in this repository. Until a runtime release supplies the required source record, the corresponding page must remain marked planned or unavailable.
+
+## Issue routing
+
+| Reported problem                                                | Primary repository                               | Documentation action                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Broken navigation, stale prose, missing alt text, or site build | `rampspec-docs`                                  | Fix or triage in docs; add a quality regression when practical.               |
+| Incorrect endpoint, schema, rule, CLI, or report behavior       | `rampspec-backend`                               | Link the runtime issue and pin the affected artifact in the docs issue.       |
+| Incorrect contract method, event, hash, address, or deployment  | `rampspec-contracts`                             | Do not patch prose around it; wait for a corrected tagged artifact.           |
+| Incorrect UI route, wallet flow, or screenshot                  | `rampspec-frontend`                              | Request a frontend release or update the docs after frontend review.          |
+| Security, privacy, runner isolation, or network-safety concern  | Owning runtime repository plus security reviewer | Use the security policy for sensitive reports; document only confirmed scope. |
+
+## Review and release responsibility
+
+| Change                                          | Required review                              | Release owner                                                                 |
+| ----------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------- |
+| Navigation, prose, assets, and examples         | Documentation maintainer                     | Docs maintainer publishes the site change.                                    |
+| API, schema, CLI, rule, or report claims        | Backend owner and documentation maintainer   | Backend owner releases the artifact; docs owner publishes the wrapper.        |
+| Contract method, hash, address, or event claims | Contracts owner and documentation maintainer | Contracts owner releases specs/manifests; docs owner publishes the reference. |
+| UI workflow or screenshot                       | Frontend owner and documentation maintainer  | Frontend owner releases the behavior; docs owner updates the guide.           |
+| Security, privacy, or network-safety guidance   | Security reviewer plus owning repository     | Owning repository releases the fix; docs records the limitation and version.  |
+
+The docs site can publish a documentation change only after its referenced runtime artifacts are available, hash-verified, and compatible. A docs deployment does not release or certify a runtime repository.
 
 ## Status
 
-This ownership model is implemented for the docs repository. Runtime release integrations remain planned until the owning repositories publish their first tagged artifacts.
+The ownership model and documentation-side checks are implemented locally. Runtime artifact imports, compatibility manifests, and deployment integrations remain planned until the owning repositories publish their first tagged artifacts.
