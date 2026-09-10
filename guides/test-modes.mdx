@@ -1,0 +1,80 @@
+---
+title: "Test modes and network safety"
+description: "Choose a RampSpec test mode with explicit mutation, authorization, runner, credential, cost, and evidence boundaries."
+keywords: ["test modes", "testnet", "pubnet", "runner safety", "kill switch"]
+---
+
+RampSpec modes describe what a run may do, not how thorough or authoritative its result is. The selected mode, network, target authorization, runner, credential scope, and cost ceiling belong in the suite lock and report.
+
+<Warning>
+  No backend execution-policy release exists. The controls below are the
+  required design contract, not evidence that active testnet or pubnet runs are
+  currently available.
+</Warning>
+
+## Mode matrix
+
+| Mode        | Mutations                                                                                          | Authorization and runner                                                                       | Credentials                                                                       | Primary output                                                              |
+| ----------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Discovery   | None; read public metadata and declared endpoints.                                                 | Target selection; public sandbox or local runner.                                              | None unless the target protects discovery.                                        | Source snapshot, capability inventory, and reachability observations.       |
+| Contract    | No business transaction; schema-valid requests may reach controlled validation endpoints.          | Explicit target authorization; sandbox for public targets or local runner for private targets. | Least-privilege synthetic token when required.                                    | Operation, schema, header, and error-shape findings.                        |
+| Journey     | Creates controlled deposit, withdrawal, KYC, quote, or payment state.                              | Written target authorization and testnet by default; isolated runner.                          | Synthetic identity, scoped API token, and funded test account only when required. | State transitions, callbacks, ledger correlation, and redacted evidence.    |
+| Interactive | Opens an authorized browser flow and may create target-side state.                                 | Journey authorization plus approved browser worker and callback policy.                        | Synthetic user session; no real identity documents.                               | Screenshots, browser trace, redirect/callback evidence, and terminal state. |
+| Adversarial | Sends bounded malformed, replayed, expired, or policy-rejected inputs.                             | Separate adversarial consent, dedicated fixtures, strict rate and request limits.              | Disposable credentials with no production authority.                              | Expected rejection evidence and any security finding.                       |
+| Regression  | Replays pinned fixtures against a compatible release.                                              | Same or narrower authority than the original fixture; isolated runner.                         | Recreated synthetic credentials, never captured secrets.                          | Difference report against the pinned baseline.                              |
+| Monitor     | Repeats passive checks on a schedule; stateful probes require separate approval.                   | Approved schedule, target, quiet hours, and stop owner.                                        | None for passive probes; scoped rotating token if explicitly required.            | Time series, availability observations, and incident signals.               |
+| Evidence    | Makes no target request; verifies a report, manifest, hashes, signatures, and optional commitment. | No target authorization needed because the runner has no target egress.                        | Verification keys and public/network metadata only.                               | Verification result with failed-closed integrity checks.                    |
+
+## Network policy
+
+### Local fixtures
+
+Use local deterministic fixtures for development, negative cases, replay behavior, and destructive testing. Local success proves only the named fixture and release.
+
+### Testnet default
+
+Testnet is the default for any run that builds, signs, submits, or correlates a Stellar transaction. Record the network passphrase, Horizon or RPC endpoint, funded fixture account policy, fee/amount ceiling, cleanup responsibility, and transaction hashes.
+
+### Passive pubnet
+
+Passive pubnet mode may read public SEP files, endpoints, transactions, ledgers, contract state, and history without submitting transactions or creating target state. It still requires rate limits, a named target, an egress allowlist, and a stop owner.
+
+### Active pubnet
+
+Active pubnet is denied unless every gate below is satisfied:
+
+1. a released backend policy explicitly supports the selected mode;
+2. the target owner provides written scope, time window, assets, accounts, endpoints, and expected mutations;
+3. an authorized operator completes a fresh confirmation for the run;
+4. credentials and signers are least-privilege and cannot exceed the approved operation;
+5. amount, fee, operation-count, rate, concurrency, and daily cost ceilings are enforced immediately before signing or dispatch;
+6. destination, asset, memo, network passphrase, time bounds, and authorization entries are revalidated;
+7. global and organization kill switches are tested and assigned to on-call owners;
+8. rollback, reconciliation, and incident contacts are ready;
+9. the resulting report is labeled with the exact pubnet scope and limitations.
+
+Absence of any gate is a policy rejection. A documentation example never overrides that rejection.
+
+## Runner and network controls
+
+Public runners resolve and pin destinations, reject loopback, link-local, multicast, private, documentation, carrier-grade NAT, and cloud-metadata ranges, recheck redirects, and enforce egress at the network layer. Private targets use an outbound-only local runner.
+
+Each job receives an immutable target allowlist, protocol/port allowlist, request and byte limits, timeout, rate limit, concurrency quota, and expiration. Runners discard ephemeral state after redaction and upload only approved evidence.
+
+## Credentials and data
+
+- Generate synthetic identities and use dedicated test accounts.
+- Inject secrets at the runner; do not send local signing-provider secrets to the control plane.
+- Never store bearer tokens, private keys, identity documents, or full customer payloads in reports.
+- Revoke or expire credentials after a run and record cleanup status.
+- Stop when a target unexpectedly returns real customer data.
+
+## Costs and stop controls
+
+Before execution, calculate expected target fees, Stellar fees, account reserves, quote exposure, runner time, browser time, and artifact storage. The smaller of organization, target, suite, and network ceilings applies. Exceeding a ceiling, losing target authorization, detecting scope drift, or activating a kill switch stops new work and prevents retries until a human review.
+
+## Evidence labels
+
+A completed mode produces scoped observations under [Terminology and boundaries](/reference/terminology). "Locally checked," "testnet deployed," and "pubnet deployed" describe different evidence and are never inferred from one another. Infrastructure errors remain indeterminate; policy rejection is not a protocol failure; an advisory or experimental result is not a SEP violation.
+
+Use [Architecture](/architecture/overview#runner-models) for execution boundaries and [Rule classification](/governance/rule-classification) for gate semantics.

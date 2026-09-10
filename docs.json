@@ -118,7 +118,7 @@
         "groups": [
           {
             "group": "Guides",
-            "pages": ["guides/getting-started"]
+            "pages": ["guides/getting-started", "guides/test-modes"]
           },
           {
             "group": "Maintainers",
