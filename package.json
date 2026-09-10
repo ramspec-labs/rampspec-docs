@@ -1,0 +1,22 @@
+{
+  "name": "rampspec-docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documentation for RampSpec's Stellar SEP conformance and interoperability platform.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run typecheck && npm run lint && npm run export",
+    "dev": "mintlify dev",
+    "export": "mintlify export --output export.zip",
+    "lint": "mintlify broken-links",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "devDependencies": {
+    "adm-zip": "0.6.0",
+    "mintlify": "4.2.884",
+    "typescript": "5.9.2"
+  }
+}
