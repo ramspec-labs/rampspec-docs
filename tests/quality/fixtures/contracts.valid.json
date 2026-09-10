@@ -1,0 +1,39 @@
+{
+  "bundleVersion": "0.0.0-test",
+  "migrationNotes": [],
+  "artifacts": [
+    {
+      "kind": "spec-json",
+      "path": "artifacts/specs/evidence-registry.json",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "kind": "typescript-binding",
+      "path": "artifacts/bindings/evidence-registry.ts",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "kind": "wasm",
+      "path": "artifacts/wasm/evidence-registry.wasm",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "kind": "deployment-manifest",
+      "path": "artifacts/manifests/undeployed.json",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "contracts": [
+    {
+      "name": "evidence-registry-fixture",
+      "classification": "test-fixture",
+      "wasmSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "specSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "methods": ["publish_fixture"],
+      "types": ["FixtureInput"],
+      "errors": [{ "code": 1, "name": "InvalidFixture" }],
+      "events": ["fixture_published"]
+    }
+  ],
+  "deployments": []
+}

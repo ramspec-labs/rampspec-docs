@@ -1,12 +1,62 @@
 ---
 title: "Contract storage reference"
 description: "The planned storage and retention boundary for on-chain RampSpec evidence."
+keywords:
+  ["contract spec", "deployment manifest", "WASM hash", "Soroban events"]
 ---
 
 Contract storage is the on-chain representation of a compact evidence commitment, not a repository for raw reports or customer identity data.
 
-## Status
+## Availability
 
-The storage schema, TTL policy, methods, events, errors, and deployment addresses are not released. This page will be replaced with generated contract references after a tagged contracts artifact exists.
+The storage schema, TTL policy, methods, types, events, errors, and deployment addresses are not released. `generated/contract-specs/contracts.json` is intentionally absent. This page describes how a future tagged artifact is admitted without presenting planned method names as released interfaces.
 
 Until then, keep complete reports off-chain, redact sensitive evidence, and do not infer certification from a future commitment.
+
+## Release bundle
+
+The `rampspec-contracts` release owns:
+
+- generated spec JSON and optional spec XDR;
+- generated TypeScript bindings;
+- optimized WASM and lowercase SHA-256;
+- deployment manifests, network passphrases, and contract IDs;
+- method, type, error, and event inventories;
+- production or `test-fixture` classification;
+- migration notes and verification timestamps.
+
+CI requires spec, binding, WASM, and deployment-manifest artifact entries. Every contract must reference known spec and WASM hashes, use unique method/type/event names, and use unique error names and numeric codes. Every deployment must reference a known contract and WASM hash, contain a valid contract StrKey, identify testnet or pubnet, state whether it is test-only, and record the HTTPS RPC endpoint and verification time.
+
+## Import and drift detection
+
+The manual synchronization workflow uses a read-only organization secret, verifies the private contracts release tag against its full commit, downloads `contracts.json`, checks the expected SHA-256, preserves its bytes, and opens a generated-diff pull request.
+
+```powershell
+npm run import:contracts -- `
+  --source <contracts-path-or-url> `
+  --tag <contracts-tag> `
+  --commit <40-character-commit> `
+  --sha256 <64-character-digest>
+```
+
+The values above are placeholders. After a real import, `npm run lint:contracts` detects missing methods or artifact classes, unknown spec or WASM hashes, malformed deployment records, and any byte-level drift from the source release.
+
+## Evidence and privacy boundary
+
+A production evidence contract may store only compact commitments and the minimum metadata required to interpret them. Report bodies, request or response traffic, identity data, credentials, private targets, and customer secrets remain off-chain. A hash can still reveal timing and activity, so publishing requires an explicit privacy decision.
+
+Test-fixture contracts exist only for deterministic authentication and policy scenarios. Their generated pages and deployments must say `test-only` and must never be described as production wallets, custody systems, audited contracts, or official certification infrastructure.
+
+## Deployment verification
+
+Before documenting a contract as deployed:
+
+1. select the exact contracts tag and full source commit;
+2. verify the bundle and individual artifact hashes;
+3. query the named network through the recorded RPC endpoint;
+4. confirm the deployed code hash matches the released WASM hash;
+5. confirm the contract ID, network passphrase, interface, and storage version;
+6. record the verification timestamp and any test-only restriction;
+7. add the deployment manifest to the compatible product release.
+
+An absent or mismatched record is a verification failure, not evidence that a planned address is usable.

@@ -19,6 +19,11 @@ import {
   validateSchemaBundle,
   validateSchemaBundleProvenance,
 } from "../../scripts/schema-bundle-core.mjs";
+import {
+  contractBundleHash,
+  validateContractBundle,
+  validateContractBundleProvenance,
+} from "../../scripts/contract-bundle-core.mjs";
 
 const root = process.cwd();
 
@@ -192,6 +197,37 @@ test("schema provenance requires a pinned backend source", () => {
     importedAt: "not-a-date",
   }).join("\n");
   assert.match(errors, /repository must be rampspec-backend/);
+  assert.match(errors, /tag is required/);
+  assert.match(errors, /full lowercase SHA/);
+  assert.match(errors, /source is required/);
+  assert.match(errors, /ISO date-time/);
+});
+
+test("contract bundle cross-checks interfaces and artifact hashes", () => {
+  const fixture = JSON.parse(
+    readFileSync(
+      path.join(root, "tests", "quality", "fixtures", "contracts.valid.json"),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(validateContractBundle(fixture), []);
+  fixture.contracts[0].methods = [];
+  fixture.contracts[0].wasmSha256 = "f".repeat(64);
+  const errors = validateContractBundle(fixture).join("\n");
+  assert.match(errors, /wasmSha256 is unknown/);
+  assert.match(errors, /methods must be non-empty/);
+});
+
+test("contract provenance requires a pinned contracts source", () => {
+  const errors = validateContractBundleProvenance({
+    repository: "rampspec-docs",
+    tag: "",
+    commit: "short",
+    source: "",
+    sha256: contractBundleHash("fixture"),
+    importedAt: "not-a-date",
+  }).join("\n");
+  assert.match(errors, /repository must be rampspec-contracts/);
   assert.match(errors, /tag is required/);
   assert.match(errors, /full lowercase SHA/);
   assert.match(errors, /source is required/);
