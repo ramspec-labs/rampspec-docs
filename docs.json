@@ -80,6 +80,10 @@
             "pages": ["contracts/overview", "reference/contract-storage"]
           },
           {
+            "group": "Reference",
+            "pages": ["reference/terminology"]
+          },
+          {
             "group": "Governance",
             "pages": [
               "governance/repository-ownership",

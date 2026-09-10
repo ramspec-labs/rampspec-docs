@@ -1,0 +1,62 @@
+---
+title: "Terminology and boundaries"
+description: "Precise definitions, evidence labels, and non-goals for RampSpec documentation."
+keywords:
+  ["conformance", "evidence", "verification", "terminology", "boundaries"]
+---
+
+RampSpec uses the terms on this page consistently across the frontend, backend, contract, and documentation repositories. A definition describes what a future released component must mean; it does not claim that the component is already released.
+
+## Core terms
+
+| Term                    | Definition                                                                                                                                           | What it does not mean                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Conformance result**  | A scoped evaluation of an authorized target against a pinned rule and scenario set, including pass, fail, skipped, and indeterminate outcomes.       | Certification, legal approval, or proof that every production condition is satisfied.                             |
+| **Evidence report**     | A structured artifact containing the target, inputs, suite lock, rule outcomes, redacted observations, status, content hash, and optional signature. | Proof that unobserved systems, people, or future deployments are safe.                                            |
+| **Verified run**        | A run for which the report hash, signature when present, suite lock, and release manifest have been independently checked.                           | A claim that the target is certified, secure, compliant, or suitable for every use case.                          |
+| **Rule classification** | The policy category and enforcement level attached to a rule, such as `MUST`, `SHOULD`, `SECURITY`, `INTEROP`, `POLICY`, or `EXPERIMENTAL`.          | A replacement for the upstream SEP text or for a target owner's documented policy.                                |
+| **Gate**                | An explicit release or workflow decision policy that maps selected outcomes to an allow, block, warn, or review-required decision.                   | A score, ranking, or guarantee of quality.                                                                        |
+| **Score**               | A repeatable summary metric over a defined suite and denominator, always accompanied by the underlying outcomes and exclusions.                      | A universal quality rating or a substitute for reviewing failures and indeterminate states.                       |
+| **Suite lock**          | The immutable identifiers for the rule pack, scenarios, protocol snapshots, schemas, runner, and target configuration used by a run.                 | A guarantee that the same target will behave the same way later.                                                  |
+| **Target**              | An endpoint, deployment, or controlled test environment that an organization has authorized RampSpec to contact.                                     | Permission to scan or exercise an unrelated third-party system.                                                   |
+| **Runner**              | The execution boundary that performs requests and records observations, either in a public sandbox or in an outbound-only local environment.         | A privilege escalation path, a network proxy for arbitrary traffic, or a place to store unredacted customer data. |
+| **Evidence**            | A redacted observed request, response, callback, browser state, ledger observation, or synthetic fixture linked to a rule outcome.                   | A claim based only on an assertion, a screenshot without provenance, or live personal information.                |
+
+## Evidence labels
+
+Use the following labels in documentation, release manifests, and issue reports. A higher label must be backed by a more specific record; it must not be inferred from a lower label.
+
+| Label                   | Minimum evidence                                                                            | Current RampSpec meaning                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Planned**             | A scoped design or implementation item.                                                     | The runtime feature is described but not released.                                        |
+| **Implemented**         | A committed implementation in the owning repository.                                        | The code exists, but this label alone says nothing about deployment or interoperability.  |
+| **Locally checked**     | A reproducible local command, fixture, or CI result.                                        | The checked behavior passed in the named environment and scope.                           |
+| **Testnet deployed**    | A deployment manifest, network, contract IDs, release tag, and run record.                  | The named release was exercised on Stellar testnet; results remain scoped to that run.    |
+| **Pubnet deployed**     | A deployment manifest, release tag, operator record, and explicit production authorization. | The named release exists on Stellar public network; it is not an audit or certification.  |
+| **Externally reviewed** | A dated review record naming the reviewer, scope, limitations, and artifact version.        | A review occurred; it does not imply endorsement or remediation of every finding.         |
+| **Adopted**             | A public or authorized integration record naming the adopter and release.                   | The named party reports using the release; it is not evidence of universal compatibility. |
+
+The documentation repository currently supports `Implemented` and `Locally checked` labels for its own toolchain. Runtime, network, review, and adoption labels remain unclaimed until their records exist.
+
+## Non-goals and safety boundaries
+
+RampSpec documentation does not claim or provide:
+
+- SDF certification, official Stellar endorsement, or protocol approval.
+- Legal, regulatory, licensing, KYC, AML, sanctions, or compliance approval.
+- A security audit, penetration test, threat-model sign-off, or vulnerability-free result.
+- Custody of funds, signing authority, or permission to move a user's assets.
+- Storage of real identity data or production credentials; examples default to synthetic data and redacted observations.
+- Permission to scan, crawl, or exercise an endpoint that the target owner has not authorized.
+- A partner, customer, reviewer, or ecosystem-adoption claim without a named record.
+- A score that proves every production condition, every deployment, or every future run.
+
+## Applying the terms
+
+Use [Getting started](/getting-started) for the current setup boundary, [Architecture](/architecture/overview) for component responsibilities, and [Repository ownership](/governance/repository-ownership) for source-of-truth decisions. The [Roadmap](/roadmap) records what is still planned. When a release exists, its compatibility manifest must identify the exact suite lock and evidence records used by any published result.
+
+<Warning>
+  Treat a result as scoped evidence. Do not reuse it as a certification, audit,
+  compliance decision, or authorization to contact a system outside the target
+  and network boundaries recorded in the report.
+</Warning>
