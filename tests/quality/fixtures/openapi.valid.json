@@ -1,0 +1,19 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RampSpec test fixture",
+    "version": "0.0.0-test"
+  },
+  "paths": {
+    "/fixture": {
+      "get": {
+        "operationId": "getFixture",
+        "responses": {
+          "200": {
+            "description": "Fixture response"
+          }
+        }
+      }
+    }
+  }
+}

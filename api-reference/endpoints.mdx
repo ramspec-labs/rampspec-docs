@@ -1,10 +1,44 @@
 ---
 title: "API endpoints"
 description: "Generated HTTP endpoint reference for a compatible RampSpec backend release."
+keywords:
+  ["OpenAPI", "authentication", "errors", "pagination", "idempotency", "SSE"]
 ---
 
-The API endpoint reference will be generated from the tagged backend OpenAPI artifact.
+The API endpoint reference is generated from a tagged `rampspec-backend` OpenAPI artifact. Authored documentation explains how to consume that artifact but does not define endpoint paths or payload fields.
 
 ## Availability
 
-No backend OpenAPI release exists yet. Do not infer request paths, authentication, pagination, events, or error shapes from this placeholder.
+No backend OpenAPI release exists yet, so `generated/openapi/openapi.json` is intentionally absent. Do not infer request paths, authentication, pagination, events, or error shapes from this page.
+
+## Import and integrity
+
+The synchronization workflow uses a read-only organization secret to download `openapi.json` from the named private backend release. It requires the backend release tag, verifies that tag's full commit SHA, and checks the expected SHA-256. The import rejects an invalid document or digest mismatch, writes canonical JSON, and records provenance in `generated/openapi/source.json`. CI then recomputes the digest so manual changes fail.
+
+```powershell
+npm run import:openapi -- `
+  --source <openapi-path-or-url> `
+  --tag <backend-tag> `
+  --commit <40-character-commit> `
+  --sha256 <64-character-digest>
+```
+
+These placeholders are intentional and the command is not evidence of a released backend.
+
+## Authentication
+
+The generated OpenAPI `components.securitySchemes` and each operation's `security` field are authoritative. A guide may describe token acquisition and scopes only after those definitions exist. Examples must use synthetic credentials and must not embed bearer tokens.
+
+## Errors
+
+Consumers must use the generated response schemas and documented status codes. They should preserve machine-readable error codes, correlation identifiers, and retry guidance while treating unknown fields as additive. Documentation must not turn a missing operation or undocumented response into a guessed contract.
+
+## Pagination and idempotency
+
+Cursor names, page limits, continuation behavior, and replay semantics come from operation parameters and schemas. Mutating requests use an idempotency mechanism only when the released operation declares it. Retries must preserve the original request body and follow the backend's documented conflict behavior.
+
+## Server-sent events
+
+If the released API defines an SSE operation, the generated reference is authoritative for event names and payload schemas. Clients must handle reconnects, duplicate event IDs, terminal events, and authorization expiry. The documentation will link each event to its generated JSON Schema after the backend publishes the bundle.
+
+See [Compatibility and release manifest](/reference/release-manifest) for version selection and [Repository ownership](/governance/repository-ownership) for source-of-truth rules.

@@ -9,6 +9,11 @@ import {
   validateReferenceIndex,
 } from "../../scripts/quality-core.mjs";
 import { validateReleaseManifest } from "../../scripts/manifest-core.mjs";
+import {
+  sha256,
+  validateOpenApiDocument,
+  validateOpenApiProvenance,
+} from "../../scripts/openapi-core.mjs";
 
 const root = process.cwd();
 
@@ -103,4 +108,39 @@ test("release manifest validation rejects incomplete release claims", () => {
   assert.match(errors, /breaking changes require migration notes/);
   assert.match(errors, /verified manifests require verifiedAt/);
   assert.match(errors, /a released manifest requires releasedAt/);
+});
+
+test("OpenAPI validation requires stable operation identifiers and responses", () => {
+  const invalid = {
+    openapi: "3.1.0",
+    info: { title: "RampSpec API", version: "1.0.0" },
+    paths: {
+      "/runs": {
+        get: { operationId: "runs", responses: {} },
+        post: {
+          operationId: "runs",
+          responses: { 202: { description: "Accepted" } },
+        },
+      },
+    },
+  };
+  const errors = validateOpenApiDocument(invalid).join("\n");
+  assert.match(errors, /responses are required: GET \/runs/);
+  assert.match(errors, /duplicate operationId: runs/);
+});
+
+test("OpenAPI provenance requires a pinned backend source", () => {
+  const errors = validateOpenApiProvenance({
+    repository: "another-repository",
+    tag: "",
+    commit: "short",
+    source: "",
+    sha256: sha256("fixture"),
+    importedAt: "not-a-date",
+  }).join("\n");
+  assert.match(errors, /repository must be rampspec-backend/);
+  assert.match(errors, /tag is required/);
+  assert.match(errors, /full lowercase SHA/);
+  assert.match(errors, /source is required/);
+  assert.match(errors, /ISO date-time/);
 });
