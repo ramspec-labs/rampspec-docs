@@ -1,0 +1,76 @@
+---
+title: "Target onboarding and ownership"
+description: "Register, verify, and govern an authorized RampSpec test target without expanding its network or credential scope."
+keywords: ["target", "ownership", "DNS TXT", "well-known", "testnet"]
+---
+
+A target is an authorized endpoint or deployment inside one project. Ownership proof permits RampSpec to contact only the normalized origin, network, and capabilities accepted by policy. It does not authorize unrelated hosts, subdomains, redirects, assets, corridors, or active pubnet transactions.
+
+<Warning>
+  Target APIs, UI screens, challenge formats, and runner releases are not
+  available. Names, paths, tokens, and commands must come from a compatible
+  tagged release. This page defines the onboarding and verification contract,
+  not a successful live verification.
+</Warning>
+
+## Registration record
+
+Collect and review the following fields before requesting a challenge:
+
+| Field             | Required boundary                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Home domain       | Lowercase internationalized domain normalized to its ASCII form; no user information, wildcard, query, fragment, or unapproved path. |
+| Network           | Exactly one of local, custom, Stellar testnet, or Stellar pubnet, with the passphrase and data-source endpoints recorded.            |
+| Assets            | Asset code, issuer or native designation, network, expected precision, and enabled direction.                                        |
+| Corridors         | Source and destination assets, countries or regions, rails, methods, and direction; no implicit wildcard.                            |
+| Advertised SEPs   | Expected SEP identifiers and pinned snapshot status, including draft or deprecated labels.                                           |
+| Runner            | Public sandbox for internet-reachable approved targets, or outbound-only local runner for private endpoints.                         |
+| Secret references | Provider and opaque key reference, purpose, scope, rotation date, and runner access; never a secret value.                           |
+| Policy            | Allowed modes, endpoints, redirect hosts, schedules, request ceilings, mutations, transaction limits, retention, and stop owner.     |
+
+Default new targets to Stellar testnet and discovery-only execution. Pubnet registration does not enable active pubnet behavior; the separate gates in [Test modes and network safety](/guides/test-modes#active-pubnet) still apply.
+
+## Discovery before proof
+
+The safe discovery profile retrieves only `/.well-known/stellar.toml` and other explicitly authorized public metadata. It records the final normalized URL, resolution results, status, content type, size, digest, redirects, cache metadata, and retrieval time.
+
+Discovery must reject credentials in URLs, unsupported schemes, disallowed ports, redirect scope changes, loopback or private destinations from public runners, DNS rebinding, excessive bodies, invalid text encoding, and parser-limit violations. A reachable TOML file is an observation, not ownership proof.
+
+Compare discovered accounts, endpoints, assets, network metadata, and SEP capabilities with the registration record. Differences require owner review; they must not silently widen the target.
+
+## Ownership challenge
+
+Only an Owner or Admin may request a challenge. The released backend generates a single-use random token bound to the organization, project, normalized domain, network, method, creation time, and expiration. Store only a token digest after issuance and rate-limit generation and verification.
+
+### DNS TXT method
+
+Publish the exact record name and value returned by the released challenge operation in the target domain's authoritative DNS. Verification must query authoritative results through independent resolvers, accept only the exact unexpired token, and reject stale, duplicated, malformed, replayed, or differently scoped records.
+
+### Well-known file method
+
+Publish the exact challenge bytes at the HTTPS path returned by the released operation. Verification requires a valid certificate for the target domain, an allowed port, the exact content and media type, and no redirect outside the approved origin. It rejects substituted HTML, cache-only responses, token reuse, oversized responses, and private-address resolution from a public runner.
+
+Challenge record names and file paths are intentionally omitted until the OpenAPI release defines them. Documentation examples cannot establish a parallel convention.
+
+## Expiry and renewal
+
+Ownership has an explicit `verifiedAt` and `expiresAt`. Notify target owners before expiry, but do not renew automatically from an old proof. Renewal issues a fresh challenge, repeats DNS and address safety checks, records the actor and method, and invalidates the previous token.
+
+Expiry immediately blocks new stateful, adversarial, scheduled, and active-pubnet work. A narrowly defined passive discovery policy may remain available only if the released policy permits it. Existing reports retain their original verification timestamp and do not become evidence of current ownership.
+
+Revoke verification when control changes, the domain expires, the network or normalized origin changes, DNS becomes unsafe, the owner requests removal, or abuse is detected.
+
+## Runner, secrets, and policy
+
+- Use a public runner only for approved public addresses and enforce resolution pinning, redirect checks, and network-layer egress rules.
+- Use an outbound-only local runner for private hosts; inbound control-plane access to the private network is prohibited.
+- Resolve secret references inside the selected runner and expose only metadata to the control plane and browser.
+- Restrict each reference to named protocols, endpoints, target, project, runner, and expiration.
+- Recheck ownership, policy, runner health, limits, and secret scope when a run starts and immediately before any mutation or signature.
+- Audit registrations, discoveries, challenges, verification attempts, renewals, revocations, policy changes, and runner changes.
+
+## Release validation
+
+When target functionality is released, maintainers must exercise both proof methods against a controlled testnet domain. The record must include the frontend, backend, CLI, and runner tags; DNS and HTTPS observations; success, pending, expiry, replay, and failure cases; discovery digest; and redacted audit events. Cross-domain redirects, private-address resolution, stale tokens, and mismatched networks must fail.
+
+Until that evidence exists, target onboarding remains **Planned**. Start with [Organization and project setup](/guides/organization-setup), then use the [standards baseline](/reference/standards-baseline) to classify advertised protocol versions.
