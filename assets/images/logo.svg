@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" role="img" aria-labelledby="title description">
+  <title id="title">RampSpec</title>
+  <desc id="description">RampSpec wordmark with a specification check symbol</desc>
+  <rect width="64" height="64" rx="8" fill="#082f49"/>
+  <path d="M18 16h20l8 8v24H18z" fill="#ecfeff"/>
+  <path d="M38 16v9h8" fill="none" stroke="#0891b2" stroke-width="3"/>
+  <path d="m25 35 5 5 10-12" fill="none" stroke="#0891b2" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+  <text x="78" y="42" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="700">RampSpec</text>
+</svg>

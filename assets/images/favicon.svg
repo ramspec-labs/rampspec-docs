@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">RampSpec</title>
+  <rect width="64" height="64" rx="8" fill="#082f49"/>
+  <path d="M18 12h20l9 9v31H18z" fill="#ecfeff"/>
+  <path d="M38 12v10h9" fill="none" stroke="#0891b2" stroke-width="3"/>
+  <path d="m25 36 5 5 11-13" fill="none" stroke="#0891b2" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+</svg>

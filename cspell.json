@@ -6,6 +6,7 @@
   "ignorePaths": [
     "implementation.md",
     "package-lock.json",
+    "assets/images/*.svg",
     "generated/**",
     "tests/quality/fixtures/**"
   ],
@@ -14,12 +15,15 @@
     "codeowners",
     "conformance",
     "frontmatter",
+    "Grotesk",
     "Hallab",
     "idempotency",
     "linkcheckrc",
     "Mintlify",
     "MDX",
+    "metatags",
     "OpenAPI",
+    "noindex",
     "pubnet",
     "RampSpec",
     "rampspec",
@@ -34,6 +38,7 @@
     "Stellar",
     "testnet",
     "toolchain",
+    "urlset",
     "Vercel",
     "webhook"
   ]

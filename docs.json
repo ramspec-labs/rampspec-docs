@@ -1,17 +1,72 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "RampSpec",
+  "description": "Continuous SEP conformance, interoperability testing, and verifiable evidence for Stellar anchors.",
   "theme": "maple",
+  "public": false,
   "colors": {
-    "primary": "#0891b2",
-    "light": "#22d3ee",
-    "dark": "#0e7490"
+    "primary": "#22d3ee",
+    "light": "#67e8f9",
+    "dark": "#0891b2"
+  },
+  "logo": {
+    "dark": "/assets/images/logo.svg",
+    "light": "/assets/images/logo.svg",
+    "href": "/introduction"
+  },
+  "favicon": "/assets/images/favicon.svg",
+  "appearance": {
+    "default": "system",
+    "strict": false
+  },
+  "fonts": {
+    "heading": {
+      "family": "Space Grotesk",
+      "weight": 600
+    },
+    "body": {
+      "family": "Inter"
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "type": "github",
+        "label": "GitHub",
+        "href": "https://github.com/rampspec-labs"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "View App",
+      "href": "https://github.com/rampspec-labs/rampspec-frontend"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/rampspec-labs"
+    }
+  },
+  "search": {
+    "prompt": "Search RampSpec documentation"
+  },
+  "seo": {
+    "indexing": "navigable",
+    "trailingSlash": false,
+    "metatags": {
+      "robots": "noindex, nofollow",
+      "referrer": "strict-origin-when-cross-origin"
+    }
+  },
+  "metadata": {
+    "timestamp": true
   },
   "navigation": {
     "pages": [
       "introduction",
       "governance/repository-ownership",
-      "governance/docs-release-policy"
+      "governance/docs-release-policy",
+      "governance/docs-deployment"
     ]
   }
 }

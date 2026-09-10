@@ -1,0 +1,27 @@
+---
+title: "Documentation deployment"
+description: "Build, preview, privacy, indexing, and retention controls for RampSpec documentation."
+keywords: ["Vercel preview", "Mintlify export", "documentation deployment"]
+---
+
+RampSpec documentation is exported as a static Mintlify site and is configured for Vercel hosting without embedding runtime credentials.
+
+## Build contract
+
+`npm run build` validates TypeScript, content, navigation, links, generated references, examples, spelling, and formatting. It then creates `export.zip`, rejects unsafe archive paths, replaces `out/`, confirms `out/index.html`, and removes the ZIP.
+
+Vercel uses the same command and publishes only `out/`. Pull requests receive previews after an owner connects the private repository to a Vercel project.
+
+## Private preview controls
+
+The repository and current documentation channel are private. The Mintlify configuration sets `public` to `false`, exported pages emit no-index metadata, `robots.txt` disallows crawling, and Vercel sends an `X-Robots-Tag` response header.
+
+Before enabling previews, an owner must enable Vercel Deployment Protection for every environment, restrict Git access to approved organization members, and set preview retention to seven days in the Vercel project settings. These account-level controls cannot be declared safely in `vercel.json` and are not yet verified.
+
+## Search and canonical URLs
+
+Mintlify generates `sitemap.xml`, `robots.txt`, and canonical tags during hosted builds. Canonical URLs follow the final deployment domain; no unverified RampSpec domain is hard-coded. In-product search uses page keywords and navigation boosts. Search analytics are reviewed in the Mintlify dashboard and must not be joined to RampSpec account, target, report, or identity data.
+
+## Current status
+
+The static export is locally checked. No Vercel project, protected preview, custom domain, or hosted analytics configuration is claimed as deployed.

@@ -127,7 +127,7 @@ The root pages provide the short entry path used by the reference repository. Co
 
 **Outcome:** Documentation changes are reviewable and content is findable without leaking user data.
 
-**Parts:** Configure `docs.json` with the Maple theme, sidenav layout, bordered sidebar items, default topbar, no rounding, Space Grotesk headings, Inter body text, the reference cyan color set, shared light/dark logo from `assets/images/`, diagrams from `assets/diagrams/`, favicon, GitHub link, View App CTA, footer social, search analytics, RampSpec synonyms, page/group boosts, robots/sitemap, and canonical URLs. Add `mintlify export --output export.zip`, a guarded `adm-zip` extraction script that requires the ZIP, recreates `out/`, extracts the site, removes the ZIP, and fails visibly; add `vercel.json` with `npm run build`, PR previews, and preview expiration.
+**Parts:** Configure `docs.json` with the Maple theme, sidenav layout, bordered sidebar items, default topbar, no rounding, Space Grotesk headings, Inter body text, the reference cyan color set, shared light/dark logo from `assets/images/`, diagrams from `assets/diagrams/`, favicon, GitHub link, View App CTA, footer social, privacy-safe Mintlify dashboard analytics, page keyword synonyms, page/group boosts, robots/sitemap, and canonical URLs. Use current Mintlify 4 `navbar`, `footer`, `fonts`, `seo`, frontmatter keyword, and navigation boost fields instead of removed legacy keys. Add `mintlify export --output export.zip`, a guarded `adm-zip` extraction script that requires the ZIP, recreates `out/`, extracts the site, removes the ZIP, and fails visibly; add `vercel.json` with `npm run build`, protected PR previews, and a documented preview-expiration setting.
 
 **Depends on:** Phase 03.
 

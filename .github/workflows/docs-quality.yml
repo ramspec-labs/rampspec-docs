@@ -43,6 +43,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rampspec-docs-export
-          path: export.zip
+          path: out/
           if-no-files-found: error
           retention-days: 7

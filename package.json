@@ -8,9 +8,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm run typecheck && npm run lint && npm run export",
+    "build": "npm run typecheck && npm run lint && npm run export && node scripts/extract-mintlify-export.mjs",
     "dev": "mintlify dev",
-    "export": "mintlify export --output export.zip",
+    "export": "node scripts/prepare-mintlify-export.mjs && mintlify export --output export.zip",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run lint:mintlify && npm run lint:content && npm run lint:references && npm run lint:snippets && npm run lint:spelling && npm run format:check",
