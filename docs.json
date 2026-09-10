@@ -121,6 +121,10 @@
             "pages": ["guides/getting-started", "guides/test-modes"]
           },
           {
+            "group": "Onboarding",
+            "pages": ["guides/organization-setup"]
+          },
+          {
             "group": "Maintainers",
             "pages": ["guides/maintainers/spec-synchronization"]
           }

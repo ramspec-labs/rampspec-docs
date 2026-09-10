@@ -1,0 +1,82 @@
+---
+title: "Organization and project setup"
+description: "Create a RampSpec organization and project with explicit roles, invitations, service accounts, and least-privilege checks."
+keywords:
+  ["organization", "project", "roles", "invitations", "service accounts"]
+---
+
+An organization is the tenant boundary for people, policies, runners, audit events, and billing. A project groups targets, suites, integrations, and evidence under one operating purpose. Create separate projects when targets require different owners, retention rules, credentials, or release gates.
+
+<Warning>
+  RampSpec has no released identity UI, OpenAPI operation, or CLI command. The
+  workflow below is the required product contract and validation plan. It is not
+  an executable quickstart, and no screenshot or placeholder command is
+  presented as released behavior.
+</Warning>
+
+## Required workflow
+
+When compatible frontend, backend, and CLI tags are published, all three paths must produce the same organization and project resources:
+
+1. authenticate a human owner through the released identity flow;
+2. create one organization with a unique display name and slug;
+3. accept the retention, signing, anchoring, and network defaults explicitly;
+4. create a project with a purpose, environment class, and owner;
+5. invite maintainers and read-only reviewers with the narrowest suitable roles;
+6. create service accounts only for automation that cannot use a human session;
+7. review the effective permissions and organization audit events;
+8. continue to target onboarding only after the tenant and project identifiers are recorded.
+
+The tagged OpenAPI artifact is authoritative for request paths and payloads. The tagged CLI help is authoritative for command names and flags. The frontend release must show the organization and project identifiers returned by that same API. See [API endpoints](/api-reference/endpoints) for the release gate.
+
+## Role matrix
+
+| Capability                                                               | Owner               | Admin               | Maintainer          | Runner          | Auditor         | Viewer |
+| ------------------------------------------------------------------------ | ------------------- | ------------------- | ------------------- | --------------- | --------------- | ------ |
+| Manage billing and delete the organization                               | Allow               | Deny                | Deny                | Deny            | Deny            | Deny   |
+| Change roles, signing policy, or anchoring policy                        | Allow               | Deny                | Deny                | Deny            | Deny            | Deny   |
+| Manage projects, targets, integrations, schedules, and secret references | Allow               | Allow               | Deny                | Deny            | Deny            | Deny   |
+| Edit suites, start approved runs, triage findings, and approve baselines | Allow               | Allow               | Allow               | Deny            | Deny            | Deny   |
+| Execute an already approved suite and read its result                    | Allow               | Allow               | Allow               | Allow           | Deny            | Deny   |
+| Read immutable reports, history, and audit events                        | Allow               | Allow               | Allow               | Limited         | Allow           | Deny   |
+| Read dashboards and reports                                              | Allow               | Allow               | Allow               | Limited         | Allow           | Allow  |
+| Read raw request or response evidence                                    | Separate permission | Separate permission | Separate permission | Deny by default | Deny by default | Deny   |
+
+Permissions are additive only when explicitly granted. Project membership cannot grant an organization-level capability. A user who holds roles in multiple organizations receives no cross-tenant access.
+
+## Invitations
+
+- Send an invitation to a normalized email address for one organization and one initial role.
+- Give every invitation a short expiration and a single-use token.
+- Require the accepting account to match the intended identity or an approved SSO binding.
+- Recheck the inviter's authority when the invitation is accepted, not only when it is created.
+- Reject reuse, expiry, revocation, self-escalation, and cross-organization acceptance.
+- Record creation, resend, role change, acceptance, revocation, and expiry in the audit log without recording the token.
+- Require a second owner before allowing the last owner to leave or be demoted.
+
+## Service accounts
+
+A service account belongs to one organization and has an owner, purpose, project scope, explicit capabilities, expiration, and rotation policy. Its API key or OAuth credential is displayed only at creation and stored only as a one-way hash or by the configured secret provider.
+
+Use separate identities for CI gates, scheduled monitors, and local runners. Do not give a CI identity organization administration, secret management, target ownership verification, active-pubnet approval, or report-publication authority unless that exact action is required and reviewed.
+
+Disable an unused account immediately. Rotation must overlap only long enough to update the consumer, and both issuance and revocation must produce audit events.
+
+## Least-privilege review
+
+Before onboarding a target, confirm:
+
+- there are at least two recoverable human owners for a production organization;
+- each human has the narrowest role needed for current work;
+- automation uses a non-human identity with project and action scopes;
+- raw evidence access is separate from report access;
+- destructive actions require recent authentication and explicit confirmation;
+- organization, project, membership, invitation, and service-account events are auditable;
+- denied cross-tenant and privilege-escalation attempts are tested;
+- secret values never appear in the browser, logs, reports, or audit metadata.
+
+## Release validation
+
+Documentation can replace this release-gated contract with tested instructions only after a compatibility manifest identifies frontend, backend, and CLI tags. Maintainers must then capture the tagged UI flow, execute the API and CLI paths in a clean tenant, compare resource identifiers and effective permissions, test every allowed and denied cell in the role matrix, and remove any stale screenshot or command.
+
+Until that record exists, label this capability **Planned** under [Terminology and boundaries](/reference/terminology). Continue with [Test modes and network safety](/guides/test-modes) to understand later execution permissions.
