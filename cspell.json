@@ -1,0 +1,40 @@
+{
+  "version": "0.2",
+  "language": "en,en-GB",
+  "useGitignore": true,
+  "files": ["**/*.{md,mdx,json,yml,yaml,mjs}"],
+  "ignorePaths": [
+    "implementation.md",
+    "package-lock.json",
+    "generated/**",
+    "tests/quality/fixtures/**"
+  ],
+  "words": [
+    "airgapped",
+    "codeowners",
+    "conformance",
+    "frontmatter",
+    "Hallab",
+    "idempotency",
+    "linkcheckrc",
+    "Mintlify",
+    "MDX",
+    "OpenAPI",
+    "pubnet",
+    "RampSpec",
+    "rampspec",
+    "redaction",
+    "roadmap",
+    "schema",
+    "schemas",
+    "SEP",
+    "SEPs",
+    "sidenav",
+    "Soroban",
+    "Stellar",
+    "testnet",
+    "toolchain",
+    "Vercel",
+    "webhook"
+  ]
+}

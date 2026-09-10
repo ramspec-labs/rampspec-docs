@@ -1,0 +1,48 @@
+name: Docs quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run validator tests
+        run: npm test
+
+      - name: Check external links
+        run: npm run lint:external
+
+      - name: Export documentation
+        run: npm run build
+
+      - name: Upload static export
+        uses: actions/upload-artifact@v4
+        with:
+          name: rampspec-docs-export
+          path: export.zip
+          if-no-files-found: error
+          retention-days: 7

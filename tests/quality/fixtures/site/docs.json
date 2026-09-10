@@ -1,0 +1,6 @@
+{
+  "name": "Broken fixture",
+  "navigation": {
+    "pages": ["broken", "missing"]
+  }
+}

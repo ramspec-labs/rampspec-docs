@@ -1,0 +1,13 @@
+{
+  "references": {
+    "operations": [],
+    "schemas": [],
+    "contractMethods": []
+  },
+  "requirements": {
+    "operations": ["POST /v1/runs"],
+    "schemas": ["https://schemas.rampspec.dev/report/v1"],
+    "contractMethods": ["publish_evidence"]
+  },
+  "snippets": ["examples/missing-command.sh"]
+}

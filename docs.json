@@ -8,6 +8,10 @@
     "dark": "#0e7490"
   },
   "navigation": {
-    "pages": ["introduction"]
+    "pages": [
+      "introduction",
+      "governance/repository-ownership",
+      "governance/docs-release-policy"
+    ]
   }
 }
