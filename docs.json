@@ -62,11 +62,60 @@
     "timestamp": true
   },
   "navigation": {
-    "pages": [
-      "introduction",
-      "governance/repository-ownership",
-      "governance/docs-release-policy",
-      "governance/docs-deployment"
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Overview",
+            "boost": 3,
+            "pages": ["introduction", "getting-started", "roadmap"]
+          },
+          {
+            "group": "Architecture",
+            "pages": ["architecture/overview"]
+          },
+          {
+            "group": "Contracts",
+            "pages": ["contracts/overview", "reference/contract-storage"]
+          },
+          {
+            "group": "Governance",
+            "pages": [
+              "governance/repository-ownership",
+              "governance/docs-release-policy",
+              "governance/docs-deployment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDK",
+        "groups": [
+          {
+            "group": "SDK",
+            "pages": ["sdk/overview"]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Guides",
+            "pages": ["guides/getting-started"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "API Reference",
+            "pages": ["api-reference/endpoints"]
+          }
+        ]
+      }
     ]
   }
 }
