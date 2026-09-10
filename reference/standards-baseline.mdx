@@ -1,0 +1,52 @@
+---
+title: "Standards baseline"
+description: "Pinned Stellar Ecosystem Proposal versions, statuses, sources, and RampSpec coverage."
+keywords:
+  ["SEP versions", "standards snapshot", "protocol coverage", "FCP", "draft"]
+---
+
+RampSpec evaluates rules against an immutable Stellar Ecosystem Proposal snapshot. The snapshot below was read from the official `stellar/stellar-protocol` repository at commit `0dc4592cb44dda1943341016f076e9326874daed` on 2026-09-10. Status and version values are upstream metadata, not RampSpec endorsements.
+
+<Warning>
+  No backend rule-pack release is available. Every RampSpec coverage entry is
+  therefore `Planned` even though the upstream documents themselves are active,
+  draft, or in Final Comment Period.
+</Warning>
+
+## Pinned snapshot
+
+| Standard | Upstream status                                              | Version       | Updated       | RampSpec coverage | Normative source                                                                                                                            |
+| -------- | ------------------------------------------------------------ | ------------- | ------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| SEP-1    | Active                                                       | 2.7.0         | 2025-01-16    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0001.md#preamble) |
+| SEP-6    | Active; interactive components deprecated in favor of SEP-24 | 4.3.0         | 2025-09-10    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0006.md#preamble) |
+| SEP-9    | Active                                                       | 1.17.0        | 2024-04-22    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0009.md#preamble) |
+| SEP-10   | Active                                                       | 3.4.1         | 2024-03-20    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0010.md#preamble) |
+| SEP-12   | Active                                                       | 1.15.0        | 2024-07-23    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0012.md#preamble) |
+| SEP-24   | Active                                                       | 3.8.0         | 2025-09-10    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0024.md#preamble) |
+| SEP-31   | Active                                                       | 3.1.0         | 2024-11-05    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0031.md#preamble) |
+| SEP-34   | Final Comment Period (FCP)                                   | Not specified | Not specified | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0034.md#preamble) |
+| SEP-38   | Draft                                                        | 2.5.0         | 2025-02-26    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0038.md#preamble) |
+| SEP-45   | Draft                                                        | 0.1.1         | 2025-12-16    | Planned           | [Pinned Preamble](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0045.md#preamble) |
+
+The machine-readable [snapshot](/standards/snapshot.json) records each source path and SHA-256. `npm run lint:standards` validates the required inventory and metadata shape.
+
+## Status interpretation
+
+- **Active** means the upstream Preamble currently labels the SEP active at the pinned commit. It does not mean a target implements it or RampSpec tests it.
+- **Final Comment Period** is an upstream review status. Rule packs must retain the pinned text and prepare for incompatible changes.
+- **Draft** behavior can change without a stable compatibility promise. Draft rules must be clearly labeled and cannot block a default production gate unless an organization opts in.
+- **Planned coverage** means no tagged backend rule pack provides executable evidence yet.
+
+## Refresh procedure
+
+1. Clone the official repository and record the new full commit SHA.
+2. Read the Preamble for all ten supported documents; do not infer status from an issue or secondary article.
+3. Compute SHA-256 over each file's exact bytes.
+4. Diff normative language and categorize added, removed, and changed requirements.
+5. Coordinate rule and scenario updates in `rampspec-backend`.
+6. Add compatibility and migration notes for semantic changes.
+7. Update `standards/snapshot.json`, this table, and every protocol guide link in one reviewed change.
+8. Run `npm run lint:standards` and the complete docs build.
+9. Publish coverage as implemented only after the backend tag and release manifest identify the matching snapshot.
+
+The [classification policy](/reference/terminology#rule-classification) explains why an upstream requirement, interoperability recommendation, and RampSpec policy must remain distinct.

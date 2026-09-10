@@ -88,6 +88,10 @@
             ]
           },
           {
+            "group": "Standards",
+            "pages": ["reference/standards-baseline"]
+          },
+          {
             "group": "Governance",
             "pages": [
               "governance/repository-ownership",

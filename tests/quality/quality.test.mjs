@@ -24,6 +24,7 @@ import {
   validateContractBundle,
   validateContractBundleProvenance,
 } from "../../scripts/contract-bundle-core.mjs";
+import { validateStandardsSnapshot } from "../../scripts/standards-core.mjs";
 
 const root = process.cwd();
 
@@ -232,4 +233,16 @@ test("contract provenance requires a pinned contracts source", () => {
   assert.match(errors, /full lowercase SHA/);
   assert.match(errors, /source is required/);
   assert.match(errors, /ISO date-time/);
+});
+
+test("standards snapshot requires the complete pinned SEP inventory", () => {
+  const fixture = JSON.parse(
+    readFileSync(path.join(root, "standards", "snapshot.json"), "utf8"),
+  );
+  assert.deepEqual(validateStandardsSnapshot(fixture), []);
+  fixture.documents = /** @type {{sep: number}[]} */ (fixture.documents).filter(
+    (document) => document.sep !== 45,
+  );
+  const errors = validateStandardsSnapshot(fixture).join("\n");
+  assert.match(errors, /missing SEP: 45/);
 });

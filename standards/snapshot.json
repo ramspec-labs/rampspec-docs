@@ -1,0 +1,97 @@
+{
+  "repository": "stellar/stellar-protocol",
+  "commit": "0dc4592cb44dda1943341016f076e9326874daed",
+  "retrievedAt": "2026-09-10T23:21:00.6368568Z",
+  "documents": [
+    {
+      "sep": 1,
+      "title": "Stellar Info File",
+      "status": "Active",
+      "version": "2.7.0",
+      "updated": "2025-01-16",
+      "path": "ecosystem/sep-0001.md",
+      "sha256": "97ff83ec09e2400a95044f29c83e2790b8a292aef00c8473da4cc27bac6054c0"
+    },
+    {
+      "sep": 6,
+      "title": "Deposit and Withdrawal API",
+      "status": "Active (Interactive components are deprecated in favor of SEP-24)",
+      "version": "4.3.0",
+      "updated": "2025-09-10",
+      "path": "ecosystem/sep-0006.md",
+      "sha256": "1ccaa1c546dd1a37bcfb6d0e0750e957127575be9e14a8dbe7a49970a878a74c"
+    },
+    {
+      "sep": 9,
+      "title": "Standard KYC Fields",
+      "status": "Active",
+      "version": "1.17.0",
+      "updated": "2024-04-22",
+      "path": "ecosystem/sep-0009.md",
+      "sha256": "6df7a69007a0537acca585e580c0e3fd088c6779692c2c13a729eeacdf95d2fc"
+    },
+    {
+      "sep": 10,
+      "title": "Stellar Web Authentication",
+      "status": "Active",
+      "version": "3.4.1",
+      "updated": "2024-03-20",
+      "path": "ecosystem/sep-0010.md",
+      "sha256": "1040df1bcbaeeac5adab9b7bf9ae4d0cdf1eba77ae396179baf0de9caadc6b7a"
+    },
+    {
+      "sep": 12,
+      "title": "KYC API",
+      "status": "Active",
+      "version": "1.15.0",
+      "updated": "2024-07-23",
+      "path": "ecosystem/sep-0012.md",
+      "sha256": "b74c5c74698daed7b2215c754ff2978fbaa0cba6378049aeb65b7da000e40d7c"
+    },
+    {
+      "sep": 24,
+      "title": "Hosted Deposit and Withdrawal",
+      "status": "Active",
+      "version": "3.8.0",
+      "updated": "2025-09-10",
+      "path": "ecosystem/sep-0024.md",
+      "sha256": "a6f0769501a2fa71dc9982a6d59793f291bf83180cbf3d9f1263cc0ad566f917"
+    },
+    {
+      "sep": 31,
+      "title": "Cross-Border Payments API",
+      "status": "Active",
+      "version": "3.1.0",
+      "updated": "2024-11-05",
+      "path": "ecosystem/sep-0031.md",
+      "sha256": "553b89fd9cdf79db8ede1821f2d47dd3c2373cf812fcece712cd80c783d29ac3"
+    },
+    {
+      "sep": 34,
+      "title": "Wallet Request Attribution for Anchors",
+      "status": "Final Comment Period (FCP)",
+      "version": null,
+      "updated": null,
+      "path": "ecosystem/sep-0034.md",
+      "sha256": "41e26c6a843fc9d69ab955d7cfc6f45ca7c20489fd8f1c836956efb22b345df3"
+    },
+    {
+      "sep": 38,
+      "title": "Anchor RFQ API",
+      "status": "Draft",
+      "version": "2.5.0",
+      "updated": "2025-02-26",
+      "path": "ecosystem/sep-0038.md",
+      "sha256": "2ca1cfd30390a04ce2b852ea1e61817d2ebb03fbd17d90a73b363d63f7813d1a"
+    },
+    {
+      "sep": 45,
+      "title": "Stellar Web Authentication for Contract Accounts",
+      "status": "Draft",
+      "version": "0.1.1",
+      "updated": "2025-12-16",
+      "path": "ecosystem/sep-0045.md",
+      "sha256": "09ec1d9ad7446384879358f0afbbba20e33d00526462924f3ed834ea8505fa72"
+    }
+  ]
+}
