@@ -1,0 +1,34 @@
+---
+title: "Documentation repository ownership"
+description: "The authoritative content, generated inputs, and review boundaries owned by rampspec-docs."
+---
+
+The `rampspec-docs` repository is the authoritative source for RampSpec's published documentation experience and release-specific documentation set.
+
+## Owned here
+
+- authored product, protocol, integration, security, operations, contributor, governance, and funding guides;
+- `docs.json`, navigation, presentation configuration, and documentation assets;
+- executable documentation examples and their validation harness;
+- import and rendering tools for released OpenAPI, JSON Schema, and contract artifacts;
+- documentation version archives, release notes, and freshness metadata.
+
+## Owned elsewhere
+
+Runtime behavior is never defined by prose in this repository. The backend owns API and protocol artifacts, contracts owns on-chain interfaces and deployment manifests, and frontend owns application behavior. This repository imports tagged artifacts and explains them.
+
+When authored text conflicts with a released machine-readable interface, treat the owning repository's tagged artifact as authoritative, fail the docs check, and correct the documentation or coordinate a runtime release.
+
+## Review routing
+
+| Change | Required review |
+| --- | --- |
+| Navigation, prose, or assets | Documentation maintainer |
+| API, schema, CLI, rule, or report claims | Backend owner and documentation maintainer |
+| Contract method, hash, address, or event claims | Contracts owner and documentation maintainer |
+| UI workflow or screenshot | Frontend owner and documentation maintainer |
+| Security, privacy, or network-safety guidance | Security reviewer |
+
+## Status
+
+This ownership model is implemented for the docs repository. Runtime release integrations remain planned until the owning repositories publish their first tagged artifacts.

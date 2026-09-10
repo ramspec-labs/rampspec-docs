@@ -1,0 +1,59 @@
+name: Documentation change
+description: Propose one bounded guide, reference, example, or documentation control.
+title: "docs: "
+labels:
+  - documentation
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What single observable documentation outcome is required?
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source of truth
+      description: Link the relevant release, artifact, SEP snapshot, or decision record.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List exact files or subject areas that are in scope.
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Name adjacent work that belongs elsewhere.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use a checklist of observable content, error, safety, and navigation behavior.
+      value: |
+        - [ ] Content is technically accurate and status-labeled
+        - [ ] Examples and links validate
+        - [ ] Security and privacy constraints are explicit
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: List focused and repository-wide commands.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: The work requires no real identity data, production credentials, or unrestricted pubnet signing.
+          required: true

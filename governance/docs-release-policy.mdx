@@ -1,0 +1,26 @@
+---
+title: "Documentation release policy"
+description: "How RampSpec documentation is reviewed, versioned, published, and retained."
+---
+
+RampSpec documentation releases bind prose and examples to an explicit compatibility manifest rather than to an unversioned product claim.
+
+## Channels
+
+- `next` documents unreleased work and may change without compatibility guarantees.
+- stable versions document one compatible set of frontend, backend, schema, contract, and docs releases.
+- supported archives remain immutable except for clearly labeled security corrections and broken-link repairs.
+
+## Release requirements
+
+A stable documentation release requires passing documentation checks, reviewed generated-reference diffs, a valid compatibility manifest, exact source commits and artifact hashes, migration notes for breaking changes, and proof that executable examples ran against the documented versions.
+
+Claims use one of these evidence states: `planned`, `implemented`, `locally checked`, `testnet deployed`, `pubnet deployed`, `externally reviewed`, or `adopted`. A later state must link its evidence. Draft SEP coverage and experimental features remain visibly labeled.
+
+## Retention and corrections
+
+An archived version remains available while a supported report, deployment, or integration references it. Corrections must preserve the original release context, include a dated note, and must not silently change API, schema, contract, or protocol meaning.
+
+## Current status
+
+No stable RampSpec product release or deployment manifest exists yet. All content is in the `next` channel until the four owning repositories publish compatible tagged artifacts.

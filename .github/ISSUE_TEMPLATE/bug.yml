@@ -1,0 +1,52 @@
+name: Documentation defect
+description: Report incorrect, unsafe, inaccessible, or broken documentation.
+title: "docs bug: "
+labels:
+  - bug
+  - documentation
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Defect type
+      options:
+        - Incorrect technical guidance
+        - Broken command or example
+        - Broken link or navigation
+        - Accessibility problem
+        - Security or privacy wording
+        - Version or generated-reference drift
+    validations:
+      required: true
+  - type: textarea
+    id: location
+    attributes:
+      label: Location and version
+      description: Provide the page, heading, docs version, and source release when known.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: Explain what is wrong without including secrets or real personal data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Safe reproduction
+      description: Use synthetic data and controlled systems only.
+  - type: checkboxes
+    id: security
+    attributes:
+      label: Security check
+      options:
+        - label: This report does not disclose a vulnerability, credential, personal data, or private endpoint. I will use SECURITY.md if it does.
+          required: true

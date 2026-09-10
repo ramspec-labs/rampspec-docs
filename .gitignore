@@ -1,0 +1,11 @@
+node_modules/
+out/
+export.zip
+.mintlify/
+.vercel/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db

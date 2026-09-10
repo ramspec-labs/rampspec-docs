@@ -95,7 +95,7 @@ The root pages provide the short entry path used by the reference repository. Co
 
 ## Phase 01 - Repository and Governance Foundation
 
-**Outcome:** An independent public docs repository is ready for contribution.
+**Outcome:** An independent docs repository is ready for contribution. Repository visibility follows the organization owner's current GitHub policy.
 
 **Parts:** Add Apache-2.0, README, code of conduct, security policy, contribution guide, maintainers, issue/PR templates, ownership boundary, and docs release policy.
 
