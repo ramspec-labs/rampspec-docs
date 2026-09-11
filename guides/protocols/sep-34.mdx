@@ -1,0 +1,140 @@
+---
+title: "SEP-34 wallet attribution"
+description: "Test opt-in wallet request attribution with EdDSA JWS claims, key discovery and rotation, expiry, identity binding, and invalid tokens."
+keywords: ["SEP-34", "wallet attribution", "JWS", "JWT", "EdDSA", "signing key"]
+---
+
+SEP-34 lets an anchor attribute a resource request to a wallet server using a signed token. It proves which wallet server accepted responsibility for a specific user, resource, and anchor; it does not authenticate the user to the anchor or authorize the underlying financial action by itself.
+
+<Warning>
+  SEP-34 is in Final Comment Period and declares no version in the pinned
+  preamble. RampSpec has no released SEP-34 adapter or fixtures. The pack is
+  **Planned**, opt-in, and omitted from default suites.
+</Warning>
+
+## Pinned source and status
+
+The normative source is [SEP-34 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0034.md#preamble). The [standards baseline](/reference/standards-baseline) records its SHA-256 digest, FCP status, and absence of an upstream version.
+
+Every result stores the snapshot commit and digest. The pack may not label a target “SEP-34 compliant,” promote an FCP rule to Active, or imply that a verified token proves transaction success. Upstream status and runtime support are separate fields.
+
+## Parties and trust boundary
+
+| Party         | Responsibility                                                          |
+| ------------- | ----------------------------------------------------------------------- |
+| Wallet        | Requests an anchor resource and obtains a token from its wallet server. |
+| Wallet server | Authenticates its wallet, binds claims, and signs the attribution JWS.  |
+| Anchor server | Discovers the wallet key and verifies the token before attribution.     |
+
+A frontend-only wallet needs a server-side signer to use SEP-34. The wallet server's private key never reaches the wallet, anchor, runner, report, or browser artifact. How a wallet authenticates to its server and how another SEP transports the token are outside SEP-34 and must be separately locked by the consuming scenario.
+
+## Wallet-server issuance contract
+
+The wallet server must reject issuance unless it has authenticated the wallet request and received all three binding inputs:
+
+- the resource or action ID returned by the anchor;
+- the user's full Stellar account address;
+- the anchor server's fully qualified HTTPS home URL.
+
+It must derive issuer and signing key from its own configured home domain, use a bounded lifetime appropriate to the action, and prevent a caller from selecting an arbitrary key, issuer, audience, or signing algorithm. The resource must already exist or be reserved under the controlled case; arbitrary caller-supplied IDs are not sufficient proof.
+
+## Compact JWS contract
+
+Use a standards-compliant compact JWS with exactly three base64url segments:
+
+```text
+base64url(protected-header).base64url(payload).base64url(signature)
+```
+
+The protected header contains:
+
+| Field | Required value                                   |
+| ----- | ------------------------------------------------ |
+| `typ` | `JWT`                                            |
+| `alg` | `EdDSA`                                          |
+| `kid` | Stellar public signing key for the wallet server |
+
+The JWT payload contains:
+
+| Claim | Binding                                                                   |
+| ----- | ------------------------------------------------------------------------- |
+| `iss` | Fully qualified HTTPS wallet-server home URL.                             |
+| `sub` | Exact Stellar account associated with the user's anchor resource.         |
+| `jti` | Exact anchor-issued resource or action ID.                                |
+| `kid` | Same valid Stellar public key as the protected header.                    |
+| `aud` | Exact fully qualified HTTPS anchor-server home URL.                       |
+| `iat` | Numeric issue time accepted inside the locked clock-skew window.          |
+| `exp` | Numeric expiry strictly after issue time and within the maximum lifetime. |
+
+The runner preserves the compact token only in volatile memory. Evidence contains a SHA-256 digest, header fields, redacted subject fingerprint, resource fingerprint, normalized issuer and audience, issue and expiry times, verification key fingerprint, and decision.
+
+## Verification order
+
+The anchor-side oracle performs deterministic checks in this order:
+
+1. require a single compact JWS with three non-empty segments and size limits;
+2. decode base64url strictly and parse each JSON object without duplicate keys;
+3. allow only `typ=JWT` and `alg=EdDSA`; reject unprotected security fields;
+4. validate both `kid` values as the same Stellar public key;
+5. normalize neither `iss` nor `aud`; compare exact locked HTTPS origins;
+6. bind `sub` and `jti` to the current account and resource;
+7. validate numeric `iat` and `exp`, clock skew, ordering, and maximum lifetime;
+8. resolve the expected wallet-server key from pinned SEP-1 discovery;
+9. verify the Ed25519 signature over the original encoded header and payload;
+10. apply replay and single-resource policy before recording attribution.
+
+Failure at one step stops all later attribution. The anchor must not fetch a URL embedded in an unverified claim, echo the token, reveal whether another resource exists, or use the token as a bearer credential for unrelated actions.
+
+## Key discovery and rotation
+
+For a known wallet server, use the stored mapping from exact home domain to previously verified `SIGNING_KEY`. For first contact, retrieve that domain's `/.well-known/stellar.toml` through the target's HTTPS and redirect policy, then verify the discovered key equals both `kid` fields before checking the signature.
+
+When verification fails and the profile permits rotation refresh, fetch from the same previously bound home domain. Do not follow a claim-selected replacement domain. Accept a new key only after valid discovery, record old and new fingerprints and retrieval evidence, then retry verification once. Unknown, removed, malformed, or rapidly changing keys fail closed.
+
+Fixtures cover current key, permitted rotation, old token inside an explicitly documented overlap, old token after retirement, unknown key, wrong domain, DNS or TLS failure, and discovery content that changes between fetches.
+
+## Lifetime and reuse
+
+The profile locks maximum token lifetime and allowed clock skew. A token is invalid before its accepted issue window and at or after `exp`. Expiry that is too long is a policy failure even when its signature is valid.
+
+Bind replay state to issuer, subject, audience, resource ID, and token digest. Repeating a token for an idempotent read may be accepted only when the consuming contract explicitly permits it; repeating it to create or mutate another resource must fail. A new token cannot transfer an existing resource to a different account, wallet server, or anchor audience.
+
+## Fixture corpus
+
+The versioned corpus contains deterministic keypairs and synthetic values only. The valid set covers a canonical token, minimum and maximum allowed lifetime, accepted clock-skew edges, Unicode-free URLs, current and rotated keys, and one token for each supported consuming resource type.
+
+The invalid set covers malformed segment count, empty and oversized segments, non-base64url bytes, invalid JSON, duplicate keys, missing or extra security fields, `alg=none`, wrong algorithm, unprotected header substitution, malformed Stellar key, header/payload key mismatch, bad signature, modified header or payload, wrong issuer, HTTP issuer, wrong audience, wrong account, wrong resource, unknown resource, string timestamps, missing timestamps, future issue time, expiry before issue, expired token, excessive lifetime, replay, another resource type, and unsafe key-discovery redirects.
+
+Each invalid fixture changes one property from a named valid baseline and records the expected failed rule. The generated snapshot stores only sanitized decoded claims and verification results, never secret seed material.
+
+## Enablement and gate behavior
+
+The pack is absent from default smoke, regression, scheduled, and release suites. Enablement requires all of:
+
+- a scenario-level `sep34` opt-in;
+- an organization policy that permits FCP rules;
+- a compatible released backend adapter and schema;
+- a target profile naming the consuming request and token transport;
+- a pinned standards digest and rule-pack version;
+- controlled wallet-server and anchor-server fixtures.
+
+Once explicitly selected as blocking, every mandatory assertion in this pack is release-blocking for that run. An operator cannot downgrade an individual failure after execution; changing blocking policy creates a new run identity. If the pack is selected as advisory, findings remain visible but cannot alter a stable-suite gate.
+
+## Findings and remediation
+
+| Failure                                             | Finding                     | Remediation                                                        |
+| --------------------------------------------------- | --------------------------- | ------------------------------------------------------------------ |
+| Issuance accepts an unauthenticated wallet request. | Attribution issuance gap    | Authenticate the wallet and require all three binding inputs.      |
+| Header or payload permits another algorithm.        | JWS algorithm confusion     | Pin protected `EdDSA`, `JWT`, and one valid Stellar key.           |
+| Token binds the wrong account, resource, or anchor. | Attribution binding failure | Compare exact `sub`, `jti`, and `aud` to the current request.      |
+| Expired or future token is accepted.                | Attribution lifetime error  | Enforce numeric times, skew, ordering, and maximum lifetime.       |
+| Key refresh can move to a claim-selected domain.    | Key-discovery trust bypass  | Refresh only the previously bound HTTPS home domain.               |
+| Mutated or incorrectly signed content is accepted.  | Attribution integrity gap   | Verify original compact bytes with the discovered Ed25519 key.     |
+| Token can mutate another resource or be replayed.   | Attribution replay risk     | Bind replay state to issuer, user, audience, resource, and digest. |
+| FCP result is presented as active default coverage. | Standards status error      | Omit by default and expose snapshot, opt-in, and policy status.    |
+
+## Why this is not active coverage
+
+The upstream proposal is not Active, declares no version, and does not define the consuming protocol's transport. RampSpec also lacks a released adapter, generated schema, stored valid and invalid examples, controlled wallet server, and report snapshots. Documentation alone is not runtime coverage.
+
+The exit check becomes available only when every valid token verifies, every single-mutation invalid token produces its expected stable finding, key-rotation cases are deterministic, and default suites prove the pack is absent. Until then the capability catalog and reports must show `Planned`, FCP, opt-in, and unavailable.
