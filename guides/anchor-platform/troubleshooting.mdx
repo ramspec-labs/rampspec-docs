@@ -1,0 +1,121 @@
+---
+title: "Anchor Platform troubleshooting and upgrades"
+description: "Diagnose Anchor Platform integration findings by component and upgrade without losing compatibility or evidence integrity."
+keywords:
+  ["Anchor Platform", "troubleshooting", "upgrades", "logs", "compatibility"]
+---
+
+Diagnose the smallest owning boundary before changing configuration or retrying a run. A RampSpec finding describes an observed rule outcome; a service outage, callback timeout, stale ledger source, or browser failure is infrastructure evidence and must not be reported as a protocol violation.
+
+<Warning>
+  No pinned RampSpec reference reports or seeded-defect corpus has been
+  released. The decision paths and upgrade checklist are implemented as a
+  runbook, but their end-to-end validation status remains **Planned**.
+</Warning>
+
+## Start with the run record
+
+Preserve the run identifier, correlation and request identifiers, target and network, suite-lock digest, component versions, timestamps in UTC, terminal state, finding identifiers, redaction policy, and artifact hashes. Verify the report before trusting its component attribution.
+
+Do not rerun until you know whether the operation is read-only, idempotent, or stateful. A retry can create a duplicate customer, quote, transaction, callback, or Stellar payment.
+
+## Component map
+
+| Evidence pattern                                                                 | Primary owner                                | First checks                                                                                                            | Do not conclude                                                                 |
+| -------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Public SEP route, discovery field, response schema, or transaction state differs | SEP server and Anchor Platform configuration | Released configuration schema, enabled SEP, assets file, proxy headers, platform logs, database migration.              | That the business server is wrong before tracing the callback dependency.       |
+| Internal transaction update fails or state is stale                              | Platform Server                              | Private reachability, authentication, request schema, transaction identifier, migration, concurrency and audit event.   | That the public endpoint is nonconforming when the internal API is unavailable. |
+| KYC, rate, quote, rail, or off-chain decision is missing                         | Business server                              | Callback operation, synthetic fixture state, authentication, timeout, response schema, idempotency.                     | That Anchor Platform owns the anchor's business decision.                       |
+| Callback is rejected, duplicated, delayed, or never reflected                    | Callback/event path                          | Signature or JWT, issuer/audience, expiry, request ID, retry count, deduplication key, event offset, acknowledgement.   | That redelivery itself is a protocol failure.                                   |
+| On-chain payment is absent or mismatched                                         | Payment observer and ledger source           | Network passphrase, Horizon/RPC origin and ledger age, account, asset, amount, memo, paging cursor, transaction status. | That a stale or wrong-network data source proves missing settlement.            |
+| Interactive redirect, popup, return, or rendering fails                          | SEP-24 UI and browser worker                 | Final origin, CSP, cookies, browser console, redirect chain, viewport, locale, return URL, trace policy.                | That a screenshot alone proves the server-side cause.                           |
+| Target is unreachable only from RampSpec                                         | Runner and network policy                    | Runner heartbeat/version, DNS answers, address class, egress rule, proxy, TLS chain, redirect allowlist, timeout.       | That weakening SSRF or egress controls is an acceptable fix.                    |
+| Report is invalid or incomplete                                                  | RampSpec evidence path                       | Schema, canonical digest, suite lock, artifact digests, signing key, retention status, cleanup result.                  | That the underlying run passed because a dashboard looked successful.           |
+
+The official [Anchor Platform architecture](https://developers.stellar.org/docs/platforms/anchor-platform/admin-guide/architecture) remains authoritative for upstream component responsibilities.
+
+## Redacted diagnostic bundle
+
+Collect only the smallest evidence needed to reproduce the failure:
+
+- component name, exact image digest, configuration schema version, and health state;
+- UTC window, run/request/correlation identifiers, event sequence, and retry count;
+- HTTP method, normalized route template, status, timing, content type, body digest, and redaction class;
+- callback authentication outcome and key identifier, never the credential or signature secret;
+- ledger network, latest observed ledger, transaction hash, operation summary, and data-source origin;
+- browser engine/version, origin and redirect list, console category, and approved trace digest;
+- report, suite lock, manifest, and artifact hashes.
+
+Remove authorization headers, cookies, query secrets, private keys, seeds, JWT bodies, customer fields, file contents, database credentials, callback secrets, internal hostnames not needed for routing, and full environment dumps. Prefer an allowlist serializer over pattern-only masking. Scan the final bundle with the released prohibited-data rules before upload.
+
+## Diagnostic sequence
+
+1. Verify the report signature, suite lock, and component compatibility.
+2. Confirm the target, network passphrase, ownership window, and execution policy.
+3. Reproduce with the smallest released fixture and no broader credentials.
+4. Trace one correlation identifier across SEP server, callback/event, business server, Platform Server, and ledger components.
+5. Compare the failing component with the pinned reference environment.
+6. Classify the outcome as finding, infrastructure error, policy block, fixture defect, or documentation defect.
+7. Apply one scoped correction and rerun the same immutable suite lock when inputs remain valid.
+8. Create a new lock when configuration, target, standard, rules, fixtures, runner, or policy changed.
+9. Verify the new report independently and retain the before/after relationship.
+
+## Common resolution paths
+
+### Callback authentication failure
+
+Check clock skew, key identifier, issuer, audience, header name, token expiry, secret rotation overlap, and proxy header preservation. Use a newly generated synthetic callback. Never print the token or disable verification to continue.
+
+### Duplicate or missing event
+
+Compare event identifiers, Kafka offsets, acknowledgement timing, retry schedule, and the business-server deduplication key. A consumer must make the state update idempotent while retaining separate delivery-attempt evidence.
+
+### Ledger correlation mismatch
+
+Require the correct Stellar network, fresh data source, successful transaction, exact destination, asset, amount, and memo. Preserve decimal precision and paging cursor. Do not match by amount alone or resubmit a payment until the original hash is reconciled.
+
+### Browser journey failure
+
+Inspect the redacted trace before changing UI policy. Confirm approved origins throughout navigation, cookies and return URL, mobile viewport, locale, CSP, timeout, and terminal API state. Never capture a configured sensitive screen or reuse a browser profile.
+
+## Compatibility policy
+
+RampSpec supports only combinations named in a signed compatibility manifest. Patch updates may be accepted only when their schemas and behavior remain compatible and the regression suite passes. Minor or major Anchor Platform, backend, runner, browser, database, SEP snapshot, or schema changes require an explicit manifest entry and migration notes.
+
+Never upgrade directly from a mutable tag. Pin image digests, preserve the old deployment and database backup, verify migration direction and rollback support, and prohibit mixed component versions unless the manifest explicitly tests them.
+
+## Upgrade regression checklist
+
+### Before change
+
+- independently verify a healthy baseline report and its suite lock;
+- export redacted configuration digests, image digests, database migration level, assets, callback/event contracts, and ledger endpoints;
+- back up mutable data and test restoration without copying production PII into the reference environment;
+- review upstream release notes, security notices, schema changes, and RampSpec migration notes;
+- confirm rollback owner, maintenance window, runner compatibility, and credential rotation plan.
+
+### During change
+
+- pull images by digest and verify signatures or attestations;
+- stop new stateful runs and drain or cancel active workflows safely;
+- apply migrations once and record their exact output and schema level;
+- start dependencies in documented order and require all health checks;
+- reject secret defaults, unexpected ports, privilege changes, or network expansion.
+
+### After change
+
+- rerun discovery and diff TOML, endpoints, assets, headers, and capabilities;
+- test valid and invalid callback authentication, event retry/deduplication, and Platform Server updates;
+- run synthetic customer, quote, transfer, ledger-correlation, and browser cases selected for the enabled SEPs;
+- compare every finding, skipped rule, duration, and artifact against the approved baseline;
+- verify the new signed report and cleanup record independently;
+- approve the new baseline only through a separate audited Maintainer action;
+- rotate temporary credentials and remove the old environment after the rollback window.
+
+An infrastructure error, skipped required rule, invalid signature, cleanup failure, unexpected network access, or new blocking finding stops promotion.
+
+## Validation gate
+
+Before this runbook is considered locally checked, the reference environment must seed at least one defect in the Platform Server path, business-server callback, event delivery, ledger source, and browser flow. An operator following only this page must identify the owning component, collect a secret-free bundle, apply the fixture correction, and produce a verified comparison report for each case.
+
+Until those reference reports exist, use [Anchor Platform integration](./integration) for the current release boundary and do not claim the troubleshooting paths were exercised.
