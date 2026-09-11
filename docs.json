@@ -122,6 +122,7 @@
               "governance/repository-ownership",
               "governance/advisory-and-decisions",
               "governance/docs-release-policy",
+              "governance/versioned-documentation",
               "governance/docs-deployment",
               "governance/releases-and-backports"
             ]

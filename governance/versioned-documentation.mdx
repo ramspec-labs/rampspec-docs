@@ -1,0 +1,98 @@
+---
+title: "Versioned documentation releases"
+description: "How RampSpec freezes stable documentation, retains next, archives supported versions, and verifies examples against a product manifest."
+keywords: ["documentation release", "versioning", "archive", "clean room"]
+---
+
+Each stable RampSpec documentation release describes exactly one verified product compatibility set. The continuously changing authoring channel remains `next`; it never silently replaces stable or archived documentation.
+
+<Warning>
+  RampSpec has no stable product release. Current documentation belongs to
+  `next`, and there is no stable version to freeze or archive. The release
+  procedure is implemented, but promotion is blocked on compatible runtime tags
+  and production-readiness evidence.
+</Warning>
+
+## Channel model
+
+| Channel                   | Purpose                                                | Mutability                                                             | Claim boundary                                     |
+| ------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------- |
+| `next`                    | Default-branch work and unreleased guidance            | Changes through reviewed pull requests                                 | Planned or explicitly pre-release behavior only    |
+| `v<major>.<minor>` stable | One released compatible product line                   | New patch release for corrections; no silent semantic edits            | Only behavior and evidence in its product manifest |
+| archived                  | Older documentation retained for a supported reference | Immutable except labeled security notes or link-preserving corrections | Historical scope; not a current support claim      |
+
+The site selector, page banner, metadata, canonical URL, and search result must show the selected channel. A reader following an old report or deployment link must not land on `next` without a visible version change.
+
+## Freeze a stable candidate
+
+1. Start from the docs commit named in a passing [production readiness record](/operations/production-readiness).
+2. Freeze page content, navigation, standards snapshot, generated references, examples, redirects, release notes, migration guides, and the product manifest.
+3. Record the proposed docs version and immutable frontend, backend, contracts, and docs tags and full commits.
+4. Verify every imported OpenAPI, schema, rule, report, contract, deployment, SBOM, and provenance digest against its owning release.
+5. Reject branch references, floating container tags, uncommitted output, mutable downloads, null runtime versions, or manually copied generated files.
+6. Create a new candidate whenever content or an artifact changes after verification.
+
+Freezing stable never freezes `next`. New default-branch work continues there and cannot enter the candidate unless the release owner deliberately restarts the freeze.
+
+## Runtime source ledger
+
+The release record includes, for each repository, its URL, semantic tag, full commit, release URL, artifact paths and SHA-256 digests, supported interfaces, verification command, and verification timestamp. Runtime prose is derived from those released artifacts. The docs repository owns explanations and navigation, but it cannot redefine an endpoint, schema, rule, UI route, or contract method.
+
+The product [compatibility manifest](/reference/release-manifest) is shipped in the stable export and linked from the release notes. A manifest with an unavailable component cannot be promoted to stable.
+
+## Release notes and migrations
+
+Stable release notes state:
+
+- product and docs versions, release date, support end date, and known limitations;
+- all component tags, commits, deployment records, and compatible interface versions;
+- added, changed, deprecated, removed, and corrected behavior;
+- breaking changes with audience-specific migration steps and rollback or forward-fix boundaries;
+- security advisories and unresolved non-critical limitations without sensitive detail;
+- example and clean-room results, including unavailable or excluded cases;
+- links to the manifest, artifacts, source release pages, previous stable version, and `next`.
+
+Migration guides start from each supported source version, list prerequisites and backups, explain irreversible steps, show expected verification output, and identify the first incompatible boundary. An upgrade claim is not complete because a fresh install passed.
+
+## Search, links, and navigation
+
+Run internal-link and anchor validation against the frozen tree, external-link validation with recorded exceptions, navigation/orphan checks, spelling, accessibility review, sitemap generation, and representative searches for product terms, SEP identifiers, error names, API operations, and contract methods. Search results must remain inside the selected version or clearly label a channel transition.
+
+Redirects preserve moved stable URLs within the same product line. Never redirect a removed stable behavior to unrelated `next` guidance. Archived versions use canonical versioned URLs and no longer appear as the default result when their support window ends.
+
+## Example verification
+
+Classify every example as static, executable local, testnet, pubnet observation, or pubnet submission. Static examples receive parser and schema checks. Executable examples run from a clean environment against the exact manifest versions, synthetic fixtures, and permitted network. Record command, platform, tool versions, target, start/end time, exit status, output digest, cleanup result, and reviewer.
+
+No credential or private endpoint enters the release record. Skipped, flaky, environment-mismatched, or manually corrected output blocks the affected example. Pubnet submission additionally requires the active signed authorization record.
+
+## Clean-room release test
+
+The release tester uses a newly created environment with no repository cache, global dependency, prior build output, implicit credentials, or private maintainer knowledge:
+
+1. fetch the candidate by immutable commit and verify its source digest;
+2. install only documented supported tools and dependencies from lock files;
+3. validate the product manifest and fetch exact component artifacts;
+4. build the static site and confirm the declared page count and artifact digest;
+5. run every static and executable example in its declared mode;
+6. inspect desktop and mobile layouts, navigation, search, code wrapping, and version labels;
+7. verify release notes, migrations, archives, redirects, sitemap, and downloadable manifest;
+8. destroy temporary credentials and fixtures, then attach the signed test record.
+
+A maintainer workstation result does not replace this independent test.
+
+## Archive and support
+
+Archive the prior stable version only after the replacement is live and its links have been checked. Retain an archive while a supported report, deployment, integration, or migration references it. Its banner states support status and replacement. Security corrections create a dated patch or advisory without rewriting historical API or protocol meaning.
+
+Retirement requires an owner-approved record with usage evidence, affected references, notification window, replacement, final supported date, preserved manifest, and redirect policy. Deleting an archive for storage convenience is not an approved retirement reason.
+
+## Promotion and rollback
+
+Promotion requires the release owner plus docs, frontend, backend, contracts, security, protocol, and operations approvals named by the readiness record. Publish the exact tested export and manifest, create the immutable docs tag, verify the public artifact and version selector, then monitor links and errors.
+
+If publication is wrong, restore the last verified compatible docs artifact or issue a corrected patch. Do not move tags, edit the historical manifest, or make stable prose describe unreleased runtime behavior.
+
+## Current exit status
+
+The [planned documentation release record](/examples/releases/documentation-release.planned.json) captures all candidate fields while keeping versions, evidence, approvals, and stable URLs unavailable. Clean-room setup and executable runtime examples cannot pass until compatible runtime releases exist, so item completion does not imply a stable documentation release.

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "documentation-release",
+  "status": "blocked",
+  "channel": "next",
+  "candidate": null,
+  "docsVersion": null,
+  "productVersion": null,
+  "docsTag": null,
+  "docsCommit": null,
+  "stableUrl": null,
+  "nextUrl": null,
+  "previousStableVersion": null,
+  "supportEndsAt": null,
+  "productManifestUrl": "/examples/release-manifest.planned.json",
+  "runtimeSources": {
+    "frontend": { "tag": null, "commit": null, "releaseUrl": null },
+    "backend": { "tag": null, "commit": null, "releaseUrl": null },
+    "contracts": { "tag": null, "commit": null, "releaseUrl": null }
+  },
+  "frozenContent": {
+    "navigationDigest": null,
+    "standardsDigest": null,
+    "generatedReferenceDigest": null,
+    "examplesDigest": null,
+    "staticExportDigest": null,
+    "pageCount": null
+  },
+  "releaseNotesUrl": null,
+  "migrationGuideUrls": [],
+  "archivedVersionUrls": [],
+  "checks": {
+    "manifest": "blocked",
+    "generatedReferences": "blocked",
+    "search": "blocked",
+    "internalLinks": "blocked",
+    "externalLinks": "blocked",
+    "navigation": "blocked",
+    "accessibility": "blocked",
+    "staticExamples": "blocked",
+    "executableExamples": "blocked",
+    "cleanRoom": "blocked",
+    "desktopVisual": "blocked",
+    "mobileVisual": "blocked"
+  },
+  "approvals": [],
+  "promotedAt": null,
+  "notice": "Planning record only. No stable documentation or compatible product release is claimed."
+}
