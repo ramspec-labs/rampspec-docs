@@ -84,7 +84,8 @@
             "pages": [
               "reference/terminology",
               "reference/release-manifest",
-              "reference/schemas"
+              "reference/schemas",
+              "reference/scenario-language"
             ]
           },
           {

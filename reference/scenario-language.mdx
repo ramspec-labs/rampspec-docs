@@ -1,0 +1,250 @@
+---
+title: "Scenario language"
+description: "Reference for RampSpec's declarative scenario metadata, requirements, parameters, fixtures, dependency graph, matrices, retries, cleanup, policy, and secret handles."
+keywords:
+  ["scenario YAML", "scenario schema", "fixtures", "steps", "matrix", "cleanup"]
+---
+
+RampSpec scenarios describe a bounded test as declarative YAML. The backend compiler validates the document, resolves only released actions and fixtures, produces an immutable suite lock, and sends that lock to a compatible runner. A scenario never contains executable code.
+
+<Warning>
+  The backend has not published the scenario JSON Schema, compiler, action
+  catalog, or examples. This page documents the planned v1 contract from the
+  project specification; its YAML is illustrative and not executable. The
+  generated schema remains authoritative when released.
+</Warning>
+
+## Document shape
+
+One file contains one `Scenario` document. Unknown fields fail closed unless the released schema marks a specific extension point.
+
+```yaml
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: sep31-firm-quote-receive
+  title: SEP-31 receive with a firm quote
+  description: Correlate a controlled quote, payment, and payout.
+  labels:
+    protocol: sep31
+    risk: value-moving
+spec:
+  networks: [testnet]
+  requires:
+    seps: [1, 10, 12, 31, 38]
+    capabilities: [stellar-signing, callback-receiver]
+  parameters:
+    amount:
+      type: stellar-amount
+      maximum: "10.0000000"
+  fixtures:
+    sender:
+      uses: synthetic-natural-person
+    receiver:
+      uses: synthetic-natural-person
+  steps:
+    - id: discover
+      uses: sep1.discover
+    - id: authenticate
+      uses: sep10.authenticate
+      needs: [discover]
+  cleanup:
+    - id: revoke-session
+      uses: auth.revoke-fixture-session
+      needs: [authenticate]
+      always: true
+  policy:
+    failOn: [critical, high]
+    retainTraffic: 7d
+```
+
+## Identity and metadata
+
+| Field                  | Contract                                                                 |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `apiVersion`           | Exact schema family; v1 is `rampspec.dev/v1`.                            |
+| `kind`                 | Exact value `Scenario`.                                                  |
+| `metadata.id`          | Stable lowercase identifier; unique in its package and never repurposed. |
+| `metadata.title`       | Short human title; does not affect execution identity.                   |
+| `metadata.description` | Optional plain-language purpose and safety boundary.                     |
+| `metadata.labels`      | Optional string map used for search and policy selection, not branching. |
+
+Scenario identity includes canonical document digest, schema ID and version, rule-pack digests, action-catalog digest, resolved fixtures, parameters, policy, target snapshot, runner profile, and compiler version. Editing any execution-relevant byte produces a new lock digest.
+
+IDs use lowercase ASCII letters, digits, and single hyphens; they start and end with an alphanumeric character. Step and cleanup IDs are unique across the document. Display titles, labels, or filenames never substitute for stable IDs.
+
+## Networks
+
+`spec.networks` is a non-empty unique list selected from the released network catalog. A value-moving scenario names exactly one network unless the schema explicitly declares a read-only comparison scenario. The lock resolves each name to its full passphrase and approved Horizon or RPC endpoint set.
+
+`testnet` is the default for signing and submission. `pubnet` requires a separately released policy, explicit organization approval, value and fee caps, protected signing, and a target that permits it. Custom or private networks use catalog IDs; raw URLs, passphrases, or credentials are not allowed in scenario YAML.
+
+## Requirements
+
+`spec.requires` declares prerequisites before any fixture is created:
+
+| Field                  | Meaning                                                        |
+| ---------------------- | -------------------------------------------------------------- |
+| `seps`                 | Unique integer SEP identifiers required by the journey.        |
+| `capabilities`         | Runner features such as browser, callback receiver, or signer. |
+| `adapters`             | Optional released adapter IDs with compatible version ranges.  |
+| `targetCapabilities`   | Advertised target features that must be discovered and locked. |
+| `minimumRunnerVersion` | Optional compatible runner floor resolved by the compiler.     |
+
+Requirements are assertions, not installation requests. A missing capability makes the run ineligible or skipped according to policy; the runner may not download arbitrary software or silently reduce coverage.
+
+## Parameters
+
+`spec.parameters` maps a stable name to a typed declaration. Supported planned types are `string`, `boolean`, `integer`, `decimal`, `duration`, `timestamp`, `enum`, `network`, `stellar-account`, `stellar-asset`, `stellar-amount`, `sep38-asset`, `country-code`, `locale`, `fixture-ref`, `target-ref`, and `secret-ref`.
+
+A declaration may provide a non-secret default, description, `required`, enum values, string length or pattern, numeric minimum or maximum, decimal scale, or allowed catalog. Constraints can narrow a type but cannot expand the schema's safety limits.
+
+Runtime input must validate before compilation. Values are canonicalized into the suite lock: decimals remain strings, timestamps use UTC, durations use the released duration grammar, Stellar assets retain issuer identity, and references become immutable IDs and versions. Parameters cannot select an action name, construct a property path, inject YAML, or interpolate into an unrestricted destination.
+
+## Fixtures
+
+`spec.fixtures` maps a local name to a released fixture definition:
+
+```yaml
+fixtures:
+  customer:
+    uses: synthetic-natural-person
+    with:
+      locale: en
+  sourceAccount:
+    uses: stellar-funded-account
+    with:
+      maximumBalance: "25.0000000"
+```
+
+`uses` is an exact fixture-catalog ID. `with` contains only fields allowed by that fixture's schema. A fixture may declare sensitivity, network, owner, value cap, lease lifetime, concurrency key, creation action, and required cleanup action in the catalog; a scenario cannot weaken them.
+
+Fixture outputs are referenced as `${{ fixtures.customer.id }}`-style typed expressions only where the schema permits that output type. They are not general string templates. Secret values are exposed as opaque handles, and sensitive customer fields can flow only into explicitly authorized action inputs.
+
+## Steps and actions
+
+`spec.steps` is a non-empty ordered list. Each step has:
+
+| Field        | Contract                                                                    |
+| ------------ | --------------------------------------------------------------------------- |
+| `id`         | Unique stable ID.                                                           |
+| `uses`       | Exact released action ID; versions resolve through the release manifest.    |
+| `needs`      | Optional IDs that must reach an accepted outcome first.                     |
+| `with`       | Typed action inputs; unknown inputs fail validation.                        |
+| `when`       | Optional restricted predicate over non-secret prior results and parameters. |
+| `retry`      | Optional policy bounded by action and organization maxima.                  |
+| `timeout`    | Optional duration no greater than the action maximum.                       |
+| `continueOn` | Optional result classes allowed to continue; never hides cleanup failure.   |
+
+An action declares required capabilities, allowed networks, input and output schemas, side effects, idempotency behavior, egress classes, evidence fields, redaction rules, timeout limits, and compensating action. The compiler rejects an action absent from the pinned catalog or incompatible with the selected runner and rule packs.
+
+Step outputs use typed references to prior dependencies. A step cannot read an output unless the producer is reachable through `needs`. Sensitive outputs can flow only to inputs with a matching sensitivity class and never into labels, conditions, matrix axes, logs, destinations, or report text.
+
+## Dependencies and concurrency
+
+`needs` forms a directed acyclic graph. Missing IDs, self-dependencies, cycles, duplicate edges, and forward references that cannot be resolved fail compilation. A step without `needs` is eligible after setup; list order is a stable presentation order, not an implicit dependency.
+
+The runner may execute ready steps concurrently only when their action definitions, fixture leases, target concurrency limits, and side-effect locks allow it. Steps sharing a customer record, source account, transaction, callback receiver, browser profile, or provider idempotency key are serialized unless the catalog explicitly marks safe parallel access.
+
+Failure propagation is deterministic. A blocking failed or indeterminate dependency prevents dependent steps and records why they were not run. Independent branches may continue only when policy permits, while cleanup remains eligible.
+
+## Conditionals
+
+`when` uses a closed expression grammar with equality, inequality, membership, boolean conjunction or disjunction, and presence checks over typed non-secret values. Operands can reference parameters, discovered capabilities, matrix values, and completed dependency outputs allowed by the action schema.
+
+No functions, property discovery, regular-expression execution, network access, filesystem access, clock reads, random values, evaluation, or arbitrary interpolation are allowed. The compiler type-checks both sides, records the normalized expression, and makes skipped-versus-ineligible outcomes explicit.
+
+## Matrices
+
+`spec.matrix` defines named finite axes whose values already satisfy the associated parameter schemas:
+
+```yaml
+matrix:
+  asset: [native, issued-usdc]
+  auth: [required, omitted]
+  include:
+    - asset: native
+      auth: required
+  exclude:
+    - asset: issued-usdc
+      auth: omitted
+```
+
+The compiler expands a deterministic Cartesian product, then applies exact `include` and `exclude` entries. Axis order and value order are preserved in presentation but canonical sorting determines identity. Duplicate rows fail. Organization and runner policy cap axes, rows, concurrent jobs, total duration, value, and external calls before scheduling.
+
+Secrets, arbitrary target URLs, raw accounts, customer data, and action names cannot be matrix values. Each expanded case receives a stable derived ID and its own fixture leases and evidence namespace.
+
+## Retries and timeouts
+
+Retry configuration may set `maxAttempts`, `initialDelay`, `maximumDelay`, `backoff`, `jitter`, and a closed list of retryable result classes. Limits must be positive and within the action catalog's ceiling. The suite lock records the fully resolved policy.
+
+Retries reuse the action's stable idempotency key. An action with an unknown side-effect outcome must reconcile before another attempt. Authentication rejection, schema failure, policy denial, invalid signature, and deterministic assertion failure are not retryable. Jitter comes from a run-seeded deterministic schedule so replay can explain exact delays.
+
+Every action and the overall run have monotonic timeouts. Timeout produces an explicit known-failure or indeterminate result, triggers reconciliation and cleanup, and cannot detach an unlimited background process.
+
+## Cleanup
+
+`spec.cleanup` uses the same ID, action, input, dependency, timeout, and bounded-retry structure as steps, plus `always: true`. Cleanup actions come from a restricted catalog and run in reverse resource-dependency order after success, failure, cancellation, or timeout.
+
+The compiler proves that each leased fixture and action-declared side effect has a cleanup or documented retention disposition. Cleanup can revoke credentials, close browser contexts, delete synthetic records, release accounts, unregister callbacks, remove temporary artifacts, and verify provider or ledger terminal state. It cannot erase required audit evidence.
+
+A failed cleanup changes the run result to cleanup failed and blocks fixture reuse. Cancellation is not complete until cleanup reaches a terminal result or an incident is opened with retained recovery state.
+
+## Policy
+
+`spec.policy` can narrow organization policy but cannot weaken it. Planned fields include:
+
+| Field               | Purpose                                                           |
+| ------------------- | ----------------------------------------------------------------- |
+| `failOn`            | Finding severities that fail the scenario.                        |
+| `draftRules`        | `omit`, `advisory`, or `blocking` for explicitly selected drafts. |
+| `destructiveCases`  | Explicit opt-in to approved mutation families.                    |
+| `retainTraffic`     | Retention duration capped by organization and data class.         |
+| `maximumValue`      | Aggregate amount cap for value-moving actions.                    |
+| `maximumFee`        | Aggregate transaction-fee cap.                                    |
+| `maximumDuration`   | Run deadline.                                                     |
+| `allowedTargetRefs` | Catalog references only; no literal network destination.          |
+| `evidenceProfile`   | Released allowlist and redaction profile.                         |
+
+Effective policy is the strict intersection of platform, organization, project, target, suite, scenario, runner, and action constraints. The lock stores every contributing policy digest and the resolved result.
+
+## Secret references
+
+Scenarios reference secrets by parameter or fixture handle, never by value:
+
+```yaml
+parameters:
+  partnerCredential:
+    type: secret-ref
+    required: true
+steps:
+  - id: authenticate
+    uses: sep10.authenticate
+    with:
+      credential: ${{ parameters.partnerCredential }}
+```
+
+The compiler verifies provider, scope, organization, project, target, permitted action inputs, rotation state, and runner locality without resolving the secret. The runner resolves it just in time, keeps it in memory when possible, redacts before persistence or upload, and records only provider and handle fingerprints. Expressions cannot inspect, compare, concatenate, branch on, log, or export secret values.
+
+## Forbidden constructs
+
+The schema and compiler reject:
+
+- shell commands, scripts, JavaScript, dynamic modules, containers, or package installation;
+- arbitrary HTTP methods, raw sockets, DNS names, IP addresses, URLs, redirects, or proxy settings;
+- filesystem paths, environment-variable names, host mounts, process controls, or privileged capabilities;
+- embedded credentials, private keys, bearer tokens, seeds, customer data, or encrypted secret blobs;
+- dynamic action or fixture names, aliases that escape typed fields, YAML tags, anchors, merge keys, or multiple documents;
+- unbounded loops, recursion, polling, retries, timeouts, matrix expansion, parallelism, or artifact size;
+- runtime code evaluation, templating beyond typed references, or conditions over secrets;
+- pubnet or destructive execution without the released policy and explicit approval.
+
+Parsing uses safe YAML rules, rejects duplicate mapping keys, limits document depth and size, and converts to the canonical JSON form before schema validation. Network access is possible only through action-catalog destinations resolved from approved target references.
+
+## Compilation and validation
+
+Validation proceeds through YAML safety, JSON Schema, semantic reference resolution, type and data-flow checks, graph checks, matrix expansion, capability and policy checks, side-effect and cleanup coverage, then deterministic lock generation. A compile result includes source digest, schema ID, normalized scenario, diagnostics, expanded case IDs, resolved catalogs and rule packs, effective policy, and suite-lock digest.
+
+The docs repository will import the generated scenario schema and named examples from a tagged backend release through the [schema bundle process](./schemas). Documentation CI will then validate every stored YAML example against that exact `$id`, scan for forbidden constructs and literal destinations, and compare the compiled lock to its golden digest.
+
+Until that release exists, examples must be labeled Planned, no CLI or UI may offer them as runnable, and this reference cannot satisfy the executable exit check. Publication becomes release-ready only when every fragment validates against the imported schema and the compiler rejects arbitrary code and unrestricted destinations.
