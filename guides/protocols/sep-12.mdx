@@ -1,0 +1,171 @@
+---
+title: "SEP-12 customer lifecycle"
+description: "Test authenticated customer queries, updates, files, callbacks, shared-account isolation, and deletion with synthetic data."
+keywords:
+  ["SEP-12", "KYC", "customer lifecycle", "callbacks", "shared accounts"]
+---
+
+SEP-12 defines the customer-information exchange used by other Stellar ecosystem protocols. RampSpec treats it as a stateful lifecycle: discover required fields, create or update a synthetic customer, observe review states, verify callback integrity, and delete every test record.
+
+<Warning>
+  SEP-12 is Active upstream at version 1.15.0, but RampSpec has no released
+  SEP-12 adapter, synthetic lifecycle fixture, or controlled reference target.
+  This guide is **Planned**. It does not claim a successful live customer
+  lifecycle or deletion.
+</Warning>
+
+## Pinned source and boundary
+
+The normative source is [SEP-12 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0012.md#api-endpoints). The [standards baseline](/reference/standards-baseline) records its digest.
+
+SEP-12 supplies transport and lifecycle rules. It does not define the target's accepted customer `type` values, determine which identity fields are legally sufficient, or authorize RampSpec to use real personal data. A consuming protocol and the target's `/info` response supply that context.
+
+## Prerequisites
+
+Before a run, lock:
+
+- a controlled target, network, and exact discovery document;
+- the `KYC_SERVER` or `TRANSFER_SERVER` endpoint selected from discovery;
+- a short-lived [SEP-10](./sep-10) or [SEP-45](./sep-45) bearer token whose subject owns the customer identity;
+- a released [SEP-9 synthetic fixture](./sep-9), prohibited-data scan result, and retention deadline;
+- the customer `type`, related transaction ID when applicable, and expected required-field policy;
+- a callback receiver on an approved destination with the anchor signing key pinned from SEP-1;
+- cleanup authorization and a way to verify deletion across the target and RampSpec stores.
+
+The runner must not start if any dependency is mutable, expired, points to production, or lacks a published release-manifest digest.
+
+## Endpoint matrix
+
+| Operation                    | Purpose                                                          | Required checks                                                                                    |
+| ---------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `GET /customer`              | Discover required fields or retrieve a customer's current state. | Authentication, selector isolation, `type`, response schema, and status invariants.                |
+| `PUT /customer`              | Create, update, or verify a customer idempotently.               | Encoding, exact identity binding, requested fields, duplicate retry behavior, and returned ID.     |
+| `POST /customer/files`       | Upload a binary separately when nested JSON is also needed.      | Optional endpoint support, media policy, byte limit, digest, expiry, and returned file ownership.  |
+| `GET /customer/files`        | List one file or all files for a customer.                       | Exact selector, ownership, metadata only, empty-list behavior, and no cross-customer disclosure.   |
+| `PUT /customer/callback`     | Register or replace the customer's callback URL.                 | Controlled destination, identity binding, replacement semantics, and signed delivery verification. |
+| `DELETE /customer/[account]` | Delete all personal information for the authenticated customer.  | Account ownership, shared-account selector, `200`/`404` behavior, and post-delete verification.    |
+
+The deprecated `PUT /customer/verification` endpoint is a backward-compatibility observation only. New tests submit verification values to `PUT /customer` using the original field name plus `_verification`.
+
+## Authentication and identity binding
+
+Send `Authorization: Bearer <JWT>` on every customer and file request. Record only the token issuer, subject class, issue/expiry times, and digest; never retain the token.
+
+The server should infer the customer account from the authenticated subject. The deprecated `account` request parameter is tested only for compatibility and, when present, must match that subject. A customer ID returned under one account must produce `404` when used under a different authenticated account.
+
+### Shared accounts
+
+For a classic shared account, the memo in the decoded SEP-10 subject must match the request memo. For a muxed account, a supplied memo must match the muxed account's 64-bit sub-account ID. A contract account cannot use a memo. `memo_type` is deprecated; compatibility cases may send it, but current fixtures use ID memos.
+
+An account is either shared or unshared for its lifetime. Test both attempts to change classification: memo-bound to memo-free and memo-free to memo-bound. Each attempt must fail without reading, changing, or deleting another customer record.
+
+## Request encodings
+
+All endpoints accept `multipart/form-data`, `application/x-www-form-urlencoded`, and `application/json`; responses are JSON.
+
+Run non-binary create and update cases once for each encoding. Use multipart when sending a binary SEP-9 value directly, and place binary parts after non-binary fields. When the request needs both nested JSON and files, upload through `/customer/files` and submit the returned ID in a field such as `photo_id_front_file_id`.
+
+For every encoding, assert that equivalent inputs produce equivalent customer state. Malformed JSON, duplicate form keys, an unsupported media type, an invalid binary signature, or an oversized body must fail without a partial update or sensitive echo.
+
+## Controlled lifecycle
+
+### 1. Query required fields
+
+Call `GET /customer` with the scenario's selector. Supported selectors are customer `id`; authenticated account with optional memo; muxed account; or `transaction_id` with a required `type`. Always supply `type` when the consuming protocol defines one, because one customer can have different status and field requirements for different actions.
+
+For an unknown synthetic customer, expect `NEEDS_INFO` and a `fields` object describing missing values. Validate every field name against the locked SEP-9 schema, its `string`, `binary`, `number`, or `date` type, optional flag, choices, and description. A query must not create a customer.
+
+### 2. Create the customer
+
+Submit only the requested synthetic fields with `PUT /customer`. Accept `200` or `202` plus a non-empty customer ID. Store the ID as sensitive run metadata and bind it to target, authenticated subject, memo identity, `type`, fixture digest, and run ID.
+
+Repeat the identical request and assert idempotency: no second customer, no duplicate callback, no changed ownership, and the same effective field state. A transport retry after an unknown response outcome uses the same locked payload.
+
+### 3. Add or correct fields
+
+Query by customer ID and `type`, then submit only missing, corrected, or newly requested values. A nonexistent ID or an ID owned by another authenticated account must return `404`. An invalid field, type, customer type, or verification value should return `400` with an `error` property and must not change accepted fields.
+
+Record state before and after each update. RampSpec compares semantic state, not human message wording or field order.
+
+### 4. Exercise verification
+
+When a provided field is `VERIFICATION_REQUIRED`, obtain the code only from the controlled email, phone, or callback sink. Submit it to `PUT /customer` as `<field>_verification`. Assert that the field becomes `PROCESSING` or `ACCEPTED`; seed an invalid code and assert a redacted client error without retry storms.
+
+Never invoke the deprecated verification endpoint unless the locked compatibility scenario explicitly requests it. Its result is reported as legacy behavior and cannot satisfy the current conformance check.
+
+### 5. Observe status transitions
+
+Poll with bounded exponential backoff and honor the run deadline. Validate these customer states:
+
+| Status       | Required interpretation                                                           |
+| ------------ | --------------------------------------------------------------------------------- |
+| `NEEDS_INFO` | `fields` is present and identifies information still needed.                      |
+| `PROCESSING` | Review is in flight; polling can continue within policy.                          |
+| `ACCEPTED`   | All required fields for this `type` are accepted and no required `fields` remain. |
+| `REJECTED`   | The lifecycle cannot succeed for this customer and `message` is present.          |
+
+Provided fields may be `ACCEPTED`, `PROCESSING`, `REJECTED`, or `VERIFICATION_REQUIRED`. A field-level rejection that can be corrected should leave the customer in `NEEDS_INFO`; a terminal rejection should move the customer to `REJECTED`.
+
+Do not assume `ACCEPTED` is permanent. The specification permits later movement to another state, so a regression case changes the controlled target state and verifies that a subsequent query and callback expose the change.
+
+## File lifecycle
+
+The file endpoints are optional. The locked capability manifest states whether they are supported; absence is a skip only when the scenario does not require nested data and separate files.
+
+1. Upload one watermarked synthetic file as multipart and record its input SHA-256.
+2. Validate `file_id`, `content_type`, byte `size`, optional `expires_at`, and nullable `customer_id`.
+3. Attach it through the correct SEP-9 `<field>_file_id` property in `PUT /customer`.
+4. Query by `file_id` and by `customer_id`; require exact ownership and metadata, never returned file bytes.
+5. Query a missing selector and require `200` with an empty `files` list.
+6. Seed an unsupported file and an over-limit file; require structured `400` and `413` responses without retention.
+
+Reports retain hashes and metadata, not file contents, filenames containing identity data, or signed download URLs.
+
+## Callback lifecycle
+
+Register a controlled URL with `PUT /customer/callback`; a later registration replaces the previous URL. Change the synthetic customer's state and require a POST whose body is semantically equivalent to `GET /customer`.
+
+The callback must include `Signature`, or deprecated `X-Stellar-Signature` for compatibility, formatted as `t=<timestamp>, s=<base64 signature>`. Verify the signature with the SEP-1 `SIGNING_KEY` over `<timestamp>.<wallet-host>.<raw-body>`. Reject a modified body, wrong host, invalid key, malformed header, or timestamp outside the configured freshness window. A replayed valid callback must not produce a second state transition.
+
+Delivery continues on status changes until `ACCEPTED` or `REJECTED`. Watching a later change requires callback registration again. Capture attempts, response codes, signature outcomes, and body digests without storing tokens or customer values.
+
+## Deletion and teardown
+
+Call `DELETE /customer/[account]` under the owning bearer token. Include the matching memo identity for a shared account; omit it for contract accounts. Expect `200` for deletion and `404` when no customer information exists. A mismatched token, account, memo, or customer must fail closed.
+
+After success:
+
+- `GET /customer` must no longer expose prior personal fields or files;
+- file queries must return no associated records;
+- callbacks must cease and callback destinations must be unregistered;
+- the controlled target, runner workspace, object store, capture services, and browser profile must report cleanup;
+- a second delete must return the target's documented no-record response without restoring state.
+
+Keep only fixture IDs, schema and release versions, redacted field presence, request/response hashes, status transitions, file metadata, callback verification results, and deletion evidence. A failed cleanup changes the run result and blocks fixture reuse.
+
+## Evidence record
+
+Each case records the target and network, release-manifest digest, pinned SEP digest, discovered endpoint digest, authentication method and redacted claims, customer selector class, customer `type`, request encoding, fixture digest, expected/actual HTTP status, semantic state transition, callback signature result, file metadata, timings, retry count, and cleanup result.
+
+Requests and responses pass through the evidence redactor before persistence. Bearer tokens, synthetic field values, binary bytes, verification codes, full callback bodies, and server secrets are prohibited. Findings link to redacted evidence IDs and reproducible case IDs.
+
+## Findings and remediation
+
+| Failure                                                                        | Finding category           | Required remediation                                                                    |
+| ------------------------------------------------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------- |
+| Request succeeds without valid SEP-10/SEP-45 identity.                         | Authentication bypass      | Enforce token validation and subject ownership on every endpoint.                       |
+| Memo, muxed ID, account, or customer ID crosses users.                         | Customer isolation failure | Bind all selectors to one immutable authenticated identity and deny mismatch.           |
+| Identical PUT creates duplicate state.                                         | Idempotency failure        | Add an identity-and-payload idempotency key and transactional update.                   |
+| `NEEDS_INFO` omits fields or `REJECTED` omits message.                         | Lifecycle schema failure   | Emit the required state properties and validate responses before returning.             |
+| Callback is unsigned, stale, vulnerable to replay, or bound to the wrong host. | Callback integrity failure | Sign the exact host/body payload, enforce freshness, and reject replay.                 |
+| File metadata or content crosses customer boundaries.                          | File isolation failure     | Authorize every file lookup and bind the file to its customer and target.               |
+| Delete leaves fields, files, or callbacks available.                           | Incomplete deletion        | Make cleanup comprehensive, observable, retryable, and independently tested.            |
+| Logs or evidence contain identity data or credentials.                         | Evidence disclosure        | Redact before persistence, purge affected artifacts, rotate secrets, and review access. |
+
+Authentication bypass, customer/file isolation, prohibited-data disclosure, and incomplete deletion are release blockers. Cosmetic descriptions and optional message wording are advisory unless they violate the locked schema.
+
+## Validation and release gate
+
+The released suite must exercise all three encodings, every customer and field status, create/update idempotency, verification, shared and unshared identities, muxed and contract accounts, cross-account denial, optional files, callback replacement/signature/freshness/replay, deprecated compatibility behavior, error schemas, and deletion. Seeded defects must prove that each blocker is detected.
+
+The backend dependency is not released, so these examples cannot yet run against the controlled reference. Publication becomes eligible only when the adapter, schemas, synthetic fixtures, target bundle, redactor, and tests are versioned in a compatible release manifest and the complete lifecycle plus deletion passes.
