@@ -1,0 +1,201 @@
+---
+title: "SEP-6 deposits"
+description: "Reproduce same-asset and cross-asset SEP-6 deposits from discovery through off-chain funding, Stellar settlement, and evidence."
+keywords:
+  ["SEP-6", "deposit", "deposit exchange", "SEP-38 quote", "ledger evidence"]
+---
+
+SEP-6 lets a wallet initiate and track non-interactive anchor transfers. This guide covers deposits only: an external asset enters the anchor and a Stellar asset reaches the destination account. Withdrawal behavior requires its own released journey and is outside this guide.
+
+<Warning>
+  SEP-6 is Active upstream at version 4.3.0; its interactive components are
+  deprecated in favor of SEP-24. RampSpec has no released SEP-6 adapter,
+  controlled funding rail, or deposit fixture. This guide is **Planned** and
+  contains no executable payment instruction or successful testnet claim.
+</Warning>
+
+## Pinned source and boundary
+
+The normative source is [SEP-6 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0006.md#deposit). The [standards baseline](/reference/standards-baseline) records its digest.
+
+Use `GET /deposit` when the external asset and issued Stellar asset are equivalent. Use optional `GET /deposit-exchange` when they are non-equivalent and the anchor supports SEP-38. A cross-asset case without advertised `deposit-exchange` support is unsupported, not a same-asset fallback.
+
+RampSpec tests protocol behavior; it does not send production funds, choose a financial provider for a user, judge KYC sufficiency, or interpret legal availability. Active execution is restricted to an approved controlled testnet target and a capped synthetic off-chain rail.
+
+## Prerequisites
+
+Lock these inputs before discovery:
+
+- target, network passphrase, SEP-1 document, and `TRANSFER_SERVER` origin;
+- released backend adapter and schemas, fixture bundle, runner image, and compatible release manifest;
+- synthetic customer, authenticated Stellar identity, destination account, asset code and issuer, country profile, and funding method;
+- controlled external sender and receiver, maximum amount and fee budget, and explicit transaction approval;
+- Horizon/RPC endpoint for the selected network and a ledger-finality policy;
+- cleanup, refund, callback, timeout, and incident owners.
+
+HTTPS is required. Every transfer-server response, including errors, must expose `Access-Control-Allow-Origin: *`. Reject redirects to an unapproved origin, DNS rebinding, private-address resolution, downgrade to HTTP, or discovery data that changes after the run is locked.
+
+## Capability discovery
+
+Fetch SEP-1, select the exact `TRANSFER_SERVER`, then call `GET /info`. Store canonical response hashes and validate the result before asking for authentication or funding.
+
+For the selected `asset_code`, inspect:
+
+| `/info` area       | Required decision                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| `deposit`          | Same-asset support, `enabled`, authentication, methods, minimum, maximum, and fee declaration. |
+| `deposit-exchange` | Cross-asset support, authentication, and funding methods.                                      |
+| `transaction`      | Single-record query support and authentication.                                                |
+| `transactions`     | History support and authentication.                                                            |
+| `features`         | Account creation and claimable-balance support.                                                |
+
+Choose `funding_method` only from the advertised list. The older `type` parameter and `/info.fields` are compatibility observations; they cannot replace `funding_method` or [SEP-12](./sep-12) KYC. The `/fee` endpoint, `how` response property, wallet name, and wallet URL are deprecated and do not satisfy current cases.
+
+Reject an asset that is missing, disabled, conflicts with SEP-1 currency metadata, or advertises a method the controlled rail cannot execute. Absence of a minimum, maximum, or simple fee means unspecified, not zero.
+
+## Authentication
+
+When `/info` sets `authentication_required`, obtain a short-lived [SEP-10](./sep-10) or [SEP-45](./sep-45) JWT and send it as `Authorization: Bearer <JWT>` to every applicable API endpoint. A missing token should produce `403` with `type: authentication_required` on initiation.
+
+Record only redacted token claims and a digest. Verify issuer, audience, subject, client domain, network, issued/expiry time, and target binding before use. History and single-transaction queries must return only records owned by the authenticated subject, including its memo identity for a shared account.
+
+The authenticated account identifies the customer, but the deposit destination `account` may differ. Treat that difference as an explicit, reviewed input; never silently substitute the token subject or a previous destination.
+
+## Same-asset deposit
+
+### 1. Build the request
+
+Call `GET /deposit` with:
+
+- `asset_code` exactly matching an enabled `/info.deposit` key;
+- destination `account` as a classic, muxed, or contract account on the locked network;
+- advertised `funding_method`;
+- optional decimal `amount`, ISO 3166-1 alpha-3 `country_code`, synthetic `customer_id`, controlled callback, locale, and claimable-balance flag;
+- optional destination payment `memo` and `memo_type` only when the scenario needs them.
+
+The destination memo is separate from a shared-account memo in the authentication subject. With SEP-45 authentication, the deposit memo type must be `id`. Preserve exact account and memo values through initiation, transaction reporting, and ledger correlation.
+
+### 2. Validate initiation
+
+A successful `200` starts processing. Capture the anchor transaction `id`, `instructions`, estimated time, limits, simple fees, and extra information. `instructions` must use SEP-9 financial-account field names with a value and description. Treat all instruction values as sensitive and allow execution only when they resolve to the controlled off-chain destination.
+
+The transaction ID may be absent in the response according to the base schema, but the controlled RampSpec profile requires one because status, KYC, evidence, and cleanup cannot otherwise be correlated safely. Missing ID is therefore a profile failure, clearly distinguished from an upstream schema violation.
+
+Do not fund immediately. Query `GET /transaction?id=<id>` and wait for `pending_user_transfer_start`. Use the returned `amount_in` and current instructions; the final amount can differ from the proposed amount when fees are additive or processing is asynchronous.
+
+### 3. Complete KYC when requested
+
+If the record is `incomplete` or `pending_customer_info_update`, query SEP-12 with this transaction ID and `type=sep6`. Submit only requested synthetic fields until the customer is `ACCEPTED`, then poll the SEP-6 transaction again.
+
+Never pass identity or financial-account data through deprecated query fields merely because the target advertises them. A target that supports only that legacy flow is recorded as incompatible with the current RampSpec profile.
+
+### 4. Fund and settle
+
+After the user-transfer-start state, send the exact approved external amount once, with the required bank, cash, crypto, or other sandbox reference. Bind the external receipt ID to the anchor transaction before polling continues. An unknown submission outcome pauses for reconciliation; it must not trigger an automatic duplicate payment.
+
+Observe the anchor detecting external settlement, processing internally, submitting the Stellar transaction, and completing. The destination account must receive the selected asset and memo, subject to the locked amount and fee rules.
+
+## Cross-asset deposit
+
+Cross-asset testing additionally requires a pinned SEP-38 quote capability and assets expressed in its identification format.
+
+1. Confirm the Stellar destination asset appears under `/info.deposit-exchange` and the external source asset appears in SEP-38 prices for that destination.
+2. Lock `source_asset`, destination `asset_code`, funding method, source amount, destination account, and delivery method.
+3. For a market-rate case, initiate without `quote_id` and record the rate/amount basis returned over the lifecycle.
+4. For a firm-rate case, obtain a quote through SEP-38, validate its assets, sell amount, buy amount, fee, delivery method, and expiry, then pass its ID to `/deposit-exchange` before expiry.
+5. Require the initiation request's source asset, destination asset, amount, and funding method to match the quote. Any mismatch must return `400` and create no transaction that is ready for funding.
+6. Complete the same KYC, instruction, external-funding, status, and ledger checks as the same-asset journey.
+
+The request `amount` is denominated in the external `source_asset` and must equal the firm quote's sell amount. Transaction `amount_in_asset`, `amount_out_asset`, and fee asset must use SEP-38 identifiers. A firm-quote transaction must preserve the quote ID and its agreed economics when funds arrive within the quote conditions; an expired quote must not settle at the stale rate.
+
+## Amounts, fees, and assets
+
+Parse transaction amounts as decimal strings with at most seven decimal places; never use binary floating-point for comparisons. Preserve asset code and issuer together for Stellar assets, and the complete SEP-38 identifier for exchange assets.
+
+For a same-asset transaction, validate after expressing every term in that asset:
+
+```text
+amount_out = amount_in - fee_details.total - refunds.amount_refunded - refunds.amount_fee
+```
+
+For cross-asset transactions, validate the same conservation relationship only after applying the locked quote or recorded conversion basis into a common asset. Require `fee_details.total`, asset, and optional itemized amounts to reconcile; when a quote exists, fee details must match it. `amount_fee` and `amount_fee_asset` are deprecated compatibility fields and must not override `fee_details`.
+
+Test exact minimum, exact maximum, below-minimum, above-maximum, zero, negative, excess precision, overflow, malformed decimal, and an amount whose fee would make output invalid. Expected terminal classifications include `too_small` and `too_large`; a rejected amount must not produce usable instructions or accept funds.
+
+## Transaction states
+
+Poll `GET /transaction` with bounded exponential backoff, or verify signed status callbacks using the anchor's SEP-1 signing key. History from `GET /transactions` must be newest-first, honor filters and pagination, and isolate shared-account memos.
+
+| State                                                                    | Deposit interpretation                                                                   |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `incomplete`                                                             | More information is needed before initiation.                                            |
+| `pending_customer_info_update`                                           | Complete the transaction-bound SEP-12 flow.                                              |
+| `pending_transaction_info_update`                                        | Submit only explicitly requested non-KYC transaction fields through the update endpoint. |
+| `pending_user_transfer_start`                                            | Instructions and amount are ready; the controlled external transfer may begin.           |
+| `pending_external`                                                       | The external rail has not reached required confirmation.                                 |
+| `pending_anchor` or `on_hold`                                            | The anchor is processing or reviewing received funds.                                    |
+| `pending_stellar`                                                        | Stellar submission exists but is not final.                                              |
+| `pending_trust`                                                          | Destination trust line is required.                                                      |
+| `completed`                                                              | Anchor reports completion; ledger correlation must still pass.                           |
+| `expired`, `no_market`, `too_small`, `too_large`, `error`, or `refunded` | Terminal or compensating outcome requiring matching evidence.                            |
+
+`pending_user` is a generic additional-action state. Require a redacted message or approved `more_info_url` that identifies the action. `user_action_required_by` is valid only for a state requiring user action and must trigger no automatic payment after its deadline.
+
+Track only allowed transitions. Timestamps cannot move backward, `completed_at` appears only on completion, and a terminal record cannot silently return to an active state. Repeated callbacks or polls must not duplicate a state transition or payment.
+
+## Destination readiness
+
+Before active funding, check that the destination account exists and has a trust line to the exact asset. Exercise unsupported account creation, supported controlled account creation, missing trust line, issuer authorization, and claimable-balance paths separately.
+
+If claimable balances are advertised and requested, require `claimable_balance_id`, a successful creation operation, the intended claimant and predicate, and a completed record. Completion proves creation, not that the user has claimed it. A separate controlled action establishes the trust line and claims the balance when the scenario includes claim completion.
+
+Never assume claimable-balance support merely because SEP-6 recommends it. Capability discovery and the request flag must agree.
+
+## Ledger correlation
+
+An anchor's `completed` state is necessary but insufficient. Query the locked Stellar data source and prove:
+
+- `stellar_transaction_id` exists on the selected network and succeeded at the required ledger finality;
+- the relevant payment, account-creation, or claimable-balance operation targets the exact destination;
+- asset code and issuer, amount, memo and memo type, and claimant data match the locked scenario;
+- the transaction time follows accepted external funding and fits the run window;
+- the transaction hash maps to exactly one anchor record and its `external_transaction_id` maps to the controlled receipt;
+- the observed balance delta reconciles with amount, fee, conversion, and refund evidence.
+
+Reject a hash from another network, failed transaction, wrong operation index, path-payment ambiguity, unrelated payment in the same envelope, or duplicate correlation. Store the transaction hash, ledger sequence, operation index, result, asset identity, amount, destination, and observation timestamp; do not store secret keys.
+
+## Errors and boundaries
+
+Every non-`200` response must carry structured error details. Test unsupported asset/method, disabled deposit, missing or invalid parameter, authentication required, KYC denial, quote mismatch/expiry, unsafe callback, missing transaction, cross-account lookup, amount bounds, instruction timeout, external payment failure, ledger failure, and refund.
+
+The runner must fail closed before value transfer when errors conflict with usable instructions. After value has moved, it must stop new actions, reconcile both rails, and follow the controlled target's refund procedure. A refund record includes total returned, total refund fee, and payment entries whose amounts and fees sum exactly to the totals.
+
+Do not test withdrawals, SEP-24 interactive flows, production banks or blockchains, unsupported asset pairs, arbitrary callback destinations, automatic trust lines on behalf of a user, or irreversible transfers outside the approved budget. These are explicit exclusions, not skipped successes.
+
+## Evidence record
+
+Each case records discovery and release digests, target/network, authentication class, customer/transaction fixture IDs, deposit kind, assets, issuer, funding method, quote ID and expiry, requested and actual decimal amounts, fee/refund reconciliation, redacted instruction digest, status timeline, callback verification, external receipt ID, Stellar transaction and ledger coordinates, destination observation, retry count, and cleanup outcome.
+
+Redact bearer tokens, customer fields, bank/crypto instructions, full external accounts, callback bodies, and all secret material before persistence. Evidence distinguishes target claims, external-rail observations, and independently queried Stellar facts.
+
+## Findings and remediation
+
+| Failure                                               | Finding category         | Required remediation                                                              |
+| ----------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `/info` and initiation capabilities disagree.         | Discovery drift          | Publish one capability source and reject requests outside it.                     |
+| Missing/invalid JWT can access protected records.     | Authentication failure   | Enforce endpoint policy and bind records to the authenticated subject.            |
+| KYC data appears in query parameters or logs.         | Sensitive-data exposure  | Move collection to SEP-12, redact at ingress, purge artifacts, and review access. |
+| Quote terms or funding method change after locking.   | Quote integrity failure  | Bind initiation and settlement to the complete quote and reject mismatch.         |
+| Amount, fee, or refund arithmetic does not reconcile. | Accounting failure       | Use decimal arithmetic, explicit asset units, and invariant checks.               |
+| Instructions point outside the controlled rail.       | Unsafe destination       | Validate destinations before display or execution and revoke the record.          |
+| `completed` lacks matching successful ledger effect.  | False completion         | Reconcile independently and correct status only after final settlement.           |
+| Shared-account history exposes another memo.          | Record isolation failure | Key every query by the full authenticated identity and add negative tests.        |
+| Unknown transport outcome causes duplicate funding.   | Duplicate payment risk   | Pause, reconcile by immutable IDs, and resume only after operator review.         |
+
+Authentication bypass, sensitive-data exposure, quote/accounting failure, unsafe destinations, record isolation, duplicate payment risk, and false completion are release blockers.
+
+## Validation and release gate
+
+The released suite must pass controlled testnet same-asset and cross-asset deposits, market and firm quote paths, authenticated and permitted unauthenticated discovery, SEP-12 updates, every supported funding method, amount/fee boundaries, destination-account variants, callback and polling parity, status and error schemas, history isolation, refunds, and independent ledger correlation. Seeded defects must demonstrate each blocker.
+
+The backend, contracts, and controlled reference releases required by this guide do not exist yet. Stable commands and fixtures remain unavailable until their artifacts are pinned by one compatible release manifest. Publication is eligible only after both deposit journeys complete within budget and teardown confirms no reusable customer data, callback registration, browser state, runner secret, or uncontrolled off-chain instruction remains.
