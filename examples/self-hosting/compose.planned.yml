@@ -1,0 +1,54 @@
+name: rampspec-planned-evaluation
+
+services:
+  postgres:
+    image: "<verified-postgresql-image-digest>"
+    networks: [internal]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+
+  temporal:
+    image: "<verified-temporal-image-digest>"
+    networks: [internal]
+    depends_on: [postgres]
+
+  redis:
+    image: "<verified-redis-image-digest>"
+    networks: [internal]
+
+  object-storage:
+    image: "<verified-object-storage-image-digest>"
+    networks: [internal]
+    volumes: [object-data:/data]
+
+  api:
+    image: "<verified-rampspec-backend-image-digest>"
+    command: ["<released-api-command>"]
+    ports: ["127.0.0.1:8080:8080"]
+    env_file: ["<ignored-local-configuration-file>"]
+    networks: [internal]
+    depends_on: [postgres, temporal, redis, object-storage]
+
+  workers:
+    image: "<verified-rampspec-backend-image-digest>"
+    command: ["<released-evaluation-worker-command>"]
+    env_file: ["<ignored-local-configuration-file>"]
+    networks: [internal]
+    depends_on: [api]
+
+  frontend:
+    image: "<verified-rampspec-frontend-image-digest>"
+    ports: ["127.0.0.1:3000:3000"]
+    networks: [internal]
+    depends_on: [api]
+
+  reference-target:
+    image: "<verified-reference-target-image-digest>"
+    networks: [internal]
+
+networks:
+  internal:
+    internal: true
+
+volumes:
+  postgres-data:
+  object-data:

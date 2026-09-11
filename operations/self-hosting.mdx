@@ -1,0 +1,140 @@
+---
+title: "Self-hosting"
+description: "Evaluate RampSpec with Docker Compose and plan a production Helm deployment with secure identity, storage, runners, upgrades, backups, and observability."
+keywords: ["self-hosting", "Docker Compose", "Helm", "Kubernetes"]
+---
+
+Self-hosting places infrastructure availability, security, privacy, key management, upgrades, backups, and incident response under the operator's control. It does not weaken target authorization, synthetic-only, testnet-default, report verification, runner isolation, or evidence-publication policy.
+
+<Warning>
+  No RampSpec backend image, Compose bundle, Helm chart, migration image, or
+  signed self-hosting release exists. Stored files are **Planned** topology
+  fixtures and cannot start RampSpec.
+</Warning>
+
+## Choose the deployment path
+
+| Path               | Purpose                                                                                   | Not suitable for                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Evaluation Compose | One trusted operator evaluates local fixtures on a disposable host                        | Production, multi-tenant data, public ingress, pubnet, Soroban publication, real secrets |
+| Production Helm    | Reviewed Kubernetes deployment with managed or hardened dependencies and isolated runners | Installation before compatible signed images/charts and operational evidence exist       |
+
+Do not evolve the evaluation stack into production by merely changing passwords or exposing ports. Production requires separate identities, stores, network controls, high availability, recovery, and independent security review.
+
+## Release and host prerequisites
+
+Before either path, obtain a compatible release manifest with full commits, signed tags, image/chart/package/schema/migration digests, SBOM/provenance, supported upgrade range, known issues, and verification commands. Refuse mutable tags or mixed component/schema majors.
+
+Evaluation host prerequisites are a supported 64-bit OS, rootless-capable current Docker Engine and Compose plugin, enough CPU/memory/disk, local-only ports, correct UTC time, and a disposable working directory. Production prerequisites are a supported Kubernetes version, default-deny networking, ingress/WAF, cert/DNS automation, workload identity, CSI-compatible secret provider, encrypted storage classes, external PostgreSQL/Temporal/Redis/object storage or reviewed operators, KMS, telemetry, backup/restore tooling, policy/admission controller, image signature verification, and separate runner node pool/namespace.
+
+Exact supported versions and sizing will come from the release manifest; this page intentionally sets no fabricated minimum.
+
+## Evaluation Compose
+
+{/* example: examples/self-hosting/compose.planned.yml */}
+
+The stored [planned Compose file](/examples/self-hosting/compose.planned.yml) shows service boundaries and placeholder digests. It has no published image and must fail before pull/start.
+
+The evaluation bundle includes frontend, API, scheduler/workflow and specialized workers, local PostgreSQL, Temporal, Redis, object storage, OpenTelemetry collector, and a fake/reference target. It binds browser/API endpoints to loopback, creates an internal network, uses named disposable volumes, health/readiness dependencies, resource limits, and synthetic configuration.
+
+It must not include a public runner cluster, real OIDC client, GitHub App, outgoing internet target access, pubnet, evidence signer/contract, production KMS key, customer credential, or public callback. Development secrets are generated locally into ignored files or an OS keychain and destroyed at teardown; examples contain references only.
+
+### Evaluation procedure
+
+1. verify release artifacts and copy the released example into a new disposable directory;
+2. run the released configuration validator and confirm `local`, synthetic-only, fake/local target, loopback origins, evidence disabled, pubnet disabled/kill switch active;
+3. create local development-only provider values without committing or printing them;
+4. pull by immutable digest and verify image signatures/provenance;
+5. start storage dependencies, run migrations once, then workers/API/frontend/reference target;
+6. require every readiness check and inspect privacy-filtered logs for secret canaries;
+7. import the released SEP-1 suite fixture, run against the fake/reference target, finalize and independently verify the report;
+8. inspect report scope as local simulation, cleanup, artifact redaction, and verification output;
+9. stop, delete the exact Compose project/volumes/secrets, and prove ports/processes/data are gone.
+
+Until a tagged bundle exists, none of these commands or the SEP-1 exit check can be executed.
+
+## Production Helm values
+
+{/* example: examples/self-hosting/helm-values.planned.yaml */}
+
+The stored [planned Helm values](/examples/self-hosting/helm-values.planned.yaml) illustrate required values and disabled risky features. The future chart schema and defaults are authoritative.
+
+Use an immutable OCI chart digest and image digests. Render templates in CI, validate chart/value schemas, scan policies/images, verify signatures, and diff against the live release before change. Never place secret values in Helm values, Git history, rendered manifests, release metadata, or command lines.
+
+## Production namespaces and identities
+
+Use at least control/workers, public runners, and observability namespaces, plus environment separation. Give API, scheduler, workflow, protocol, browser, report, evidence, webhook, migration, backup, and runner gateway distinct service accounts/workload identities. Disable automatic service-account token mounting where not needed.
+
+Only ingress components receive public traffic. Apply default-deny ingress/egress and explicit DNS/destination rules. Public runner jobs use dedicated tainted nodes or a separate cluster, runtime sandbox where supported, per-job identity/storage, and no path to Kubernetes API, databases, workflow admin, KMS, secret manager, object administration, control pods, or other jobs. Local runners remain outbound-only.
+
+## TLS and DNS
+
+Create reviewed DNS names for app, API, callbacks, integration webhooks, runner gateway, public evidence, docs, and independent status. Restrict origin exposure, issue/renew certificates automatically, validate hostname chains, enable modern TLS and HTTP Strict Transport Security, and monitor expiration/routing.
+
+Separate browser session cookies from callback/webhook origins. Require TLS internally for database/cache/workflow/object/telemetry where the provider boundary warrants it. Do not route private service names through target-controlled DNS.
+
+## Identity and access
+
+Configure a trusted OIDC issuer/audience/client/redirect set, strong sessions, optional SSO/MFA policy, and initial bootstrap owner through a one-time audited path. Remove bootstrap capability after first owner validation. Do not ship a default password or universal admin token.
+
+Use workload identity rather than static cloud keys. Map operators to least-privilege RampSpec and cluster roles separately. Emergency access is time-bound, approved, recorded, and tested for revocation. CI/deployer cannot read tenant artifacts or sign reports/evidence unless that exact purpose is required.
+
+## Secret and key providers
+
+Integrate a released provider such as cloud secret manager/KMS or Vault via workload identity/CSI. Separate report signing, envelope encryption, OIDC, database, Temporal mutual TLS, Redis, object storage, GitHub/webhooks, runner pairing, Stellar fixtures, evidence attestor, and contract admin purposes.
+
+Initialize keys through provider-native procedures, record only references/fingerprints/purpose/rotation metadata, test non-destructively, and rotate before production traffic. Backup/recovery must restore access under dual control without exporting raw keys when the provider supports it. A missing/wrong-purpose key keeps the dependent feature unready.
+
+## Storage providers
+
+Production PostgreSQL is private, encrypted, highly available, backed up with point-in-time recovery, and accessed by separate runtime/migration/backup roles. Temporal is managed or highly available with environment namespace, mutual TLS, compatible worker versioning, and protected history. Redis is private TLS/auth transient state only. Object storage blocks public access, uses envelope KMS, versioning/lifecycle/replication, digest metadata, and scoped operations.
+
+Document provider, region, ownership, capacity/quotas, maintenance, encryption, backups, restoration, retention/hold, monitoring, and decommissioning. Do not use ephemeral Kubernetes volumes for durable production state.
+
+## Sizing
+
+Size from measured workload, not this plan. Record API requests/latency, active workflows and history growth, queue arrival/service rates, browser/protocol duration and CPU/memory, report/export throughput, webhook retry load, artifacts/retention/replication, PostgreSQL connections/IO/storage, Redis memory, telemetry volume, and runner concurrency.
+
+Start with explicit requests/limits, pod disruption budgets, anti-affinity/topology spread, autoscaling bounds, queue backpressure, tenant quotas, and provider headroom. Load/soak testing in staging must include ordinary, burst, retry/backlog, large bounded artifact, browser, and dependency-degraded profiles. Publish measured capacity and bottleneck with release/hardware/config.
+
+## Install and migrate
+
+1. provision infrastructure/DNS/identity/keys/stores/telemetry/backups from reviewed code;
+2. validate configuration and provider ownership without printing secrets;
+3. install chart with risky features disabled and network/admission policy active;
+4. run preflight and a single migration job using its dedicated identity/lock;
+5. deploy compatible workers by task-queue/build policy, then API/scheduler/gateway/frontend;
+6. pass startup/readiness, tenant isolation, redaction, signature, backup, and synthetic dependency checks;
+7. run local/fake smoke, then a controlled testnet SEP-1 report and independent verification;
+8. gradually enable schedules/integrations; evidence/pubnet require separate gates;
+9. capture release/config/chart/image/schema/migration and test evidence.
+
+Migration failure stops rollout. Restore or forward-fix according to the released database/workflow compatibility decision; never rerun a partially applied migration blindly.
+
+## Upgrade and rollback
+
+Read breaking changes, supported source versions, database migrations, Temporal worker compatibility, schema/API/report changes, runner protocol/images, key changes, and contract manifests. Rehearse against restored staging data, run old/new workers per released workflow-version order, canary, verify reports, then expand.
+
+Rollback only to an artifact that can read all new durable state/workflow history and uses compatible keys/config. Otherwise pause new work, preserve cleanup/report access, and forward-fix. Reconcile active runs, schedules, deliveries, migration state, leases, and evidence submissions before either action.
+
+## Backups and recovery
+
+Back up PostgreSQL with continuous logs and snapshots, required Temporal persistence/history according to provider architecture, versioned/replicated object data, audit/config/infrastructure code, encrypted key metadata/recovery procedures, and release manifests. Redis is reconstructed from durable systems.
+
+Encrypt, isolate, restrict, monitor, and test backups. A staging restore starts into an isolated environment, verifies point/time/inventory/digests, rebuilds derived indexes/caches, resumes workflows safely, verifies canonical reports/artifacts/signatures, and runs synthetic SEP-1. Record measured RPO/RTO and unresolved loss; planned targets are not evidence.
+
+## Observability
+
+Deploy privacy-filtering OpenTelemetry collectors before applications. Collect bounded structured metrics/logs/traces for API, SSE, scheduler/workflow, queues/workers, runners, stores, signing/evidence, integrations, and backups. Use opaque tenant/resource IDs, release/config/schema/trace identifiers, and no secrets/PII/raw bodies.
+
+Dashboards and alerts separate platform, target, Stellar dependency, and recipient health. Route alerts to owned runbooks and test them before traffic. Telemetry outage cannot cause unsafe fallback or false pass.
+
+## Day-two operations
+
+Maintain certificate/domain/provider/key expiry, dependency and image updates, capacity, queue backlogs, worker compatibility, migration drift, backups/restores, secret rotation, runner upgrades/revocation, contract TTL/admin, spec synchronization, data deletion/legal holds, and incident/runbook exercises. Record evidence and owner for each cadence.
+
+## Limitations and release gate
+
+Self-hosting operators own infrastructure security, availability, provider contracts, data governance, target permission, Stellar funds/actions, evidence keys/contracts, upgrades, backups, and response. RampSpec cannot certify the deployment, target, or operator practice.
+
+A released self-hosting package must pass clean Compose install/teardown and verified local SEP-1, fresh production-like Helm staging install, policy/secret scans, network/runner isolation tests, identity/tenant checks, migration/upgrade/rollback or forward-fix, backup restore, observability/alerts, and verified testnet SEP-1. The current files only validate documentation/YAML shape; all operational exits remain unavailable.

@@ -197,7 +197,10 @@
           },
           {
             "group": "Platform Operations",
-            "pages": ["operations/deployment-and-configuration"]
+            "pages": [
+              "operations/deployment-and-configuration",
+              "operations/self-hosting"
+            ]
           },
           {
             "group": "Integrations",

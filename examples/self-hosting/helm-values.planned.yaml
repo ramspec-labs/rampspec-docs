@@ -1,0 +1,63 @@
+global:
+  environment: production
+  releaseManifestDigest: "sha256:<release-manifest-digest>"
+  secretProvider: "<workload-identity-secret-provider>"
+
+images:
+  frontend: "<registry>/rampspec-frontend@sha256:<digest>"
+  backend: "<registry>/rampspec-backend@sha256:<digest>"
+  runner: "<registry>/rampspec-runner@sha256:<digest>"
+
+ingress:
+  appHost: "app.example"
+  apiHost: "api.example"
+  callbackHost: "callbacks.example"
+  webhookHost: "webhooks.example"
+  runnerGatewayHost: "runners.example"
+  tlsIssuer: "<approved-tls-issuer>"
+
+identity:
+  oidcIssuer: "https://identity.example"
+  oidcClientId: "<public-client-id>"
+  oidcClientSecretReference: "<secret-reference>"
+  bootstrapOwnerEnabled: false
+
+storage:
+  postgresqlReference: "<private-managed-postgresql-reference>"
+  temporalReference: "<private-managed-temporal-reference>"
+  redisReference: "<private-managed-redis-reference>"
+  objectStorageReference: "<private-object-storage-reference>"
+  kmsReference: "<kms-reference>"
+
+workers:
+  protocol: { minReplicas: 2, maxReplicas: 10 }
+  browser: { minReplicas: 0, maxReplicas: 5 }
+  report: { minReplicas: 2, maxReplicas: 6 }
+  evidence: { minReplicas: 0, maxReplicas: 2 }
+  webhook: { minReplicas: 2, maxReplicas: 6 }
+
+runners:
+  public:
+    enabled: false
+    namespace: rampspec-runners
+    nodePool: "<isolated-runner-node-pool>"
+    imageDigestPolicy: required
+    defaultDenyNetworkPolicy: true
+  localGateway:
+    enabled: true
+
+stellar:
+  testnetEnabled: true
+  pubnetEnabled: false
+  pubnetKillSwitch: true
+
+evidence:
+  publicationEnabled: false
+
+telemetry:
+  collectorReference: "<privacy-filtering-collector-reference>"
+  privacyFilterVersion: "<released-filter-version>"
+
+backup:
+  enabled: true
+  policyReference: "<reviewed-backup-policy>"
