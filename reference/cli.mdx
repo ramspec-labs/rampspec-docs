@@ -1,0 +1,296 @@
+---
+title: "CLI reference"
+description: "Planned command, configuration, output, exit, automation, cancellation, runner, evidence, PowerShell, POSIX, and troubleshooting contracts."
+keywords: ["CLI", "commands", "PowerShell", "POSIX", "exit codes", "automation"]
+---
+
+The RampSpec CLI will provide a scriptable interface to authentication, target discovery, scenario validation, suite locking, run control, report verification, policy gates, evidence operations, and local-runner lifecycle.
+
+<Warning>
+  No CLI binary, package, command manifest, config schema, or tagged help output
+  exists. Every command and option on this page is **Planned**. Numeric exit
+  codes are deliberately unassigned, and the stored examples are not runnable.
+</Warning>
+
+## Source and generation contract
+
+The backend repository owns the CLI implementation and must publish a machine-readable command manifest with each tag. Documentation generation will render command names, aliases, arguments, flags, defaults, environment mappings, config keys, output schemas, examples, deprecations, and numeric exits directly from that artifact.
+
+Human-authored sections explain workflow and safety but cannot redefine syntax. Documentation CI will compare the imported command manifest digest with the release manifest, regenerate reference output, run every stored example against the pinned binary in a clean environment, and fail on help drift.
+
+Until that artifact exists, the command tree below is the intended product surface, not a compatibility promise.
+
+## Planned command tree
+
+```text
+rampspec
+  version
+  login
+  logout
+  whoami
+  target discover
+  scenario validate
+  suite lock
+  suite inspect
+  run start
+  run status
+  run events
+  run cancel
+  report download
+  report verify
+  ci gate
+  evidence publish
+  evidence status
+  evidence verify
+  runner register
+  runner start
+  runner status
+  runner rotate-credential
+  runner revoke
+```
+
+The final names, grouping, and availability come from tagged help. Missing subcommands cannot be inferred from the API or this list.
+
+## Global behavior
+
+Every command supports generated help and version output. Planned global concerns include configuration profile, API origin, output mode, color, interactivity, timeout, request correlation, and diagnostic verbosity. Exact option spellings and short aliases remain unpublished.
+
+The CLI writes requested machine output to standard output and diagnostics to standard error. In machine mode, standard output contains exactly one documented JSON value or a documented newline-delimited stream. Progress indicators, colors, prompts, and update notices are disabled. Text mode is for humans and is not a stable parser contract.
+
+The process handles interruption, closes output records, stops local child work, requests remote cancellation only when explicitly configured, and returns the released cancellation exit. A terminal event or canonical report, not a spinner or connection lifetime, establishes run outcome.
+
+## Installation and version proof
+
+Install only an exact CLI version named by a compatible [release manifest](./release-manifest). Verify package or binary digest, signature, source tag and commit, license, component inventory, supported operating system and architecture, runtime when required, and runner/API/schema/report compatibility.
+
+Planned verification form:
+
+```powershell
+<install-verified-cli> -Version <manifest-cli-version>
+rampspec version --output json
+```
+
+The version record must expose CLI version, source commit, artifact digest, API major, scenario and report schema majors, command-manifest digest, and supported runner protocol. The placeholder installer is intentionally invalid.
+
+## Configuration
+
+The future config schema will define profile names, API origins, trust-key references, output defaults, timeouts, and non-secret project or environment selectors. Credentials, API keys, refresh tokens, runner private keys, Stellar seeds, webhook secrets, customer data, and provider values never belong in the config file.
+
+Expected precedence is explicit command option, process-scoped environment reference, selected profile, then compiled safe default. The CLI prints a redacted source map for effective configuration and fails on unknown keys, conflicting network passphrases, insecure origins, invalid file permissions, or a profile that selects an unavailable release.
+
+The release must publish exact config locations for Windows, macOS, Linux, containers, and portable mode. It must not silently search project directories for credentials or load arbitrary environment files. Automation should pass profile and resource IDs through protected workflow configuration and secrets through the released credential provider.
+
+## Output modes
+
+Planned output classes are:
+
+| Mode         | Contract                                                                |
+| ------------ | ----------------------------------------------------------------------- |
+| Human        | Stable meaning, but formatting and wording may evolve within a major.   |
+| JSON         | One schema-versioned result with no progress text on standard output.   |
+| Event stream | Schema-versioned newline-delimited events with monotonic event IDs.     |
+| Quiet        | No success output; diagnostics and process exit still identify failure. |
+
+Commands that return a resource include stable ID, type, state, release/schema identifiers, and safe correlation data. Sensitive fields are omitted rather than masked inconsistently. File-writing commands require an explicit destination, do not overwrite by default, write atomically, and return file size and SHA-256 in machine mode.
+
+## Authentication commands
+
+### `login`
+
+Starts the released interactive or device authorization flow and stores only a protected renewable session in the operating-system credential store. Planned flags select profile and non-secret organization context; automation uses a separate service-account or workload-identity flow, never interactive login.
+
+Reject an API origin not already trusted by the selected profile. The browser callback binds state, nonce, issuer, audience, redirect, and PKCE when the released identity flow requires it. Tokens never appear in terminal output, shell history, config, logs, or error messages.
+
+### `whoami`
+
+Returns authenticated subject ID, organization memberships, active profile, token expiry class, and granted scopes without returning the token. Machine output is safe for authorization checks but not proof that a later command remains authorized.
+
+### `logout`
+
+Revokes the current refresh/session credential when reachable, deletes the local credential, and records partial failure distinctly. A local deletion alone does not claim server revocation. `logout` never revokes service accounts or runner identities unless the exact released command says so.
+
+## Target discovery
+
+Intended form:
+
+```text
+rampspec target discover --target <verified-target-id> --output json
+```
+
+The project specification's earlier `--home-domain` sketch is not safe enough for active testing because target ownership and policy must already be bound. The released command may allow passive preview of a canonical home domain, but authenticated, browser, signing, or value-moving discovery requires a verified target resource.
+
+Output records target and network, ownership state, discovery snapshot, normalized origin, SEP-1 digest, redirects, address-policy result, capabilities, retrieval time, and infrastructure diagnostics. DNS, TLS, network-policy, size, or parser failure remains indeterminate, not conformance failure.
+
+## Scenario validation
+
+Intended form:
+
+```text
+rampspec scenario validate <scenario-file> --output json
+```
+
+Validation parses one safe YAML document, applies the exact generated schema, resolves only pinned actions and fixtures, checks typed references, dependencies, matrices, capabilities, limits, cleanup, secrets, destinations, and policy, then returns diagnostics and a canonical source digest. It performs no target call and resolves no secret value.
+
+A validation result does not create a suite lock. Use the exact schema and catalog versions from the release manifest; an unknown action, remote schema reference, arbitrary command, raw destination, embedded credential, or unbounded construct fails.
+
+## Suite locking and inspection
+
+`suite lock` resolves a suite version, scenarios, parameters, target snapshot, standards and rule packs, generated schemas, runner image and capabilities, fixtures, policy, and release compatibility into immutable canonical bytes and a digest. The command requires exact resource IDs or versions and an explicit output file.
+
+`suite inspect` verifies the lock schema and digest and renders every input, expanded case, skip condition, side effect, amount/fee limit, destination class, secret handle, artifact class, and cleanup obligation. It never resolves secret values. Re-locking identical inputs must produce the same digest.
+
+## Starting a run
+
+Intended form:
+
+```text
+rampspec run start --target <target-id> --lock <suite-lock-file> --wait --output json
+```
+
+The command verifies the lock, target ownership, release compatibility, runner eligibility, credentials, policy, and idempotency key before requesting a run. A caller-provided idempotency key represents one logical run and is reused only with byte-identical inputs.
+
+Without `--wait`, return the accepted run ID and initial state. With `--wait`, reconnect to the same run through event cursors and finish only at a documented terminal state: completed, failed, indeterminate, policy blocked, cancelled, or cleanup failed. A lost stream cannot create another run.
+
+Automation sets an explicit overall deadline. If local waiting times out, query `run status` before cancellation or retry; the remote workflow may still be active.
+
+## Status and event replay
+
+`run status` returns authoritative durable state, suite-lock and release identities, timestamps, runner class, current step summary, gate when known, and cleanup status. It does not expose raw traffic or secrets.
+
+`run events` resumes from a provided event ID, handles heartbeat records, de-duplicates event IDs, and stops when history expires or a terminal event is seen. Event history is an observation channel; after a gap, use durable status and the canonical report.
+
+Machine consumers validate every event schema and tolerate only documented additive fields. An unknown event type is recorded and prompts state reconciliation rather than being executed.
+
+## Cancellation
+
+Intended form:
+
+```text
+rampspec run cancel --run <run-id> --reason <safe-reason-code> --wait
+```
+
+Cancellation is an authenticated idempotent request, not an immediate claim that work stopped. The workflow stops new side effects, signals active work, reconciles unknown outcomes, runs compensations, revokes job credentials, expires callbacks, removes ephemeral state, and produces cleanup evidence.
+
+With `--wait`, finish only when the run reaches cancelled, cleanup failed, or another already-terminal state. Repeated cancellation returns the same outcome. A cancellation denied by policy, delivered after completion, or unable to reach a local runner has a distinct machine result.
+
+Interactive interruption asks before sending cancellation unless a non-interactive automation flag defines behavior. Terminating the CLI process without a cancellation request only stops observation.
+
+## Report download and verification
+
+`report download` writes canonical JSON plus explicitly selected detached verification material. Derived HTML, PDF, JUnit, and SARIF outputs use separate filenames and never replace the canonical report. The command verifies transport size/digest and will not overwrite an existing path unless the released safe option is explicit.
+
+Intended offline verification form:
+
+```text
+rampspec report verify <report-file> --manifest <release-manifest> --offline --output json
+```
+
+Verification applies the report schema, RFC 8785 canonicalization, SHA-256, signature-field exclusion, Ed25519 trust and validity, suite-lock and release compatibility, artifact digests, count/gate recomputation, and exception policy. Offline mode makes no network request.
+
+Valid, tampered, unknown-key, incompatible, incomplete-artifact, and invalid-schema outcomes remain distinct. A cryptographically valid report is not automatically a passing gate or certification.
+
+## CI policy gate
+
+Intended form:
+
+```text
+rampspec ci gate --report <verified-report-file> --policy <policy-id> --output json
+```
+
+The gate first verifies the report or requires a verifier receipt bound to its digest. It evaluates exact severity and classification thresholds, draft policy, skipped required coverage, indeterminate state, exceptions, cleanup, baseline compatibility, and regressions. Numeric score never overrides a blocking finding.
+
+Machine output includes gate decision, report and policy digests, baseline identity, blocking finding IDs, coverage decision, cleanup decision, and semantic exit category. The CI service account cannot approve baselines, exceptions, targets, suites, or policies.
+
+Use the [CI gate quickstart](../guides/ci-gate) for the end-to-end control boundary.
+
+## Evidence operations
+
+Evidence commands are unavailable until the contracts repository releases generated specs, operator tooling, and verified deployment manifests.
+
+`evidence publish` is intended to accept a locally verified canonical report and manifest, show the exact compact commitment and target network, simulate the Soroban invocation, obtain separate signer approval, submit once, and return transaction hash, ledger, contract ID, method, report digest, and emitted event. It never uploads the report or accepts a report-signing key as the contract signer.
+
+`evidence status` reads a known deployment and reports present, superseded, revoked, or absent state at a verified code hash. `evidence verify` compares a report and its release/suite material with the on-chain commitment and returns an integrity decision with disclaimers.
+
+Unknown network, manifest, contract ID, code hash, method, signer, sequence, simulation, or submission outcome fails closed. An unknown submission is reconciled by transaction hash and source sequence before any retry.
+
+## Runner commands
+
+Runner commands operate on customer-hosted service state and require the [local runner](../operations/runners/local-runner) release.
+
+- `runner register` consumes a one-time token through a protected input and creates local mutual-TLS identity.
+- `runner start` validates config and identity, opens the outbound lease channel, and stays foregrounded unless installed through documented service-manager tooling.
+- `runner status` reports redacted local health, version, identity expiry, capabilities, leases, cleanup backlog, and control-plane reachability.
+- `runner rotate-credential` generates and activates a new identity before retiring the old one.
+- `runner revoke` requests control-plane revocation by exact runner ID and guides local cleanup; it is not a substitute for an owner revoking a compromised unreachable host.
+
+Registration tokens and private keys never appear in command arguments or output. Exact protected-input mechanisms and service commands are platform-specific release data.
+
+## PowerShell automation
+
+{/* example: examples/cli/powershell-gate.planned.ps1 */}
+
+The stored [planned PowerShell example](/examples/cli/powershell-gate.planned.ps1) uses separate statements, explicit files, JSON output, semantic verification, and a `try/finally` cleanup boundary. It contains placeholders and is not executable.
+
+On Windows, use PowerShell's native argument arrays and literal paths. Do not build a command string with secrets, use shell tracing around authentication, or collapse every nonzero exit into conformance failure. Capture `$LASTEXITCODE` immediately after each CLI invocation.
+
+## POSIX automation
+
+{/* example: examples/cli/posix-gate.planned.sh */}
+
+The stored [planned POSIX example](/examples/cli/posix-gate.planned.sh) uses quoted variables, a temporary directory, a cleanup trap, JSON output, and distinct run/verify/gate results. It contains placeholders and is not executable.
+
+Use an argument array where the shell supports it, disable command tracing around credentials, quote every path and ID, and avoid parsing human output. Signal handling must not accidentally start a second run or skip cleanup.
+
+## Semantic exit categories
+
+The tagged CLI must assign a unique stable integer to every category. Numbers remain unassigned here to avoid creating an accidental contract.
+
+| Category               | Meaning and automation response                                                   |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| Success                | Requested operation and required verification or gate succeeded.                  |
+| Conformance failure    | A verified run contains blocking target-rule findings.                            |
+| Policy block           | Policy denied or stopped work; do not blame target conformance.                   |
+| Invalid configuration  | Local inputs, config, schema, references, or compatibility are invalid.           |
+| Infrastructure failure | Platform, runner, target reachability, provider, or storage prevented completion. |
+| Authentication failure | Identity missing, expired, invalid, or unavailable; inspect and rotate safely.    |
+| Authorization failure  | Authenticated identity lacks the exact operation or resource scope.               |
+| Integrity failure      | Digest, signature, key, manifest, schema, code hash, or artifact check failed.    |
+| Cancellation           | Operation reached the documented cancelled outcome.                               |
+| Cleanup failure        | Primary work stopped, but required cleanup is not proven complete.                |
+
+An indeterminate report uses the released infrastructure or distinct indeterminate mapping; the final command manifest must remove any ambiguity. Wrappers preserve the numeric value and machine result rather than remapping all nonzero codes.
+
+## Troubleshooting
+
+| Symptom                                | Inspect                                                              | Safe response                                                      |
+| -------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Command absent or option rejected      | CLI version, command-manifest digest, selected docs version.         | Use a compatible release; do not guess aliases.                    |
+| Config differs across machines         | Effective redacted source map, profile, config location, defaults.   | Pin profile/config and remove ambient overrides.                   |
+| Authentication repeats indefinitely    | Issuer, audience, clock, credential store, token scope and expiry.   | Stop after bounded refresh; reauthenticate or rotate.              |
+| Discovery reports private destination  | Target canonicalization, ownership, DNS and runner mode.             | Use an authorized local runner; never weaken public egress policy. |
+| Scenario validates but cannot lock     | Catalogs, fixtures, target capability, policy and release versions.  | Resolve the incompatibility; validation alone is insufficient.     |
+| Wait disconnects                       | Run ID, idempotency key, last event ID, durable status.              | Reattach to the existing run; do not start another.                |
+| Cancellation appears stuck             | Active side effect, runner connectivity, reconciliation and cleanup. | Escalate cleanup; do not mark cancellation complete early.         |
+| Report verification fails              | Exact bytes, schema, manifest, lock, artifacts, key set and time.    | Quarantine and reject; never bypass verification.                  |
+| Gate differs from dashboard score      | Policy digest, baseline, findings, skipped rules and exceptions.     | Trust verified rule-based gate, not score alone.                   |
+| Runner shows healthy but gets no lease | Binding, version, capabilities, policy, target and available quota.  | Fix eligibility; do not broaden identity or allowlists blindly.    |
+| Output parser breaks                   | Machine mode, result schema and CLI major.                           | Parse only released JSON schema; never scrape human output.        |
+
+Use diagnostic verbosity only in a controlled environment. It cannot include secrets, raw customer data, private keys, unredacted traffic, internal target addresses, or upload capabilities.
+
+## Help-drift and example gate
+
+A CLI release is documentable only when CI:
+
+1. downloads the tagged binary/package and verifies its digest and signature;
+2. imports the machine-readable command manifest and verifies provenance;
+3. regenerates this command reference and proves a clean working tree;
+4. snapshots root and every subcommand's human and machine help;
+5. validates config and output schemas and unique numeric exit assignments;
+6. runs PowerShell examples on supported Windows and POSIX examples on each supported shell;
+7. exercises login, discover, validate, lock, run, reconnect, cancel, download, verify, gate, evidence, and runner cases available in that release;
+8. asserts no secret appears in output, logs, process arguments, config, or artifacts;
+9. tests all semantic exits and representative invalid options;
+10. records the binary, command-manifest, example, report, and cleanup digests.
+
+The current build can verify page structure, stored-example presence, spelling, links, and rendering only. Since the CLI artifact is absent, help drift and executable examples cannot run and the page remains Planned.

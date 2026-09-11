@@ -85,7 +85,8 @@
               "reference/terminology",
               "reference/release-manifest",
               "reference/schemas",
-              "reference/scenario-language"
+              "reference/scenario-language",
+              "reference/cli"
             ]
           },
           {
