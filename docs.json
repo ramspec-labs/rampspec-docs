@@ -163,7 +163,8 @@
             "group": "Runner Operations",
             "pages": [
               "operations/runners/public-runner",
-              "operations/runners/local-runner"
+              "operations/runners/local-runner",
+              "operations/runners/local-security"
             ]
           },
           {

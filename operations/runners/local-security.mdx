@@ -1,0 +1,287 @@
+---
+title: "Local secrets and offline operation"
+description: "Keep secret values and raw traffic local with provider handles, Vault-backed resolution, intent-bound signing, local redaction, encrypted upload, and air-gapped bundles."
+keywords:
+  [
+    "secret provider",
+    "Vault",
+    "local signing",
+    "redaction",
+    "air-gapped",
+    "offline runner",
+  ]
+---
+
+The local runner separates orchestration metadata from sensitive execution data. The control plane can identify an approved secret reference, signing capability, redaction profile, and evidence digest without receiving the resolved secret, private key, full customer record, or raw traffic.
+
+<Warning>
+  The provider interface, Vault adapter, local signer, encrypted artifact
+  format, and offline bundle format have not been released. This guide is
+  **Planned** and its examples are contracts for future tagged components, not
+  working configuration.
+</Warning>
+
+## Data boundary
+
+The following values stay inside the local environment:
+
+- resolved target credentials, API keys, bearer tokens, cookies, and sessions;
+- Stellar secret seeds, hardware-key handles, and signing authorization data;
+- complete SEP-9 and SEP-12 fixture fields and uploaded document bytes;
+- private target origins, internal addresses, provider endpoints, and full financial destinations;
+- raw HTTP bodies, browser profiles, traces from sensitive steps, memory, and process state;
+- encryption keys for local recovery data and organization-private artifacts.
+
+The control plane may receive stable reference IDs, provider type and health, scope and rotation metadata, non-sensitive target IDs, field classifications, redaction decisions, canonical hashes, approved structured observations, encrypted object metadata, and cleanup outcomes. An organization policy can narrow that upload set further.
+
+Transport encryption is required but does not redefine this boundary. A value forbidden from leaving the runner cannot be sent merely because the channel uses TLS or the payload is encrypted to a platform key.
+
+## Provider roles
+
+Keep four interfaces distinct:
+
+| Provider           | Purpose                                                              | Returns to action engine                        |
+| ------------------ | -------------------------------------------------------------------- | ----------------------------------------------- |
+| Secret provider    | Resolve an approved opaque handle just in time.                      | Sensitive bytes plus expiry, never through API. |
+| Signing provider   | Validate a typed intent and perform an allowed signature.            | Signature or signed envelope plus audit data.   |
+| Redaction provider | Classify and transform evidence before disk or upload.               | Sanitized value, labels, digest, decision.      |
+| Key provider       | Encrypt recovery/artifact keys and verify offline bundle identities. | Wrapped keys or cryptographic operation result. |
+
+One implementation can back several interfaces, but authorization and audit remain separate. A generic secret read must not imply transaction signing, and signing authority must not imply decryption or artifact access.
+
+## Secret-provider contract
+
+A scenario supplies a `secret-ref`, never a value or provider path. The suite lock resolves it to metadata containing organization, project, target, provider instance, purpose, permitted action and input, network, expiry, rotation state, and an opaque external-key fingerprint.
+
+The runner asks the local adapter to resolve the handle for one job, step, and typed purpose. The adapter must:
+
+1. authenticate the runner workload locally;
+2. validate organization, project, target, runner, job, action, input, network, and expiry;
+3. map the opaque reference to a provider path without accepting caller path fragments;
+4. request only the required field and version;
+5. return it through protected process memory with sensitivity metadata;
+6. register the value and safe encodings with the redactor before use;
+7. expire or revoke any dynamic credential after the step or job;
+8. emit a value-free audit result.
+
+The interface exposes health, metadata, resolve, renew when supported, revoke, and rotation-status operations. It never exposes list-all paths, unrestricted read, raw provider responses, previous values, secret length in public telemetry, or a “show value” API.
+
+Resolution fails closed for an unknown handle, changed scope, unhealthy provider, stale version, expired lease, revoked rotation, missing redactor, policy mismatch, or unapproved action input. The runner must not ask the control plane for a fallback value.
+
+## Handle lifecycle
+
+Create a reference by recording metadata and a proof that the local provider mapping exists; do not send the mapped path or value to the control plane when policy marks it private. Rotation creates a new external version under the same logical purpose, validates it with a non-destructive check, moves the reference's active-version metadata, drains old users, and revokes the old version.
+
+Deletion disables future resolution first, waits for active leases to finish or be cancelled, revokes dynamic credentials, removes the provider mapping according to local policy, and retains only required audit metadata. A deleted reference cannot be recreated with the same immutable identifier.
+
+Access events record actor or workload, reference fingerprint, purpose, action, target, outcome, provider response class, issue and expiry times, and rotation version. They exclude value, provider token, full provider path, response body, and sensitive target details.
+
+## Vault-backed reference pattern
+
+Use a dedicated Vault namespace or equivalent administrative boundary for RampSpec test credentials. The runner authenticates from its local workload identity to a narrowly scoped role. That role can reach only approved test paths or dynamic-credential roles and cannot enumerate unrelated mounts, change policy, read root material, or create longer-lived child credentials.
+
+The planned adapter configuration contains references, not credentials:
+
+```yaml
+provider:
+  kind: vault
+  instance: <local-provider-id>
+  origin: <local-vault-origin-reference>
+  trustBundle: <approved-ca-reference>
+  authentication: <workload-auth-reference>
+  namespace: <runner-namespace-reference>
+  defaultLease: <bounded-duration>
+  renewalWindow: <bounded-duration>
+  auditSink: <local-audit-reference>
+```
+
+Exact keys belong to the future generated provider schema. The Vault address, namespace, authentication role, and secret paths can remain local metadata. Bootstrap credentials enter through a protected service-manager credential facility or hardware-backed identity, not the configuration file or environment shared with jobs.
+
+Map each RampSpec reference to one exact secret version or dynamic role. Prefer dynamic, short-lived target credentials when the integration supports them. For stored secrets, pin the requested version during a job so rotation cannot change behavior mid-step. The adapter verifies lease duration, renewability, revocation support, response shape, and sensitivity before releasing bytes.
+
+Provider outage before resolution makes the job ineligible or indeterminate. Outage after a dynamic credential is issued starts bounded renewal or safe stop; it never turns an expired credential into implicitly valid access. Recovery verifies lease state before another attempt.
+
+### Vault policy review
+
+The local administrator must review the effective policy and prove:
+
+- authentication is bound to the intended runner identity and environment;
+- capabilities are limited to the exact test paths, versions, and lease operations;
+- no wildcard crosses organizations, projects, targets, networks, or purposes;
+- response wrapping or an equivalent single-consumer channel is used when available;
+- audit logging is enabled and protected from the runner service account;
+- server certificates and trusted authorities are pinned by local policy;
+- token and secret leases have bounded lifetime and reliable revocation;
+- backup, recovery, seal, and administrative roles remain outside the runner.
+
+Never include real Vault paths, tokens, namespaces, or policy output in a public report or support bundle.
+
+## Local signing
+
+Signing providers expose typed operations, not private-key reads. A Stellar signing request contains network passphrase, source account, sequence, time bounds, fee, operation count and types, destinations, assets and issuers, amounts, memos, Soroban contract and method when relevant, authorization entries, scenario and step IDs, maximum policy, and canonical intent digest.
+
+The runner constructs or receives the candidate envelope, parses it independently, simulates when required, compares every field with the suite lock and latest target instructions, and asks the signer to authorize that exact digest. The provider repeats its own policy checks before signing.
+
+The result includes public-key fingerprint, signature or signed-envelope digest, provider operation ID, policy decision, and time. It excludes the private key and internal authorization factors. A signature cannot be reused across network passphrases, modified envelopes, later sequence numbers, another target, or a different step.
+
+For hardware or remote local signers, mutually authenticate the provider connection and bind it to the runner host or workload. Operator approval, when configured, displays the full human-readable intent and expires. Blind-sign and arbitrary-byte operations are forbidden for value-moving actions.
+
+Pubnet signing remains unavailable unless a released organization policy explicitly enables reviewed accounts, assets, issuers, destinations, methods, operation and run caps, daily limits, simulation, approval, and kill switch. Losing control-plane connectivity never grants offline pubnet authority.
+
+## Classification before capture
+
+Every input, output, header, cookie, query field, form field, file, screenshot, trace, ledger value, provider value, and derived value has a data class before an action executes:
+
+| Class      | Local handling                                                        | Upload default                   |
+| ---------- | --------------------------------------------------------------------- | -------------------------------- |
+| Public     | Canonicalize and hash.                                                | Allowed by evidence profile.     |
+| Internal   | Encrypt locally; include only required structured fields.             | Metadata or approved fields.     |
+| Sensitive  | Strict redaction and short retention; encrypt raw source if retained. | Denied unless explicitly listed. |
+| Secret     | Memory-only where possible; register variants with redactor.          | Always denied.                   |
+| Prohibited | Stop capture, quarantine safely, and trigger incident workflow.       | Always denied.                   |
+
+Unclassified data defaults to Sensitive, and an unknown schema defaults to deny. Classification comes from schema fields, action definitions, content inspection, target policy, and source context; a server-provided label cannot downgrade it.
+
+## Local redaction pipeline
+
+Redaction occurs before application logs, workflow events, crash reports, browser artifacts, local evidence files, or upload. Structured parsing takes precedence over text replacement:
+
+1. enforce input and response size and media-type limits;
+2. parse with duplicate-key and depth protection;
+3. apply schema field classifications and allowlisted extraction;
+4. remove authorization, cookies, secret references, identity fields, financial destinations, and private origins;
+5. replace approved identifiers with stable run-scoped fingerprints;
+6. scan free text and binary metadata for known secret variants and prohibited data;
+7. canonicalize the sanitized artifact and compute its digest;
+8. validate the result against the evidence schema and upload manifest;
+9. record redaction-policy version, transformations, and outcome.
+
+The runner registers exact secret bytes and common safe encodings only inside the redactor's protected memory. It must handle header casing, URL encoding, JSON escaping, base64 forms, multiline values, archive entries, image metadata, nested exceptions, and secrets split across structured fields. Hashing a low-entropy value without a keyed, run-scoped transform is not sufficient redaction.
+
+Screenshots, video, PDF, and browser traces are disabled on sensitive steps unless a specific artifact policy allows capture. Allowed images undergo text and metadata detection, deterministic masks, and human review rules without sending the unredacted source to an external service.
+
+If redaction fails, the artifact is quarantined locally in encrypted form, upload is denied, the run becomes cleanup failed or indeterminate according to impact, and the privacy incident process starts. There is no “upload raw for debugging” override.
+
+## Local logs and diagnostics
+
+Use structured, allowlisted logs with event IDs, component and release, job and step fingerprints, state, duration, result class, and non-sensitive error code. Do not log request or response bodies, environment dumps, command lines with provider inputs, stack variables, target query strings, customer fields, full private origins, tokens, or secret paths.
+
+Debug mode changes verbosity only for allowlisted metadata and expires automatically. Support bundles are generated through a dedicated sanitizer, show their file inventory and digests to the operator, and require approval before transfer. A process memory dump is never a support artifact.
+
+## Encrypted artifact upload
+
+The control plane sends a signed upload manifest listing allowed artifact IDs, schemas, data classes, sizes, retention, and recipient key references. The runner redacts first, creates a random data key locally, encrypts each protected artifact with authenticated encryption and bound metadata, wraps the data key to the approved recipient key, and uploads through a one-job write-only channel.
+
+Bound metadata includes organization, project, run, artifact ID, schema, release, redaction profile, plaintext digest, ciphertext digest, size, and retention class. The storage service cannot accept an unlisted key, overwrite, read, list, or extend retention with the upload credential.
+
+Public or internal structured results may be uploaded in plaintext only when the evidence profile explicitly permits it and transport remains encrypted. Secret and Prohibited classes are never uploaded. Sensitive raw artifacts may be encrypted to an organization-controlled key so the platform can retain ciphertext and metadata without decrypting content.
+
+On receipt, verify ciphertext digest and manifest binding before acknowledgement. The runner retains encrypted retry state until acknowledgement or a bounded deadline, then records deletion or a recovery reference. Upload URLs and workload credentials are secret and never appear in artifacts.
+
+## Air-gapped execution model
+
+Air-gapped mode transfers signed immutable bundles through an operator-controlled medium. It does not create a hidden network tunnel or general offline authorization.
+
+### Prepare an offline job bundle
+
+On a connected trusted workstation, select compatible release artifacts and an already authorized target profile. Export a bundle containing:
+
+- format version, unique job ID, organization and project IDs;
+- target, network, scenario, suite lock, rule packs, schemas, catalogs, and release manifest;
+- runner compatibility and required capabilities;
+- effective policy, value/fee/duration caps, and artifact manifest;
+- allowed local provider-reference fingerprints, never resolved values;
+- issue time, expiry, single-use nonce, issuer, recipient runner identity;
+- digest inventory and control-plane signature.
+
+The bundle contains no control-plane session, registration token, target credential, customer fixture, private key, or unrestricted destination. Encrypt sensitive target metadata to the registered offline runner when needed.
+
+### Import inside the gap
+
+Move the bundle using approved media with malware scanning and chain-of-custody records. The offline runner verifies outer encryption, issuer signature, full digest inventory, recipient identity, expiry, nonce reuse, release compatibility, schemas, catalogs, local policy, target binding, required providers, limits, and available cleanup capacity before showing the exact plan for operator approval.
+
+Import is atomic and append-only. A rejected or expired bundle cannot be edited locally into validity. The runner records used nonces in durable protected storage so restoring a snapshot cannot silently replay a value-moving job.
+
+### Execute and export evidence
+
+The job uses only approved local targets, Stellar services, providers, and fixture systems reachable inside the environment. If a required external dependency is unavailable, the affected assertion is skipped or indeterminate according to the lock; it is not replaced with unpinned data.
+
+After execution and cleanup, create an offline evidence bundle containing canonical redacted report, suite lock and release manifest, approved evidence, artifact digest inventory, local runner and provider fingerprints, policy and redaction versions, timestamps, terminal state, cleanup proof, and unresolved recovery references. Sign it with the registered runner evidence key and encrypt it to named import recipients.
+
+Raw secrets and prohibited data remain excluded. Organization-private raw evidence can be placed in a separately encrypted local archive whose digest appears in the report without transferring the archive.
+
+### Import to the control plane
+
+On a connected trusted workstation, scan the medium, verify encryption recipient, runner identity and revocation-at-execution status, signatures, canonical report hash, artifact digests, job ID and nonce, release compatibility, target authorization, execution window, policy, and cleanup result. Reject duplicates, partial bundles, modified manifests, unknown keys, expired jobs, and evidence from a different runner.
+
+The import creates a new audit event and marks the report as offline-runner evidence. It does not claim the control plane observed live execution. Any Soroban commitment is a later, separately authorized action over the verified canonical report hash.
+
+## Offline identity and time
+
+An offline runner has a distinct evidence-signing identity with bounded validity and published rotation history. It does not reuse the online mutual-TLS private key for bundle signing. The control plane records permitted offline window, capability and target bindings, and revocation status before export.
+
+Use a protected synchronized clock and record source, offset estimate, and monotonic execution durations. If wall-clock trust is outside policy, do not execute time-sensitive tokens, quotes, certificates, or value-moving cases. Import exposes the time-confidence result.
+
+Revocation cannot reach a disconnected runner immediately. Therefore offline authorization is short-lived, single-use, target-specific, value-capped, and denied for operations whose risk requires online cancellation. Operators must distribute emergency revocation lists through the same controlled media before importing new jobs.
+
+## Backup and restore
+
+Back up only state required to preserve identity, replay protection, recovery, and audit continuity:
+
+- runner and offline evidence public identity metadata;
+- encrypted private identity or hardware-key recovery reference;
+- trusted issuer and recipient keys with rotation history;
+- validated non-secret config and policy digests;
+- provider mappings as encrypted local metadata, not secret values when provider backup owns them;
+- used offline nonces and imported-job ledger;
+- encrypted unresolved cleanup and upload recovery records;
+- local audit events and evidence indexes required by retention policy.
+
+Secret values remain under the provider's own backup and disaster-recovery process. Do not duplicate Vault contents into runner backups. Backup encryption keys reside in an independent approved key provider, with separated backup and restore roles.
+
+Test restore onto a clean replacement host: verify artifact and config compatibility, recover identity without duplication, fence the old host, restore nonce history, reconnect or validate offline trust, resume cleanup, and prove previous secrets are not exposed. A restored runner stays drained until an owner confirms binding and old identity state.
+
+Backup media is inventoried, encrypted, access-controlled, retention-limited, and destruction-verified. Failed restore or missing replay history blocks offline and value-moving work.
+
+## Unsupported and restricted behavior
+
+| Behavior                             | Local connected mode                         | Air-gapped mode                                   |
+| ------------------------------------ | -------------------------------------------- | ------------------------------------------------- |
+| Dynamic scheduling                   | Available only after released lease channel. | Unsupported; signed imported jobs only.           |
+| Live dashboard and event stream      | Redacted events only.                        | Unavailable until verified evidence import.       |
+| Internet callback receiver           | Only through an approved local integration.  | Unsupported unless entirely inside the gap.       |
+| Dynamic cloud credentials            | Allowed only through a local provider.       | Only if the provider operates inside the gap.     |
+| Control-plane cancellation           | Supported through outbound connection.       | Unsupported; local operator kill switch required. |
+| Automatic release or key refresh     | Signed metadata under operator policy.       | Unsupported; import a new verified bundle.        |
+| General browser or HTTP destinations | Forbidden outside target/service allowlists. | Forbidden outside the imported/local allowlists.  |
+| Pubnet value movement                | Disabled without explicit released policy.   | Unsupported by default and may remain prohibited. |
+| Raw-traffic upload                   | Denied unless encrypted to organization key. | Keep local; transfer only under separate policy.  |
+| Secret recovery from control plane   | Unsupported.                                 | Unsupported.                                      |
+
+Offline mode cannot prove live control-plane observation, immediate revocation, current external service state, or current key status beyond the imported trust material. Reports must disclose those limitations.
+
+## No-secret-egress acceptance test
+
+Use synthetic marker values unique to the test for target credentials, bearer tokens, cookies, Stellar seeds, SEP-9 fields, provider paths, private origins, and financial destinations. Register their raw, encoded, escaped, split-field, and case-relevant variants with an independent capture oracle.
+
+Run provider health and resolution, authentication, signed testnet intent, customer submission, browser flow with a sensitive step, a failed request, debug logging, artifact upload, cancellation, cleanup failure and recovery, offline export, and support-bundle generation. Capture runner outbound traffic, uploaded objects, control-plane records, logs, metrics, traces, crash output, process arguments, workspace remnants, and transferred offline bundle.
+
+Acceptance requires:
+
+- zero marker value or recoverable variant outside the intended local action boundary;
+- zero secret value in control-plane APIs, events, reports, artifacts, logs, metrics, traces, config, or process arguments;
+- only reference and provider fingerprints in permitted metadata;
+- locally redacted structured evidence matching its schema and profile;
+- encrypted uploads bound to approved artifact and recipient keys;
+- an offline evidence bundle containing only allowlisted redacted content;
+- provider leases, credentials, workspaces, browser profiles, and callback state revoked or deleted;
+- deterministic findings for every seeded redaction escape;
+- incident and quarantine behavior when the redactor is deliberately failed.
+
+Run the capture twice, including after identity and secret rotation, and compare normalized evidence digests. Human inspection supplements but does not replace automated marker scanning.
+
+## Release gate
+
+Runnable publication requires tagged provider and local-runner releases, generated schemas, cryptographic format specifications, compatibility manifest, independently reviewed Vault policy, redaction corpus, upload and offline bundle verifiers, backup/restore procedure, and the complete no-secret-egress record.
+
+None exists yet, so the exit check cannot currently be satisfied. Product surfaces must show provider, Vault, signing, encrypted raw evidence, and offline capabilities as Planned and must not substitute environment variables, plaintext files, platform-readable secrets, or unverified archives.
