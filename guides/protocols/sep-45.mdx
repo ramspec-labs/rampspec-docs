@@ -1,0 +1,168 @@
+---
+title: "SEP-45 contract-account authentication"
+description: "Test draft SEP-45 authorization entries, contract invocation, simulation footprint, signatures, nonce, and token behavior."
+keywords:
+  [
+    "SEP-45",
+    "contract authentication",
+    "authorization entries",
+    "web_auth_verify",
+    "Soroban",
+  ]
+---
+
+SEP-45 authenticates a Stellar contract account with Soroban authorization entries and a Web Authentication Contract. Every result must retain the draft version and source commit because the protocol can change incompatibly.
+
+<Warning>
+  SEP-45 is Draft upstream at version 0.1.1 in the pinned snapshot. RampSpec has
+  no released SEP-45 adapter, fixture contract, WASM, deployment, or rule pack.
+  All coverage on this page is **Planned** and non-blocking by default.
+</Warning>
+
+## Pinned source and discovery
+
+The normative source is [SEP-45 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0045.md#authentication-endpoint). The [standards baseline](/reference/standards-baseline) records the source digest and draft status.
+
+From the selected Home Domain's pinned SEP-1 response, discover and bind:
+
+- `WEB_AUTH_FOR_CONTRACTS_ENDPOINT` as the authentication endpoint;
+- `WEB_AUTH_CONTRACT_ID` as the exact Web Authentication Contract;
+- `SIGNING_KEY` as the classic Server Account;
+- the Home Domain and Web Auth Domain relationship;
+- optional client-domain support and its discovered classic signing account;
+- Stellar network passphrase, RPC origin, protocol version, and latest ledger.
+
+The target policy must approve every origin and contract before contact. A changed contract ID, signing key, network, or draft version invalidates the suite lock.
+
+## Roles and supported accounts
+
+| Role                        | Address form and responsibility                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------- |
+| Client Account              | `C...` contract account whose `__check_auth` behavior decides client authorization.               |
+| Server Account              | `G...` signing key advertised by the Home Domain and required by the Web Authentication Contract. |
+| Client Domain Account       | Optional `G...` signing key discovered from the approved client domain.                           |
+| Web Authentication Contract | `C...` contract at the advertised ID implementing `web_auth_verify`.                              |
+
+SEP-45 supports contract accounts. SEP-10 supports classic `G...` and muxed `M...` accounts. Test the two protocols side by side only when both are advertised; never send one protocol's challenge format to the other endpoint or claim equivalent authorization semantics.
+
+## Safe fixture boundary
+
+Use only released test-only contracts on a controlled local network or Stellar testnet deployment. The contracts release must publish source commit, interface/spec digest, WASM digest, deployment transaction, network passphrase, contract IDs, constructor inputs, and verification result as described in [Contract documentation](/contracts/overview).
+
+Fixture contracts exercise explicit `__check_auth` policies without holding production assets. Signers and policy-wallet inputs are generated per run. No authorization entry is signed before structural validation, and no transaction is submitted; the client simulates the exact proposed invocation first.
+
+## Challenge request
+
+Request a challenge for one valid `C...` Client Account and explicit Home Domain. Add `client_domain` only for an approved controlled domain. Record request parameters, endpoint origin, response digest, ledger sequence, network, and fixture contract release.
+
+Test malformed contract addresses, missing or unsupported home domains, unapproved client domains, rate limits, and repeated identical requests. Each successful request must contain a fresh nonce even when every request parameter is identical.
+
+## Decode authorization entries
+
+Decode the returned XDR as the pinned `SorobanAuthorizationEntries` type with strict byte, entry-count, nesting, string, and map limits. Reject trailing data, wrong XDR type, duplicate ambiguous map keys, invalid addresses, and unsupported credential forms.
+
+Each entry must have one root contract-function invocation and no sub-invocations. Across every entry require:
+
+- `contract_address` equals the discovered `WEB_AUTH_CONTRACT_ID`;
+- `function_name` equals `web_auth_verify`;
+- the entire Symbol-to-String argument map is identical;
+- `account` equals the requested Client Account;
+- `home_domain` equals the selected Home Domain;
+- `web_auth_domain` equals the bound server domain;
+- `web_auth_domain_account` equals the Server Account;
+- `nonce` is nonempty, unique for the challenge, and identical across entries;
+- optional `client_domain` and `client_domain_account` appear together and match pinned discovery.
+
+Require one entry for the Server Account with a valid server signature, one for the Client Account, and, when selected, one for the Client Domain Account. Entries may arrive in any order, so compare identities rather than positions.
+
+Reject any altered argument, extra sub-invocation, unexpected contract/function, missing participant, duplicate participant, mismatched nonce, or network mismatch before signing.
+
+## Signatures and policy contracts
+
+The fixture signer authorizes only the exact validated entry under the locked network passphrase and near-future signature-expiration ledger. A Client Account's `__check_auth` may require one signature, multiple signatures, a policy wallet, or no conventional signature, so the expected credential shape comes from the released fixture contract and scenario.
+
+Test successful and rejected fixture policies, missing signatures, wrong signer, modified payload, wrong network, unsupported credential type, insufficient policy approval, expired signature ledger, and excessive expiration. Client-domain signing is separate from Client Account authorization and must match the discovered domain account.
+
+Signing proves only that the fixture contract's selected auth policy accepted this invocation. It does not prove legal identity, account ownership outside the contract logic, custody security, or permission to move assets.
+
+## Simulate and inspect footprint
+
+Construct a transaction containing one Invoke Host Function operation for the advertised Web Authentication Contract and `web_auth_verify`, with the validated arguments and signed authorization entries. Simulate through the pinned RPC without submitting.
+
+Simulation must succeed and the read-write footprint must contain only the allowed authentication state:
+
+- nonce contract data for the Client Account;
+- nonce contract data for the Server Account;
+- optional nonce contract data for the Client Domain Account;
+- optional contract-instance data for the Web Authentication Contract when its archived instance must be restored.
+
+Reject code changes, instance mutation outside the allowed restoration case, persistent/temporary data unrelated to nonce handling, asset balances, trustlines, other contracts, or any unexpected write. Record the RPC ledger, diagnostic-event digest, resource summary, restored keys, and canonical footprint without secrets.
+
+Simulation output is not permission to submit the transaction. RampSpec does not submit the authentication invocation to the ledger.
+
+## Token exchange and replay
+
+Submit the signed entries only to the approved contract-auth endpoint using each encoding required by the pinned draft. The server must repeat contract/function/argument, nonce, participant, signature, and simulation verification before issuing a session JWT.
+
+Test these replay controls together:
+
+1. nonce uniqueness for every challenge;
+2. atomic one-time nonce consumption at token exchange;
+3. rejection of old nonces;
+4. near-future client signature-expiration ledger;
+5. bounded server signature expiration or server-side rejection policy;
+6. no more than one JWT for one challenge.
+
+Also reject malformed XDR, altered maps, mixed challenges, missing entries, duplicated entries, unexpected sub-invocations, wrong contract, failed simulation, archived-state surprises outside the pinned behavior, and concurrent replay.
+
+## Session token checks
+
+Verify the JWT before trusting it. Require the pinned claims: expected issuer URI, exact `C...` subject, reasonable issued-at time, valid expiry, and optional exact `client_domain` only when that proof was performed. Restrict algorithms and keys, reject unknown critical headers and bad claim types, and record only redacted claims and a token digest.
+
+Audience, token identifier, maximum lifetime, and downstream authorization checks are `SECURITY` or `POLICY` unless the pinned draft directly requires them. Never present those failures as normative SEP-45 violations without a source anchor.
+
+## Fixture contract set
+
+A released test fixture bundle must include:
+
+- single-signature contract account;
+- multisignature or threshold policy account;
+- policy-wallet acceptance and rejection cases;
+- account whose `__check_auth` needs no conventional client signature;
+- valid Web Authentication Contract requiring client and server auth;
+- optional client-domain variant;
+- expired signature, replayed nonce, altered args, unexpected sub-invocation, and wrong-network cases;
+- archived Web Authentication Contract instance restoration case for version 0.1.1;
+- malicious contract attempting an unexpected footprint write.
+
+All artifacts are tagged `testOnly`, hash-verified, and deployed only to named fixture networks. The [contract storage reference](/reference/contract-storage) remains the boundary until such a release exists.
+
+## Classic comparison
+
+| Concern         | SEP-10                                                             | SEP-45                                                                     |
+| --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Client account  | Classic or muxed account.                                          | Contract account.                                                          |
+| Challenge       | Stellar transaction with Manage Data operations and sequence zero. | Soroban authorization entries for `web_auth_verify`.                       |
+| Authority       | Ledger signer weights and selected threshold policy.               | Contract `__check_auth` policy.                                            |
+| Replay window   | Transaction time bounds plus one-time challenge behavior.          | Unique nonce plus signature-expiration ledgers and one-time exchange.      |
+| Safety check    | Decode transaction and reject executable or altered structure.     | Decode entries, reject sub-invocations, and constrain simulated footprint. |
+| Session subject | `G...`, `G...:memo`, or `M...`.                                    | Exact `C...` address.                                                      |
+
+Both protocols require domain/key discovery, server proof, network binding, independent JWT validation, bounded fixtures, and secret-free evidence. Passing one never implies passing the other.
+
+## Findings and remediation
+
+| Observation                                                  | Classification                                      | Remediation                                                                   |
+| ------------------------------------------------------------ | --------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Wrong contract/function, altered args, or any sub-invocation | Draft normative rule with critical security impact. | Rebuild the challenge from pinned inputs and reject before signing.           |
+| Missing or invalid server/client/domain authorization        | Draft normative rule.                               | Generate the required entry and satisfy the exact fixture auth policy.        |
+| Unexpected read-write footprint                              | Draft normative and `SECURITY` finding.             | Restrict the invocation and contract behavior to allowed nonce/instance keys. |
+| Reused nonce or excessive signature expiration               | Draft replay-prevention finding.                    | Consume nonces atomically and enforce near-future ledger expiration.          |
+| Token identity or optional domain claim differs              | Draft normative rule where specified.               | Issue claims from the verified challenge participants.                        |
+| Draft changed after the suite was locked                     | Compatibility block, not a target failure.          | Import the new snapshot, update rules/fixtures, and create a new lock.        |
+
+## Exclusions and release gate
+
+This guide does not audit arbitrary wallet contracts, prove production signer security, execute asset movement, validate every downstream JWT authorization, or treat draft coverage as stable certification. Active pubnet testing is excluded.
+
+Coverage becomes locally and testnet checked only when released bindings decode every fixture, expected authorization evidence and footprints match, local and testnet simulations pass, negative cases fail closed, artifact hashes verify, and signed reports retain the draft label. Until then, use [SEP-10 web authentication](./sep-10) only for classic/muxed comparison and do not claim SEP-45 support is implemented.
