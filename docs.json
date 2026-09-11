@@ -196,6 +196,10 @@
             ]
           },
           {
+            "group": "Platform Operations",
+            "pages": ["operations/deployment-and-configuration"]
+          },
+          {
             "group": "Integrations",
             "pages": [
               "guides/integrations/github-ci",

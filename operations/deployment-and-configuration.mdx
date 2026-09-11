@@ -1,0 +1,145 @@
+---
+title: "Deployment and configuration"
+description: "Deploy separated RampSpec control, workflow, worker, runner, storage, cryptographic, network, and telemetry components with validated configuration."
+keywords: ["deployment", "configuration", "Temporal", "PostgreSQL"]
+---
+
+RampSpec uses one modular backend release with separately runnable applications and worker pools. Separation limits privilege and permits independent scaling; it does not create more repositories or allow components to bypass the API, workflow, policy, evidence, or tenant contracts.
+
+<Warning>
+  No backend image, Helm chart, infrastructure module, migration bundle, or
+  deployment release exists. Names, topology, and examples are **Planned** and
+  must not be used as production manifests.
+</Warning>
+
+## Environments
+
+| Environment | Purpose                                             | Data/network policy                                                              |
+| ----------- | --------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Local       | Developer feedback and deterministic fixtures       | Disposable state, fake anchor/local network where needed, no real secrets        |
+| CI          | Pull request and release checks                     | Ephemeral dependencies, local fixtures, separately approved bounded testnet jobs |
+| Development | Integrated team testing                             | Synthetic only, testnet, unstable compatible builds allowed                      |
+| Staging     | Production-like qualification and restore exercises | Synthetic only, testnet, production topology/security classes                    |
+| Production  | Hosted service and approved public evidence         | Tenant data under policy, testnet and tightly controlled pubnet modes            |
+
+Use separate cloud accounts/projects where practical and always separate identity providers/clients, service/workload identities, databases, Temporal namespaces, Redis clusters/key prefixes, buckets, KMS/secrets, runner clusters/pools, DNS hosts/certificates, GitHub Apps/webhook secrets, Stellar fixture accounts, evidence deployments/attestors, telemetry destinations, and encryption contexts for staging and production.
+
+No credential or object is promoted between environments. Release artifacts are promoted by immutable digest after verification. Database migrations move forward under a reviewed path; data does not.
+
+## Topology
+
+| Layer         | Components                                                           | Network and privilege boundary                                                      |
+| ------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Edge          | CDN, frontend origin, API load balancer, WAF, rate limits            | Public TLS; only expected hosts/methods/body sizes; origin access restricted        |
+| Control       | API, scheduler, local-runner gateway                                 | Private service network except explicit endpoints; tenant auth and policy authority |
+| Workflow      | Temporal frontend/service or managed endpoint, workflow workers      | Private mutual TLS; separate namespace/identity per environment                     |
+| Data/cache    | PostgreSQL, Redis                                                    | Private subnets/endpoints, encrypted/authenticated, no runner direct access         |
+| Artifacts     | S3-compatible object storage                                         | Private write/read roles, envelope encryption, lifecycle/object integrity           |
+| Workers       | Protocol, browser, report, evidence, webhook/notification pools      | Distinct identities, queues/task groups, network policies, quotas and scaling       |
+| Runners       | Public runner namespace/cluster; outbound local runners              | No control/data-plane credentials; isolated jobs, signed images, restricted egress  |
+| Cryptography  | KMS and secret manager/Vault                                         | Purpose keys and workload identities; no browser/runner admin access                |
+| Observability | OpenTelemetry collectors, metric/log/trace stores, dashboards/alerts | Privacy filter before export, operator-only administration                          |
+| External      | OIDC, DNS, GitHub, Horizon/RPC, Soroban, targets/recipients          | Explicit allowlists, pinned identities/networks, timeouts/circuit breakers          |
+
+Public ingress terminates at the edge and routes only frontend, `/v1` API, callback, runner-gateway, and integration webhook endpoints to their dedicated listeners. PostgreSQL, Redis, Temporal, KMS, secret manager, object origin, telemetry stores, and runner control surfaces are never public.
+
+## Worker pools
+
+| Pool     | Work                                                               | Required restrictions                                                           |
+| -------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Workflow | Deterministic orchestration and durable state transitions          | No target network or secret-value access; versioned task queues                 |
+| Protocol | SEP requests, state machines, Horizon correlation                  | Per-run destination/credential scope, body/time/value limits                    |
+| Browser  | SEP-24 interactive journeys                                        | Strongest sandbox, fresh profile, no host credentials, controlled downloads     |
+| Report   | Canonical assembly, redaction validation, signing request, exports | Read only finalized evidence; KMS sign purpose only; no target calls            |
+| Evidence | Soroban simulate/sign/submit/lookup                                | Verified deployment allowlist, attestor purpose key, network kill switch        |
+| Webhook  | Incoming verification and outgoing delivery/notifications          | Exact-body/replay controls; recipient SSRF/egress policy; no target credentials |
+
+Queues include environment, tenant, task type, release/compatibility line, and priority. Scaling never allows one pool to consume another pool's task or workload identity. Unknown task/schema versions are rejected or routed to a compatible worker; they are not guessed.
+
+## Runner namespace
+
+Run public jobs in a dedicated cluster or strongly isolated namespace with admission policy, signed image digest allowlist, non-root user, read-only root filesystem, dropped capabilities, no privilege/host network/path/socket, per-job service identity/storage, resource/deadline quotas, default-deny ingress/egress, controlled DNS, and destination-aware egress gateway.
+
+Control-plane services do not run in the runner namespace. Runner nodes and identities cannot reach PostgreSQL, Redis, Temporal administration, KMS, secret manager, object-store administration, cluster API, or another job. Local runners connect outbound through the gateway and retain local secrets.
+
+## PostgreSQL
+
+Use private connectivity, TLS, workload identity or rotated secret, least-privilege roles for API/workers/migration/backup, encryption, high availability, point-in-time recovery, query/connection/time limits, migration lock, and tenant-aware access. Migration identity is not used by runtime pods. Startup checks supported schema range and refuses incompatible old/new versions.
+
+## Temporal
+
+Use a dedicated namespace per environment, mutual TLS identity, encrypted connection, retention sized to supported workflow/report history, versioned task queues, worker build compatibility, search-attribute privacy limits, and restricted administration. Workflow code remains deterministic; external calls occur in bounded idempotent activities.
+
+## Redis
+
+Redis holds only bounded transient state such as rate limits, idempotency windows, caches, and stream cursors. Use private TLS/auth, environment/tenant/scope key prefixes, maximum TTL/memory/eviction policy, command restrictions, and no secrets or authoritative reports. Redis loss can reduce availability but cannot change durable report/run truth.
+
+## Object storage
+
+Separate buckets or access points by environment and class. Enforce TLS, block public access by default, versioning/object-lock option, KMS envelope encryption, content digests, object ownership, lifecycle/retention/legal hold, size/type limits, malware/prohibited-data scanning, access logs, and cross-region replication for required evidence. Workers receive object-specific short-lived operations.
+
+## KMS and secrets
+
+Separate report-signing, envelope, webhook/App, runner, evidence-attestor, and contract-admin purposes. Policies bind environment, service identity, operation, key/version, algorithm, context, and rate. Secret values enter through write-only provider paths and are never rendered as configuration diagnostics.
+
+Startup receives secret references or mounted provider handles. It must not resolve unused secrets. Rotation status, not values, is observable. Missing, wrong-purpose, disabled, cross-environment, or unauthorized keys stop the affected component.
+
+## DNS, TLS, and public hosts
+
+Use distinct reviewed hosts for app, API, docs, target callbacks, GitHub/incoming webhooks, local-runner gateway, public evidence, and status page. Pin ownership, DNS provider/project, TLS issuer, certificate/renewal owner, CAA and HTTP Strict Transport Security policy, WAF/origin routing, health checks, cache behavior, and incident failover.
+
+Callbacks/webhooks use dedicated origins and exact paths; they do not share broad browser session cookies. The status page remains independently reachable during control-plane outages. Private service discovery never resolves through a public target-controlled domain.
+
+## Configuration loading
+
+Configuration precedence is deterministic: release defaults, mounted non-secret configuration, secret-provider references/handles, then narrowly documented process overrides for local/CI only. Production does not use committed `.env` files or ad hoc shell values.
+
+At startup, validate exact schema/version, required/unknown/conflicting/deprecated fields, types/ranges, HTTPS origins, network/passphrase pairs, host uniqueness, environment consistency, object/KMS/identity ownership, worker/task compatibility, size/time/rate bounds, feature gates, and release manifest. Emit only field names and safe error codes. Any security-significant mismatch fails closed before readiness.
+
+{/* example: examples/deployment/configuration.planned.json */}
+
+The stored [planned configuration fixture](/examples/deployment/configuration.planned.json) contains all groups and placeholders, never credentials. The backend release must provide the authoritative schema, generated reference, and validation command.
+
+## Configuration groups
+
+| Prefix              | Required concerns                                                                       | Secret boundary                                         |
+| ------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `APP_*`             | Environment/release, public origins, trusted proxy/hosts, feature and maintenance gates | No secret; browser receives only reviewed public subset |
+| `DATABASE_*`        | Host/port/database/TLS, pool/timeouts, schema compatibility, migration/replica policy   | Credential/CA reference from provider                   |
+| `TEMPORAL_*`        | Endpoint/namespace/task queues, mutual TLS, retention, worker-build compatibility       | Client certificate/key reference                        |
+| `REDIS_*`           | TLS endpoint, prefix, TTL/memory/command and pool policy                                | Auth reference; never log connection URL                |
+| `OBJECT_STORAGE_*`  | Provider, endpoint/region/buckets, KMS key, size/lifecycle/replication                  | Workload role or scoped credential reference            |
+| `OIDC_*`            | Issuer, client ID, audience, redirect/logout origins, MFA/session policy                | Client secret/key reference, server only                |
+| `KMS_*`             | Provider/region, report/envelope purpose keys, algorithms/context/rotation              | Key access through workload identity; no key material   |
+| `RUNNER_*`          | Gateway, image digests, pools/quotas/timeouts, DNS/egress/artifact policy               | Pairing/workload issuer references                      |
+| `STELLAR_TESTNET_*` | Exact passphrase, Horizon/RPC allowlist, timeouts, fixture-account policy               | Fixture signer references, runner/evidence scoped       |
+| `STELLAR_PUBNET_*`  | Exact passphrase/endpoints, global kill switch, approvals/value/destination caps        | Dedicated signer references; disabled by default        |
+| `EVIDENCE_*`        | Network deployments, contract/spec/WASM/manifest hashes, confirmations, attestor policy | Attestor/admin signer references separated              |
+| `GITHUB_*`          | App/installation/API version, callbacks, event/permission manifest, limits              | App private key and webhook-secret references           |
+| `TELEMETRY_*`       | Collector/exporters, sampling, attribute allowlist, privacy filter, retention           | Export credential reference; never event payload data   |
+
+Frontend public configuration uses an explicit build/runtime public prefix and includes only API/docs origins, named Stellar network/read-only endpoints, and verified evidence contract ID if released. Service tokens, unrestricted RPC credentials, signer keys, and secret-provider references never use the public prefix.
+
+## Startup and readiness
+
+Startup validation proves configuration shape and static ownership. Readiness additionally checks compatible database schema, Temporal namespace/task queue, Redis safe operation, object/KMS purpose access, OIDC discovery pins, runner image policy, Stellar network/passphrase and endpoint identity, evidence code hash, integration key metadata, and telemetry privacy filter.
+
+Use bounded dependency checks without mutating production state. Readiness fails for required dependencies; optional feature dependencies disable only that feature visibly. Liveness proves the process can serve, not that dependencies are healthy. Avoid restart storms on external outages.
+
+## Deployment sequence
+
+1. verify signed images/packages/manifests/SBOM/provenance by immutable digest;
+2. provision environment-isolated network, identities, stores, keys, DNS/TLS, telemetry, and runner boundary from reviewed code;
+3. back up and run compatible database migrations with rollback/forward decision;
+4. deploy compatible Temporal workers before/API according to workflow versioning policy;
+5. deploy API/scheduler/gateway and specialized workers with zero broad shared credentials;
+6. run startup/readiness, migration, tenant, network, redaction, signing, and synthetic dependency checks;
+7. canary synthetic read-only then stateful testnet journey, report verification, and cleanup;
+8. promote traffic gradually, watch objectives/queues/errors, then record release evidence;
+9. leave pubnet submission and Soroban publication disabled until separate approvals.
+
+Rollback reuses verified prior artifacts only when database/workflow/schema writes remain compatible. Otherwise stop traffic/risky work and forward-fix. Never roll back configuration without reconciling keys, migrations, queued workflows, and evidence.
+
+## Release gate
+
+The owning backend release must schema-validate placeholder configurations for all environments, reject secret literals/unknown/conflicting/cross-environment/network-passphrase settings, deploy the complete staging topology, prove private boundaries and worker identities, validate DNS/TLS/WAF, run migrations and a synthetic SEP-1 report, and produce secret-free configuration inventory. Those operational checks remain unavailable in this docs-only repository.

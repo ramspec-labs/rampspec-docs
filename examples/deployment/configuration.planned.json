@@ -1,0 +1,63 @@
+{
+  "schema": "https://schemas.rampspec.dev/deployment-configuration/v1.planned.json",
+  "environment": "staging",
+  "status": "not-deployable",
+  "groups": {
+    "APP": {
+      "release": "<release-manifest-digest>",
+      "apiOrigin": "https://api.staging.example"
+    },
+    "DATABASE": {
+      "endpoint": "<private-postgresql-endpoint>",
+      "credentialReference": "<secret-reference>"
+    },
+    "TEMPORAL": {
+      "endpoint": "<private-temporal-endpoint>",
+      "namespace": "rampspec-staging",
+      "mtlsReference": "<secret-reference>"
+    },
+    "REDIS": {
+      "endpoint": "<private-tls-redis-endpoint>",
+      "authReference": "<secret-reference>"
+    },
+    "OBJECT_STORAGE": {
+      "region": "<region>",
+      "bucket": "<private-staging-bucket>",
+      "kmsKeyReference": "<key-reference>"
+    },
+    "OIDC": {
+      "issuer": "https://identity.staging.example",
+      "clientId": "<public-client-id>",
+      "clientSecretReference": "<secret-reference>"
+    },
+    "KMS": {
+      "reportSigningKeyReference": "<key-reference>",
+      "envelopeKeyReference": "<key-reference>"
+    },
+    "RUNNER": {
+      "imageDigest": "sha256:<runner-image-digest>",
+      "egressPolicyDigest": "sha256:<egress-policy-digest>"
+    },
+    "STELLAR_TESTNET": {
+      "networkPassphrase": "Test SDF Network ; September 2015",
+      "horizonOrigin": "<reviewed-horizon-origin>",
+      "rpcOrigin": "<reviewed-rpc-origin>"
+    },
+    "STELLAR_PUBNET": { "enabled": false, "globalKillSwitch": true },
+    "EVIDENCE": {
+      "enabled": false,
+      "deploymentManifestDigest": "sha256:<deployment-manifest-digest>"
+    },
+    "GITHUB": {
+      "enabled": false,
+      "appId": "<github-app-id>",
+      "privateKeyReference": "<secret-reference>",
+      "webhookSecretReference": "<secret-reference>"
+    },
+    "TELEMETRY": {
+      "collector": "<private-collector-endpoint>",
+      "privacyFilterVersion": "<filter-version>",
+      "credentialReference": "<secret-reference>"
+    }
+  }
+}
