@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "funding-claim-register",
+  "sourceCheckedAt": "2026-09-11",
+  "submissionReady": false,
+  "trackDecision": {
+    "status": "planned",
+    "selectedTrack": null,
+    "owner": "@Hallab7",
+    "evidenceUrl": "/funding/evidence-and-claims",
+    "refreshBy": "before-submission-use"
+  },
+  "claims": [
+    {
+      "id": "CLAIM-001",
+      "subject": "Four-repository implementation",
+      "approvedWording": "RampSpec is planned across four independently owned repositories.",
+      "status": "planned",
+      "evidenceUrl": "/governance/repository-ownership",
+      "owner": "@Hallab7",
+      "verifiedAt": "2026-09-11",
+      "refreshBy": "first-runtime-release"
+    },
+    {
+      "id": "CLAIM-002",
+      "subject": "Anchor Platform integration",
+      "approvedWording": "Anchor Platform integration is planned and not yet runtime-verified.",
+      "status": "planned",
+      "evidenceUrl": "/guides/anchor-platform/reference-environment",
+      "owner": "@Hallab7",
+      "verifiedAt": "2026-09-11",
+      "refreshBy": "first-integration-report"
+    },
+    {
+      "id": "CLAIM-003",
+      "subject": "Testnet and pubnet deployment",
+      "approvedWording": "No RampSpec testnet or pubnet deployment is currently evidenced.",
+      "status": "planned",
+      "evidenceUrl": "/roadmap",
+      "owner": "@Hallab7",
+      "verifiedAt": "2026-09-11",
+      "refreshBy": "first-deployment-manifest"
+    },
+    {
+      "id": "CLAIM-004",
+      "subject": "Pilot adoption and measured outcomes",
+      "approvedWording": "Pilots, adoption, defects found, and time-saved outcomes are not yet evidenced.",
+      "status": "planned",
+      "evidenceUrl": "/funding/evidence-and-claims",
+      "owner": "@Hallab7",
+      "verifiedAt": "2026-09-11",
+      "refreshBy": "first-authorized-pilot"
+    },
+    {
+      "id": "CLAIM-005",
+      "subject": "SCF eligibility and award",
+      "approvedWording": "RampSpec has no recorded SCF invitation, eligibility decision, submission, or award.",
+      "status": "planned",
+      "evidenceUrl": "/funding/evidence-and-claims",
+      "owner": "@Hallab7",
+      "verifiedAt": "2026-09-11",
+      "refreshBy": "any-SCF-status-change"
+    },
+    {
+      "id": "CLAIM-006",
+      "subject": "Security readiness",
+      "approvedWording": "The threat model is documented; independent runtime and contract review remain unavailable.",
+      "status": "planned",
+      "evidenceUrl": "/security/threat-model",
+      "owner": "@Hallab7",
+      "verifiedAt": "2026-09-11",
+      "refreshBy": "first-independent-review"
+    }
+  ],
+  "sourceUrls": [
+    "https://stellar.gitbook.io/scf-handbook/scf-awards/build-award",
+    "https://stellar.gitbook.io/scf-handbook/scf-awards/build-award/integration-track",
+    "https://stellar.gitbook.io/scf-handbook/scf-awards/build-award/integration-track/integration-list",
+    "https://stellar.gitbook.io/scf-handbook/scf-awards/build-award/rfp-track",
+    "https://developers.stellar.org/docs/platforms/anchor-platform"
+  ],
+  "notice": "Status evidence only. This register does not establish eligibility, submission, award, deployment, security approval, or adoption."
+}

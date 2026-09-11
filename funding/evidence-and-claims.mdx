@@ -1,0 +1,114 @@
+---
+title: "Funding evidence and claims policy"
+description: "How RampSpec separates funding facts, proposals, measured outcomes, and prohibited claims."
+keywords: ["funding", "SCF", "evidence", "claims", "budget"]
+---
+
+RampSpec funding material must distinguish current program facts, project plans, verified implementation, measured outcomes, and award decisions. A technically plausible plan is not deployment evidence, and an application is not an award.
+
+<Warning>
+  RampSpec has no recorded SCF invitation, submission, eligibility decision, or
+  award. It has no public testnet deployment, pilot evidence, or measured
+  on-chain outcome. Funding and track claims therefore remain planned or
+  unavailable.
+</Warning>
+
+## Source refresh
+
+The following official sources were rechecked on **2026-09-11**:
+
+- [SCF Build Award](https://stellar.gitbook.io/scf-handbook/scf-awards/build-award) for the current three-track structure, interest and invitation process, review, milestones, and eligibility boundaries;
+- [Integration Track](https://stellar.gitbook.io/scf-handbook/scf-awards/build-award/integration-track) for traction, budget, integration, and on-chain outcome requirements;
+- [Integration List](https://stellar.gitbook.io/scf-handbook/scf-awards/build-award/integration-track/integration-list) for the current Anchor Platform listing;
+- [RFP Track](https://stellar.gitbook.io/scf-handbook/scf-awards/build-award/rfp-track) for developer-tooling fit only where a current open RFP matches;
+- [Anchor Platform documentation](https://developers.stellar.org/docs/platforms/anchor-platform) for the currently documented SEP surface and integration boundary.
+
+These pages are mutable. Recheck them on the day an interest form, proposal, milestone, public funding page, or award-related announcement is prepared. Record the timestamp, relevant section, reviewer, and archived or commit-pinned source where available.
+
+## Narrative evidence map
+
+| Narrative part      | Proposed statement                                                                                               | Evidence required before publication as fact                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Problem             | Anchor interoperability regressions can slow integrations and corridor launches.                                 | Cited pilot incidents, reproducible failures, or public ecosystem research   |
+| Solution            | RampSpec will combine versioned SEP rules, complete journeys, isolated runners, and verifiable evidence.         | Released runtime tags, compatible manifest, executable examples, and reports |
+| Ecosystem value     | The system is intended to shorten diagnosis and integration work.                                                | Authorized pilot baseline and after-measurements with method and sample size |
+| Stellar specificity | Scope includes SEP-1/6/9/10/12/24/31/34/38/45, Anchor Platform, Stellar transactions, XDR, and Soroban evidence. | Released rule inventory, tagged schemas, contract specs, and coverage report |
+| Public deliverables | Four Apache-2.0 repositories, tools, rule packs, contracts, and documentation are planned.                       | Public repository URLs, release tags, licenses, build records, and manifests |
+
+Use future-tense wording while evidence is absent. Do not turn intended value into a measured outcome.
+
+## Track decision process
+
+No track is selected yet. The decision owner must rerun this process immediately before submission:
+
+1. Confirm the current Build tracks, round or invitation process, eligibility rules, jurisdiction constraints, and submission deadline from official sources.
+2. Confirm the product's actual state: public releases, traction, users, on-chain footprint, testnet and pubnet evidence, team capacity, and delivery timeline.
+3. Evaluate Integration only if the selected building block remains on the current Integration List and RampSpec can evidence the track's traction, integration-budget, and on-chain outcome requirements. Anchor Platform is listed at the refresh date; listing alone does not establish project eligibility.
+4. Evaluate RFP only against a current published RFP whose required outcome actually matches RampSpec. General developer-tooling language is insufficient.
+5. Evaluate Open only from the current official criteria and any invitation instructions; do not use it as a fallback without confirming fit.
+6. Record the selected track, rejected alternatives, sources, evidence, reviewer, and decision date in an approved governance record.
+
+Until that record exists, all material says `track decision pending`.
+
+## Evidence package
+
+A submission-ready package links immutable or publicly verifiable evidence for:
+
+- a public testnet environment and deployment manifest;
+- one complete SEP-6 or SEP-24 journey;
+- one complete SEP-31 plus SEP-38 journey;
+- an Anchor Platform integration report naming its version and configuration boundary;
+- adversarial SEP-10 and SEP-45 authentication results;
+- two authorized pilot letters or public integration statements;
+- repository releases and contributor activity, with collection dates;
+- Drips participation and merged work, without implying rewards or endorsement;
+- measured defects found and time saved, with methodology and limitations;
+- the security model, independent review scope, findings, and remediation state;
+- a maintenance, hosting, incident, and ownership plan;
+- milestone deliverables and costs tied to acceptance evidence.
+
+Repository stars, forks, contributor counts, and issues are supporting signals only. They do not prove users, adoption, interoperability, impact, or delivery readiness.
+
+## Anchor Platform evidence
+
+An Anchor Platform claim names the exact image or release, configuration digest, enabled SEP modules, business-server responsibilities, fixture source, environment, target, timestamps, report ID, and reproducible commands. It distinguishes Platform behavior from RampSpec behavior and links failures to redacted evidence. A local Docker start is not a completed integration; a testnet journey is not pubnet production use.
+
+## Pilots and metrics
+
+Pilot evidence requires written permission, scope, environment, dates, participants or anonymization method, baseline, measurement method, raw-record custodian, exclusions, and a reproducible result. Report defects found as deduplicated confirmed findings, with disputed and unresolved findings separate. Report time saved against a named baseline and sample size. Never generalize one pilot to ecosystem adoption.
+
+## Illustrative planning budget
+
+This allocation is a planning model, not an application amount, approved budget, or funding claim:
+
+| Work area                                  | Share |
+| ------------------------------------------ | ----: |
+| Anchor Platform and SEP engine integration |   30% |
+| Workflow, runner, and backend platform     |   22% |
+| Stellar and Soroban engineering            |   15% |
+| Frontend product                           |   12% |
+| Security and independent review            |   10% |
+| Documentation and developer adoption       |    7% |
+| Infrastructure and launch operations       |    4% |
+
+Before use, replace percentages with milestone costs supported by current track guidance, quotes or rates, deliverables, acceptance evidence, dependencies, and contingency. Track-specific rules override this illustrative model.
+
+## Claim rules
+
+Every public claim appears in the [claim register](/examples/funding/claim-register.planned.json) with a status, evidence URL, owner, verification date, refresh date, and approved wording. Valid statuses are `planned`, `implemented`, `locally-checked`, `testnet-verified`, `pubnet-verified`, `externally-reviewed`, `authorized-pilot`, and `awarded`. Higher status is never inferred from a lower one.
+
+Do not claim:
+
+- guaranteed SCF eligibility, invitation, track acceptance, selection, or award;
+- SDF certification, partnership, endorsement, audit, or regulatory approval;
+- legal or compliance approval from software tests;
+- production or mainnet readiness from local, mocked, or testnet evidence;
+- partner adoption, traction, or pilot outcomes without written permission and evidence;
+- complete protocol coverage while required rules are skipped, blocked, or indeterminate;
+- security readiness before the stated independent review and remediation are complete.
+
+An award claim additionally requires an official decision record, amount/currency wording that matches the notice, permitted attribution, required disclaimer, and a current review of award terms. Remove or downgrade a claim when its evidence expires, becomes unavailable, or no longer supports the wording.
+
+## Current exit status
+
+The policy and claim register are implemented, and current SCF sources were rechecked. Submission use remains blocked because runtime, pilot, track-decision, and award evidence does not exist. Each current claim links to evidence of its limited status rather than to an unsupported success claim.

@@ -126,6 +126,10 @@
             ]
           },
           {
+            "group": "Funding",
+            "pages": ["funding/evidence-and-claims"]
+          },
+          {
             "group": "Contributing",
             "pages": [
               "contributing/index",
