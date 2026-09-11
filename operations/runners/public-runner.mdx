@@ -1,0 +1,189 @@
+---
+title: "Public runner security"
+description: "Architecture and hardening requirements for isolated hosted jobs, destination control, DNS rebinding defense, credentials, artifacts, teardown, and abuse prevention."
+keywords:
+  [
+    "public runner",
+    "sandbox",
+    "egress allowlist",
+    "SSRF",
+    "DNS rebinding",
+    "job isolation",
+  ]
+---
+
+The public runner executes eligible RampSpec scenarios against verified public targets in an ephemeral sandbox. It is a constrained protocol-testing worker, not a general HTTP proxy, browser farm, shell service, signing service, or network scanner.
+
+<Warning>
+  No public runner image, scheduler, cluster, or verification record has been
+  released. Every enforcement and evidence item on this page is **Planned**. The
+  architecture cannot be used to claim hosted-runner availability.
+</Warning>
+
+## Trust boundary
+
+The control plane authenticates and authorizes the request, compiles a suite lock, selects an eligible runner profile, issues a short lease, and receives locally redacted results. The runner plane pulls an immutable job, executes released actions, uploads only approved artifacts, reports cleanup, and expires.
+
+The target, its responses, scenario inputs, browser content, DNS, network dependencies, callback payloads, and uploaded fixtures are untrusted. The runner cluster, image registry, workload identity issuer, artifact store, DNS policy, egress gateway, signing service, and scheduler are separate trust boundaries. A compromise in one must not grant another organization's data, an unrestricted destination, cluster administration, or long-lived credentials.
+
+## Admission sequence
+
+A job is admitted only after these checks succeed in order:
+
+1. authenticate the actor or service account and verify organization membership;
+2. verify current target ownership and that hosted execution is permitted;
+3. resolve a signed scenario and immutable suite lock from compatible releases;
+4. evaluate organization, project, target, network, value, rate, and data policy;
+5. reject unavailable capabilities, private targets, prohibited actions, and expired approvals;
+6. reserve organization and destination quotas before creating credentials;
+7. resolve and classify every allowed hostname and address;
+8. issue a run-scoped workload identity and artifact-upload capability;
+9. create one isolated job from an allowlisted image digest and locked profile;
+10. record the admission decision and transition to execution.
+
+Any failure before step 8 creates no workload credentials. Any failure after step 8 revokes issued capabilities and starts teardown. A queue record is not evidence that a job was admitted or ran.
+
+## Immutable runner image
+
+The release manifest pins image registry, repository, digest, source commit, build workflow, software bill of materials digest, vulnerability-scan result, signature identity, signing policy, runner protocol version, action-catalog digest, and supported architectures. Tags are display metadata and cannot select production jobs.
+
+The scheduler verifies the image signature and attestation before admission. The cluster allows only the approved registry and digest. Builds use locked dependencies, minimal runtime packages, reproducible metadata, and no embedded credentials. Images do not contain target-specific configuration, writable package caches, debugging shells exposed as services, or package-install privileges.
+
+A revoked signature, mismatched digest, unsupported version, critical unresolved image vulnerability, or absent provenance stops new jobs. Existing report access and cleanup remain available.
+
+## Job sandbox
+
+Each run receives a fresh operating-system and workload identity boundary. The required job profile enforces:
+
+- a non-root numeric user and group;
+- read-only base filesystem and immutable executable paths;
+- writable memory-backed temporary and workspace volumes with size limits;
+- all ambient Linux capabilities dropped and privilege escalation denied;
+- default syscall and mandatory-access-control profiles supplied by the cluster;
+- no host network, host process, host identity, host path, device, or privileged mode;
+- no service-account token mounted except the run-scoped workload identity path;
+- CPU, memory, process, open-file, disk, artifact, operation, and wall-clock limits;
+- one run per workspace, browser profile, callback namespace, and upload capability;
+- termination grace followed by forced stop and independent cleanup verification.
+
+The action engine is the container entry point. Scenario content cannot choose a command, executable, image, mount, environment variable, working directory, user, network namespace, or package. Interactive terminal attachment is disabled in production; reviewed emergency diagnostics create a separate audited support workload without customer secrets.
+
+## Resource and concurrency quotas
+
+Admission reserves limits at platform, organization, project, target, destination, suite, and job levels. Quotas cover queued jobs, concurrent jobs, starts per interval, DNS lookups, requests, redirects, callback count and bytes, browser pages, CPU, memory, processes, disk, artifact bytes, total runtime, Stellar operations, value, and fees.
+
+The strictest applicable limit wins. Matrix expansion and retry budgets are charged before scheduling. Execution counters fail closed when the quota service is unavailable. A job reaching a limit stops new side effects, reconciles unknown outcomes, runs cleanup, and reports policy blocked or infrastructure failure instead of silently truncating required assertions.
+
+Fair scheduling prevents one tenant or destination from exhausting the fleet. Per-destination pacing includes completed and failed requests and cannot be bypassed with aliases, redirects, address rotation, uppercase hostnames, or multiple projects.
+
+## Target ownership and use policy
+
+The organization must prove control through a current DNS or well-known challenge before active testing. Verification binds canonical origin, allowed ports, network, project, runner mode, permitted protocols, expiry, and verifier evidence. Renewal or a material target change requires another challenge.
+
+Public metadata discovery may use a narrowly defined passive profile. Authentication, synthetic customer creation, callbacks, browser automation, fault injection, signing, value movement, or destructive cases require specific target authorization and policy. Private, local, partner-only, or staging targets that resolve to non-public space are directed to a local runner when that capability becomes documented and released.
+
+The runner refuses IP-literal targets, wildcard ownership, unrelated subdomains, embedded credentials, unsupported schemes, non-approved ports, and destinations derived from response bodies unless a released protocol action explicitly resolves and revalidates them.
+
+## Origin canonicalization
+
+Before DNS resolution, parse the target with a standards-based URL library and produce one canonical origin. Require HTTPS, a valid internationalized-domain representation normalized by the platform policy, no user information, no fragment, no ambiguous slash or backslash form, and an approved explicit or default port.
+
+Reject numeric host obfuscation, mixed encoding, invalid percent sequences, trailing-dot ambiguity unless normalized consistently, oversized names, forbidden characters, scheme confusion, and any origin whose parse differs across the control plane, runner, egress gateway, or HTTP client. Store the operator input, canonical origin, parser version, and decision without storing secret URL components.
+
+## DNS and address classification
+
+Resolve all A and AAAA records through the controlled resolver before admission. Classify every returned and mapped address. Public runners reject loopback, unspecified, link-local, private, multicast, broadcast, carrier-grade NAT, benchmarking, documentation, reserved, future-use, and cloud-metadata ranges for both IP families.
+
+The control plane sends the approved hostname, port, address set, resolution time, expiry, and policy digest to the job and egress gateway. Connections use only that set for the request lifetime. The TLS server name and HTTP host remain the approved hostname; substituting an address does not disable certificate or hostname validation.
+
+On DNS refresh, repeat full resolution and classification before changing the pin. A mixed public/private answer fails entirely. Resolution failure, excessive address count, rapidly changing answers, inconsistent control-plane and runner answers, or a returned forbidden address stops the request and records a network-policy finding.
+
+## Redirect and rebinding defense
+
+Automatic redirects are disabled beneath the action layer. For each redirect, the action parser resolves the location against the current URL, applies canonicalization, confirms protocol-specific origin policy, resolves and classifies DNS, checks the destination and port allowlist, updates the network pin when permitted, removes credentials on any origin boundary, and charges redirect and request quotas.
+
+The network layer independently permits only the exact approved host-port and current address set. DNS rebinding after application validation therefore cannot open a private connection. A connection retry, alternate address, browser navigation, browser resource request, WebSocket, callback, or uploaded URL undergoes the same classification; none inherits trust merely because the initial page was allowed.
+
+Tests include IPv4 and IPv6 textual variants, mapped addresses, redirect chains, protocol-relative locations, encoded hosts, user information, trailing dots, CNAME chains, mixed answer sets, time-of-check changes, short DNS lifetimes, connection reuse, proxy environment variables, cloud metadata addresses, and browser-controlled resource requests.
+
+## Egress policy
+
+Default egress is deny. A job profile permits only:
+
+- target origins and protocol endpoints resolved from the locked target snapshot;
+- approved Stellar Horizon or RPC endpoints for the selected network;
+- the run-specific callback or browser coordination service when required;
+- controlled identity, email, phone, and payment fixture services selected by reference;
+- artifact upload and workflow event endpoints bound to the workload identity;
+- controlled DNS and time services supplied by the platform.
+
+The scenario cannot provide raw destinations. The control plane and network layer both enforce the allowlist. Direct IP connections, alternate DNS, local proxies, peer jobs, cluster services, registry access, package repositories, general internet access, and inbound listening are denied unless a narrow platform service is explicitly part of the runner profile.
+
+Each permitted class has methods, ports, request size, response size, redirect, credential, and rate policy. The runner records destination class and decision, not sensitive query strings.
+
+## Credentials and signing
+
+Use run-scoped, audience-bound credentials with the minimum target, action, artifact, and time scope. The workload identity is unique to one job and cannot list other jobs, artifacts, secrets, or tenants. Credentials arrive through a dedicated in-memory provider, are never placed in scenario YAML or command arguments, and expire shortly after the job deadline.
+
+The public runner accepts only synthetic target credentials approved for hosted use. Organization vault secrets, private-network credentials, production customer credentials, long-lived API keys, and general Stellar seeds require a local runner. A hosted signing action, if ever released, uses a capped testnet fixture key in an isolated signing component and verifies the complete intent immediately before authorization.
+
+Logs and artifacts redact authorization headers, cookies, challenges, signed transactions before policy approval, customer fields, financial destinations, provider tokens, upload URLs, and workload tokens. Revocation occurs on cancellation, policy change, job completion, runner isolation alert, or lease expiry.
+
+## Browser isolation
+
+SEP-24 jobs use a dedicated browser process and profile with no prior cookies, storage, cache, service workers, permissions, downloads, or extensions. Navigation, popups, frames, browser resource requests, downloads, and protocol handlers pass through the same origin and egress policy.
+
+The browser cannot access cluster services, local files, metadata addresses, peer jobs, clipboard, camera, microphone, geolocation, host fonts, or persistent profiles. Synthetic form data is scoped to approved fields. Screenshots and traces are disabled on sensitive steps and locally redacted before upload. Closing all pages and deleting the profile are mandatory teardown evidence.
+
+## Artifact upload
+
+The control plane creates an allowlisted artifact manifest before execution. Each entry fixes type, media type, maximum bytes, retention class, redaction profile, and whether encryption or a derived export is required. The job receives a one-run upload channel that can create only those object keys and cannot read, list, overwrite, or extend retention.
+
+Before upload, the runner validates schema, removes forbidden fields, scans structured and binary metadata, canonicalizes where required, computes SHA-256, encrypts protected artifacts, and emits type, size, digest, redaction result, and upload receipt. The storage service validates content length and digest and rejects additional objects.
+
+Raw secrets, private keys, identity documents, unrestricted traffic archives, complete payment destinations, browser profiles, memory dumps, and host diagnostics cannot be uploaded. An upload failure retains only encrypted local recovery state until bounded retry or teardown policy decides the run is indeterminate.
+
+## Teardown and cleanup evidence
+
+Cleanup starts after success, failure, cancellation, timeout, eviction, or lost workflow connectivity. It stops new side effects, reconciles unknown transactions, runs scenario compensations, revokes sessions and credentials, closes callbacks and browsers, deletes temporary volumes, expires upload capabilities, releases quotas and fixture leases, and removes the job.
+
+An independent controller verifies that the workload, network authorization, identity, volumes, callback routes, upload capability, and leases no longer exist. It records timestamps, object identifiers, final states, retries, retained recovery reference, and cleanup digest. The runner cannot mark its own deletion as proven.
+
+Cleanup failure changes the run result, quarantines affected fixture leases, alerts operations, and creates a recovery task. The platform kill switch blocks new submissions without blocking cleanup, evidence access, credential revocation, or incident investigation.
+
+## Abuse prevention and response
+
+Controls combine verified ownership, scenario/action allowlists, least privilege, destination and request quotas, rate limits, anomaly detection, complaint intake, and immutable audit events. Detection watches address sweeps, repeated ownership failures, many target aliases, forbidden-range attempts, high error rates, excessive redirects, content-size abuse, credential probing, value-cap pressure, and organizations linked to prior suspension.
+
+Responses progress through job stop, destination cooldown, capability removal, target suspension, service-account revocation, organization review, evidence preservation, and legal or provider escalation where required. Operators can block a destination globally without exposing the complainant. Reinstatement requires documented review and does not erase audit history.
+
+The service publishes acceptable-use and target-authorization requirements before hosted execution. No diagnostic or support role can bypass network policy silently.
+
+## Control evidence matrix
+
+| Control                          | Required evidence                                                      | Current status |
+| -------------------------------- | ---------------------------------------------------------------------- | -------------- |
+| Authorized target and scenario   | Ownership proof, policy decision, suite-lock and actor digests.        | Planned        |
+| Signed immutable image           | Image digest, signature, provenance, component inventory, scan.        | Planned        |
+| Non-root read-only sandbox       | Admission result plus runtime user, mount, capability, isolation test. | Planned        |
+| Resource and concurrency limits  | Resolved quotas, reservations, counters, limit-case results.           | Planned        |
+| Egress allowlist                 | Destination classes, network policy digest, denied-attempt corpus.     | Planned        |
+| DNS and rebinding protection     | Resolutions, classifications, pins, redirect and refresh test results. | Planned        |
+| Metadata and private-range block | IPv4/IPv6 corpus with application and network-layer denials.           | Planned        |
+| Short-lived credential scope     | Issuance metadata, audience, expiry, use decisions, revocation.        | Planned        |
+| Browser profile isolation        | Fresh-profile proof, navigation denials, profile deletion.             | Planned        |
+| Scoped artifact upload           | Manifest, local redaction, size and digest validation, receipt.        | Planned        |
+| Automatic teardown               | Controller-observed deletion, lease release, cleanup digest.           | Planned        |
+| Abuse controls                   | Quota and anomaly cases, suspension workflow, audited reinstatement.   | Planned        |
+
+## Failure classification
+
+A target response that violates a pinned rule creates a conformance finding. An unavailable cluster, DNS resolver, policy service, artifact store, or fixture provider creates an infrastructure or indeterminate result. A denied destination, exceeded cap, unavailable capability, or absent authorization is policy blocked. A sandbox, tenant, credential, signing, or network-boundary bypass is a security incident and invalidates affected reports.
+
+The report keeps these outcomes separate. It cannot convert a provisioning failure or blocked request into a passing assertion, and a high score cannot override missing required coverage or cleanup.
+
+## Release gate
+
+Hosted availability requires a tagged backend and runner release, signed image and provenance, compatible scenario and report schemas, an isolated deployment, documented configuration, and repeatable evidence for every row in the control matrix. Required tests include sandbox escape review, cross-tenant denial, quota exhaustion, the full SSRF and DNS corpus, credential leakage, browser isolation, upload abuse, cancellation, node loss, workflow replay, partial teardown, and abuse suspension.
+
+Until those artifacts and results exist, product UI, API, CLI, SDK, and documentation must show the public runner as Planned and direct private or sensitive work to no execution path rather than quietly weakening these controls.

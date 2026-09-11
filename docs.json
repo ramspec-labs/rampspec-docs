@@ -160,6 +160,10 @@
             "pages": ["guides/scenario-cookbook"]
           },
           {
+            "group": "Runner Operations",
+            "pages": ["operations/runners/public-runner"]
+          },
+          {
             "group": "Maintainers",
             "pages": ["guides/maintainers/spec-synchronization"]
           }
