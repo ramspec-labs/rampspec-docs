@@ -1,0 +1,93 @@
+---
+title: "Documentation maintenance"
+description: "The recurring ownership, freshness, synchronization, quality, retirement, and learning cycle for RampSpec documentation."
+keywords: ["maintenance", "freshness", "automation", "localization"]
+---
+
+RampSpec documentation maintenance combines dated source review, release-driven generated imports, recurring quality checks, support retirement, incident learning, and owner rotation. Automation detects or proposes changes; a qualified maintainer still verifies meaning before merge.
+
+<Warning>
+  The calendar and automation are implemented before launch, but the exit gate
+  is not complete. Protocol, security, operations, product, and accessibility
+  owners remain unassigned, and runtime repositories have no release artifacts
+  to dispatch.
+</Warning>
+
+## Maintenance record
+
+The machine-readable [maintenance calendar](/examples/operations/documentation-maintenance-calendar.planned.json) records cadence, source, last review, next review, owner, reviewer, automation, and evidence for every activity. `npm run lint:maintenance` fails when required fields, chronological dates, sources, or automation definitions are missing. Once `launchActive` is true, the validator also fails overdue active work.
+
+Review timestamps mean a maintainer actually checked the source and impact. A scheduled workflow run does not update `lastReviewedAt` by itself and must not manufacture freshness.
+
+## Recurring calendar
+
+| Activity                                           | Cadence                                     | Trigger                                                | Required owner                      |
+| -------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ | ----------------------------------- |
+| Stellar SEP inventory and normative diff           | Monthly and on upstream change              | Pinned `stellar-protocol` commit                       | Protocol maintainer                 |
+| Anchor Platform behavior and supported SEP surface | Monthly and on release                      | Tagged image/source and official docs                  | Backend/protocol maintainer         |
+| SCF and funding guidance                           | Monthly and before any funding use          | Current official handbook                              | Funding/product owner               |
+| Drips Wave rules, points, budgets, and deadlines   | Monthly and before every Wave               | Current official Drips pages and app                   | Community maintainer                |
+| OpenAPI, schemas, and contract references          | On owning release                           | Verified tag, commit, artifact digest                  | Owning runtime plus docs maintainer |
+| Internal/external links and site export            | Weekly and on pull request                  | Documentation source tree                              | Docs maintainer                     |
+| Accessibility                                      | Monthly and before stable release           | Keyboard, screen reader, contrast, zoom, mobile review | Accessibility reviewer              |
+| Supported-version retirement                       | Quarterly and before support end            | Support policy, usage, reports, deployments            | Release owner                       |
+| Example dependencies                               | Weekly automation, monthly execution review | Lock files and documented target versions              | Docs plus owning runtime maintainer |
+| Incident lessons                                   | Within five business days of review closure | Approved incident review                               | Operations/security owner           |
+| Localization demand                                | Quarterly                                   | Support requests, usage, pilot regions                 | Product/docs owner                  |
+| Ownership rotation                                 | Quarterly                                   | Maintainer activity and backup coverage                | Repository administrator            |
+
+During pre-launch, future review dates are planning targets. Activation requires every required role, communication route, backup, and review capacity to be accepted in the record.
+
+## Protocol and program refreshes
+
+SEP review uses the [specification synchronization workflow](/guides/maintainers/spec-synchronization.mdx): pin the upstream commit, classify normative changes, update runtime rules and fixtures in their owning release, then import tagged artifacts. A link or heading edit alone is not a protocol refresh.
+
+Anchor Platform review records the exact release/image, current supported SEP modules, architecture, configuration, callbacks, security guidance, and affected RampSpec integration claims. SCF and Drips reviews use current official sources on the day material is used. Track eligibility, points, budgets, deadlines, awards, and program acceptance are never inferred from an earlier review.
+
+## Generated-reference pull requests
+
+OpenAPI, schema, and contract sync workflows accept manual dispatch or a named `repository_dispatch` event from the owning release automation. Every event provides an immutable tag, full commit, and expected SHA-256. The docs workflow resolves the tag through GitHub, downloads the release artifact, verifies its digest during import, runs focused tests, and opens a generated-only pull request.
+
+Source repositories must hold a narrowly scoped token capable of dispatching to this private repository; docs holds read tokens for their private release assets. Those credentials and release-side dispatch jobs are not configured yet. Until they are, the workflows are implemented but not active evidence of synchronization.
+
+Generated pull requests require owning-repository and docs review. Automation never hand-edits generated content or merges an incompatible artifact.
+
+## Dependency update pull requests
+
+Dependabot checks npm dependencies weekly and GitHub Actions monthly. Its pull requests run the normal quality workflow and must include release notes, compatibility impact, security relevance, and focused verification before merge. A version suggestion is not proof that an example or Mintlify export still works.
+
+Monthly example review executes each supported example against its documented artifact and environment, records the result, and removes or updates stale examples. Floating tags, stale testnet accounts, retired endpoints, and missing fixtures block publication.
+
+## Links, accessibility, and search
+
+Pull requests and the weekly scheduled workflow validate the content model, links, spelling, tests, and static export. External failures are triaged as content defect, temporary upstream outage, intentionally retired source, or approved archived reference; disabling the check globally is not a resolution.
+
+Accessibility review covers semantic headings, landmarks, focus order, keyboard operation, visible focus, labels, alternative text, contrast, zoom, code overflow, reduced motion, and phone/desktop layouts. Automated checks assist but do not replace manual keyboard and assistive-technology review.
+
+Search review verifies representative product terms, SEP IDs, endpoints, errors, contract methods, and version boundaries. Results must not silently send stable readers to `next`.
+
+## Supported-version retirement
+
+Retirement records the version, owner, usage evidence, referencing reports/deployments, replacement, migration path, security state, notice window, support end, archive URL, manifest, and redirects. Preserve an archive while a supported artifact depends on it. Remove search prominence after support ends, but do not erase historical meaning or redirect to incompatible guidance.
+
+## Incident lessons
+
+After an incident review closes, the owning maintainer identifies missing detection, unclear instructions, unsafe examples, stale contacts, incomplete rollback, or training gaps. Documentation changes cite the approved review without exposing secrets, personal data, private targets, or exploit details. Add a regression check where practical and backport only to affected supported versions.
+
+An incident does not automatically prove a documentation defect. Record the causal link and reviewer decision.
+
+## Localization based on demand
+
+Localization begins only when support, usage, pilot-region, accessibility, or community evidence identifies a maintained audience. The decision names locale, critical journeys, translator and technical reviewer, glossary, source version, update service target, fallback language, and retirement plan.
+
+Machine translation may assist a draft but cannot publish protocol, security, funding, or network-action guidance without qualified review. An untranslated stable correction blocks the affected localized release or displays an explicit stale-version warning.
+
+## Ownership rotation
+
+Quarterly review checks activity, response performance, conflicts, backup coverage, leave, and knowledge concentration for each area in `MAINTAINERS.md`. Appointments and removals use a reviewed public decision when repository visibility permits. Rotate credentials and escalation routes separately; changing a name in documentation does not change access.
+
+An unassigned required role leaves its calendar entry blocked. Repository administration may coordinate but cannot self-approve protocol or security meaning.
+
+## Current exit status
+
+The recurring workflow, freshness validator, dependency update configuration, event-driven generated-reference pull request paths, and calendar exist. Full exit remains blocked until the missing maintainers are assigned and active, source repositories dispatch real tagged artifacts, and recurring runs produce reviewed update pull requests and freshness evidence.

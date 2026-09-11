@@ -1,6 +1,8 @@
 name: Sync backend OpenAPI
 
 on:
+  repository_dispatch:
+    types: [backend-openapi-released]
   workflow_dispatch:
     inputs:
       backend_tag:
@@ -25,8 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -34,8 +36,8 @@ jobs:
       - name: Verify backend tag and download release artifact
         env:
           GH_TOKEN: ${{ secrets.RAMPSPEC_BACKEND_READ_TOKEN }}
-          BACKEND_TAG: ${{ inputs.backend_tag }}
-          EXPECTED_COMMIT: ${{ inputs.backend_commit }}
+          BACKEND_TAG: ${{ inputs.backend_tag || github.event.client_payload.backend_tag }}
+          EXPECTED_COMMIT: ${{ inputs.backend_commit || github.event.client_payload.backend_commit }}
         shell: bash
         run: |
           test -n "$GH_TOKEN"
@@ -50,9 +52,9 @@ jobs:
         run: >-
           npm run import:openapi --
           --source .artifacts/openapi.json
-          --tag "${{ inputs.backend_tag }}"
-          --commit "${{ inputs.backend_commit }}"
-          --sha256 "${{ inputs.artifact_sha256 }}"
+          --tag "${{ inputs.backend_tag || github.event.client_payload.backend_tag }}"
+          --commit "${{ inputs.backend_commit || github.event.client_payload.backend_commit }}"
+          --sha256 "${{ inputs.artifact_sha256 || github.event.client_payload.artifact_sha256 }}"
       - run: npm test
       - run: npm run lint:openapi
       - name: Open generated reference pull request

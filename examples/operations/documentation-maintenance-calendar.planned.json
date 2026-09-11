@@ -1,0 +1,171 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "documentation-maintenance-calendar",
+  "launchActive": false,
+  "timezone": "Africa/Lagos",
+  "createdAt": "2026-09-11",
+  "entries": [
+    {
+      "id": "stellar-seps",
+      "cadence": "monthly-and-on-change",
+      "sourceUrl": "https://github.com/stellar/stellar-protocol",
+      "lastReviewedAt": "2026-09-10",
+      "nextReviewAt": "2026-10-10",
+      "owner": null,
+      "reviewer": "@Hallab7",
+      "status": "blocked-unassigned-owner",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "anchor-platform",
+      "cadence": "monthly-and-on-release",
+      "sourceUrl": "https://developers.stellar.org/docs/platforms/anchor-platform",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-10-11",
+      "owner": null,
+      "reviewer": "@Hallab7",
+      "status": "blocked-unassigned-owner",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "scf-funding",
+      "cadence": "monthly-and-before-use",
+      "sourceUrl": "https://stellar.gitbook.io/scf-handbook/scf-awards/build-award",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-10-11",
+      "owner": "@Hallab7",
+      "reviewer": null,
+      "status": "blocked-unassigned-reviewer",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "drips-wave",
+      "cadence": "monthly-and-before-wave",
+      "sourceUrl": "https://docs.drips.network/wave/",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-10-11",
+      "owner": "@Hallab7",
+      "reviewer": null,
+      "status": "blocked-unassigned-reviewer",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "generated-references",
+      "cadence": "on-owning-release",
+      "sourceUrl": "https://github.com/rampspec-labs",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-10-11",
+      "owner": "@Hallab7",
+      "reviewer": null,
+      "status": "blocked-no-runtime-release",
+      "automation": "release-dispatch-sync"
+    },
+    {
+      "id": "links-and-export",
+      "cadence": "weekly-and-on-pull-request",
+      "sourceUrl": "https://github.com/rampspec-labs/rampspec-docs",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-09-18",
+      "owner": "@Hallab7",
+      "reviewer": "github-actions",
+      "status": "implemented",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "accessibility",
+      "cadence": "monthly-and-before-stable-release",
+      "sourceUrl": "https://github.com/rampspec-labs/rampspec-docs",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-10-11",
+      "owner": null,
+      "reviewer": "@Hallab7",
+      "status": "blocked-unassigned-owner",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "supported-version-retirement",
+      "cadence": "quarterly-and-before-support-end",
+      "sourceUrl": "https://github.com/rampspec-labs/rampspec-docs",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-12-11",
+      "owner": null,
+      "reviewer": "@Hallab7",
+      "status": "blocked-no-stable-release",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "example-dependencies",
+      "cadence": "weekly-update-and-monthly-execution",
+      "sourceUrl": "https://github.com/rampspec-labs/rampspec-docs",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-10-11",
+      "owner": "@Hallab7",
+      "reviewer": null,
+      "status": "implemented-automation-reviewer-pending",
+      "automation": "dependabot"
+    },
+    {
+      "id": "incident-lessons",
+      "cadence": "after-incident-and-monthly",
+      "sourceUrl": "https://github.com/rampspec-labs/rampspec-docs",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-10-11",
+      "owner": null,
+      "reviewer": "@Hallab7",
+      "status": "blocked-unassigned-owner",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "localization-demand",
+      "cadence": "quarterly",
+      "sourceUrl": "https://github.com/rampspec-labs/rampspec-docs",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-12-11",
+      "owner": null,
+      "reviewer": "@Hallab7",
+      "status": "blocked-no-demand-evidence",
+      "automation": "docs-maintenance"
+    },
+    {
+      "id": "ownership-rotation",
+      "cadence": "quarterly",
+      "sourceUrl": "https://github.com/rampspec-labs/rampspec-docs/blob/main/MAINTAINERS.md",
+      "lastReviewedAt": "2026-09-11",
+      "nextReviewAt": "2026-12-11",
+      "owner": "@Hallab7",
+      "reviewer": null,
+      "status": "blocked-unassigned-reviewer",
+      "automation": "docs-maintenance"
+    }
+  ],
+  "automations": [
+    {
+      "id": "docs-maintenance",
+      "path": ".github/workflows/docs-maintenance.yml",
+      "schedule": "17 6 * * 1",
+      "status": "implemented"
+    },
+    {
+      "id": "dependabot",
+      "path": ".github/dependabot.yml",
+      "schedule": "weekly-npm-monthly-actions",
+      "status": "implemented"
+    },
+    {
+      "id": "release-dispatch-sync",
+      "path": ".github/workflows/sync-*.yml",
+      "schedule": "on-owning-release-dispatch",
+      "status": "blocked-no-runtime-release"
+    }
+  ],
+  "activeAssignedMaintainerCount": 1,
+  "requiredUnassignedAreas": [
+    "protocol",
+    "security",
+    "operations",
+    "product",
+    "accessibility"
+  ],
+  "exitStatus": "blocked",
+  "notice": "Pre-launch calendar. Implemented automation does not prove source freshness, runtime synchronization, or complete maintainer coverage."
+}

@@ -226,7 +226,8 @@
               "operations/self-hosting",
               "operations/observability-and-capacity",
               "operations/database-backup-and-disaster-recovery",
-              "operations/production-readiness"
+              "operations/production-readiness",
+              "operations/documentation-maintenance"
             ]
           },
           {

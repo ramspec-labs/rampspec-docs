@@ -1,6 +1,8 @@
 name: Sync contract artifacts
 
 on:
+  repository_dispatch:
+    types: [contracts-artifacts-released]
   workflow_dispatch:
     inputs:
       contracts_tag:
@@ -25,8 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -34,8 +36,8 @@ jobs:
       - name: Verify contracts tag and download release artifact
         env:
           GH_TOKEN: ${{ secrets.RAMPSPEC_CONTRACTS_READ_TOKEN }}
-          CONTRACTS_TAG: ${{ inputs.contracts_tag }}
-          EXPECTED_COMMIT: ${{ inputs.contracts_commit }}
+          CONTRACTS_TAG: ${{ inputs.contracts_tag || github.event.client_payload.contracts_tag }}
+          EXPECTED_COMMIT: ${{ inputs.contracts_commit || github.event.client_payload.contracts_commit }}
         shell: bash
         run: |
           test -n "$GH_TOKEN"
@@ -50,9 +52,9 @@ jobs:
         run: >-
           npm run import:contracts --
           --source .artifacts/contracts.json
-          --tag "${{ inputs.contracts_tag }}"
-          --commit "${{ inputs.contracts_commit }}"
-          --sha256 "${{ inputs.artifact_sha256 }}"
+          --tag "${{ inputs.contracts_tag || github.event.client_payload.contracts_tag }}"
+          --commit "${{ inputs.contracts_commit || github.event.client_payload.contracts_commit }}"
+          --sha256 "${{ inputs.artifact_sha256 || github.event.client_payload.artifact_sha256 }}"
       - run: npm test
       - run: npm run lint:contracts
       - name: Open generated reference pull request
