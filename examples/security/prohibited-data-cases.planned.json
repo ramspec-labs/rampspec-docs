@@ -1,0 +1,46 @@
+{
+  "schema": "https://schemas.rampspec.dev/prohibited-data-cases/v1.planned.json",
+  "warning": "Cases use symbolic markers and contain no real secrets or personal data.",
+  "cases": [
+    {
+      "id": "real-identity-document-marker",
+      "location": "fixture.image",
+      "expected": "quarantine"
+    },
+    {
+      "id": "customer-record-marker",
+      "location": "scenario.parameters",
+      "expected": "reject"
+    },
+    {
+      "id": "private-key-marker",
+      "location": "artifact.log",
+      "expected": "quarantine-and-rotate"
+    },
+    {
+      "id": "bank-credential-marker",
+      "location": "http.request.body",
+      "expected": "stop-and-quarantine"
+    },
+    {
+      "id": "encoded-secret-canary",
+      "location": "trace.attribute",
+      "expected": "drop-and-incident"
+    },
+    {
+      "id": "screenshot-sensitive-marker",
+      "location": "artifact.screenshot",
+      "expected": "block-upload"
+    },
+    {
+      "id": "archive-nested-marker",
+      "location": "artifact.archive",
+      "expected": "reject"
+    },
+    {
+      "id": "safe-synthetic-fixture",
+      "location": "fixture.profile",
+      "expected": "allow"
+    }
+  ]
+}

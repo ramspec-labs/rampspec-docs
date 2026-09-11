@@ -110,7 +110,10 @@
           },
           {
             "group": "Security",
-            "pages": ["security/threat-model"]
+            "pages": [
+              "security/threat-model",
+              "security/data-handling-and-operations"
+            ]
           },
           {
             "group": "Governance",

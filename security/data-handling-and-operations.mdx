@@ -1,0 +1,129 @@
+---
+title: "Security and privacy operations"
+description: "Operate RampSpec data, synthetic fixtures, secrets, redaction, artifacts, deletion, legal holds, pubnet safety, sharing, and incident communications."
+keywords: ["privacy", "data classification", "redaction", "retention"]
+---
+
+RampSpec minimizes data before collection, uses synthetic identities by default, redacts evidence at the runner boundary, and keeps secrets outside reports and scenarios. Security and privacy controls apply from target setup through final deletion, including caches, exports, notifications, backups, and on-chain commitments.
+
+<Warning>
+  Runtime data controls and review evidence have no tagged release. This page is
+  the required operating contract, not proof that a deployed service currently
+  enforces it.
+</Warning>
+
+## Accountability
+
+Every organization names a data owner, security contact, privacy contact, secret owners, target owners, run/cleanup owners, retention approver, legal-hold authority, and incident communicator. A service identity cannot grant itself access, approve its own exception, publish its own report, or place data on hold.
+
+The organization records processing purpose, permitted targets/networks/modes, data classes, regions/providers, retention, recipients, deletion behavior, and incident contacts before stateful work. Changes create a reviewed version and do not silently expand existing grants.
+
+## Data classes
+
+| Class      | Examples                                                                                                           | Required handling                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Public     | Published SEP/rule IDs, public home domain, approved public report summary                                         | Integrity checked; publication consent; normal encrypted storage                        |
+| Internal   | Project settings, suite locks, run state, health and audit metadata                                                | Tenant-scoped authorization and retention                                               |
+| Sensitive  | Private target name, redacted exchange, screenshot/trace, synthetic customer values                                | Need-to-know artifact role, shorter retention, encrypted object, audited download       |
+| Secret     | API token, Stellar seed, wallet/KMS/admin key, webhook secret, password, raw provider credential                   | Approved secret provider only; write/use/rotate/revoke, never read back through product |
+| Prohibited | Real identity document, real bank/login credential, real customer record, private signing key in scenario/artifact | Reject or stop, quarantine minimum evidence, incident assessment, delete or legal hold  |
+
+Classification follows the most sensitive included field. Hashing, encoding, truncation, or encryption does not lower the class automatically, especially for low-entropy identifiers.
+
+## Data inventory and flow
+
+Maintain a machine-readable inventory for each collected field/object: name/schema pointer, class, purpose, collection source, owner, tenant, processing locations, storage/provider/region, encryption/key purpose, consumers, exports/notifications, retention trigger/deadline, deletion mechanism, backup behavior, and legal basis/hold behavior where applicable.
+
+Run configuration resolves the inventory and redaction policy into the immutable suite lock. A runner may collect only declared fields needed for a selected rule. Undeclared fields are dropped locally and trigger a schema/privacy signal when their appearance indicates upstream drift.
+
+## Synthetic identity policy
+
+Use generated people/organizations with conspicuous test markers, reserved or organization-controlled destinations, non-real document images, organization-owned Stellar accounts, capped testnet value, and unique run namespaces. Fixtures never originate from production exports or real customer support cases.
+
+Keep reusable fixture definitions in the owning backend repository with schema/version, intended SEP/scenarios, locale, creation method, allowed targets/networks, contact routing, cleanup behavior, owner, expiry, and prohibited-data scan result. Secrets are references, not fixture fields.
+
+Before each run, validate namespace, target ownership, network, destination ownership, data/value caps, credential purpose, collision with active fixtures, and deletion/cleanup plan. A fixture that cannot be proven synthetic is prohibited.
+
+## Prohibited input handling
+
+{/* example: examples/security/prohibited-data-cases.planned.json */}
+
+The stored [planned cases](/examples/security/prohibited-data-cases.planned.json) use symbolic markers instead of real sensitive values. The release scanner must detect representative exact, transformed, nested, archive, image/metadata, log, and export cases without storing test secrets.
+
+Scan at scenario/fixture upload, secret write boundary, run preflight, runner capture before egress, artifact ingest, report/export generation, notification/publication, and support-bundle creation. Combine structural rules, destination/namespace allowlists, high-confidence patterns, secret canaries, metadata inspection, and bounded content parsing. Do not send candidate secrets/PII to an unapproved external scanner.
+
+On a match: stop unsafe work, deny publication/share, isolate the object under a restricted incident role, retain only safe digest/class/source/owner/time where possible, revoke exposed credentials, notify security/privacy owners, decide deletion versus legal hold, purge downstream derivatives/caches, verify completion, and document false-positive handling. Normal users and logs must not receive the matched value.
+
+## Secret providers
+
+Supported providers must be explicitly released for managed KMS/secret manager, HashiCorp Vault, OS keychain, environment injection for isolated development only, and air-gapped local runner workflows. Each reference binds provider, tenant/project/target, purpose, allowed runner/mode/network/destination, version, owner, created/activated/expiry, and rotation policy.
+
+The product exposes write, test-use, rotate, disable, and delete/revoke operations but never returns secret values. Workloads receive short-lived use capability or local handle, not broad list/read rights. Provider identity and audit records are tenant/purpose scoped.
+
+Never place secrets in browser storage, query strings, command arguments, process listings, environment dumps, source, scenario YAML, CI artifacts/caches, logs/traces/errors, reports, screenshots, support bundles, object names, or Soroban state.
+
+## Secret rotation and compromise
+
+Normal rotation creates a new provider version, verifies it through a non-destructive test, switches new leases, drains bounded old work, revokes the old version, invalidates caches/tokens, and records affected resources. Dual-secret overlap is short and explicit.
+
+Compromise response disables risky schedules/runs/publication, revokes the version and dependent sessions/tokens, rotates upstream credentials/keys, quarantines affected runners/artifacts/reports, searches value-free fingerprints/canaries across logs and storage, assesses transactions and tenant exposure, notifies owners, and proves the old value no longer works. Never paste the secret into an incident system.
+
+Report-signing, webhook, GitHub App, runner identity, evidence-attestor, contract-admin, database, object-storage, and encryption-key rotations have separate purpose-specific playbooks. One key cannot substitute for another purpose.
+
+## Local redaction
+
+Redaction occurs before evidence leaves the runner or browser sandbox. Start from a deny-by-default evidence schema and allow only fields required by the pinned rule. Apply structured field removal/tokenization, header/cookie/query/body rules, URL normalization, screenshot masks, trace/log attribute filters, XDR/signer policy, and length/count limits.
+
+Record redaction policy/version, input/output digests, removed/transformed field classes and counts, scanner result, and runner identity without retaining removed values. A redaction failure stops artifact upload and makes required evidence indeterminate; it never falls back to raw upload.
+
+Test exact and transformed secrets, case/encoding variants, nested objects/arrays, multipart/compressed/archive content, redirects, browser storage, exception/error stacks, screenshot text/metadata, traces, HAR, XDR, filenames, and generated exports. Human spot review uses controlled synthetic canaries and restricted tooling.
+
+## Artifact access
+
+Artifacts use opaque tenant/run object keys, envelope encryption, content SHA-256, media type, class, redaction policy, size, source, retention deadline, and legal-hold state. Sensitive/raw-artifact permissions are distinct from report view. Authorization rechecks tenant, role, purpose/grant, report/share mode, expiry, and object state for every metadata/read/download operation.
+
+Pre-signed URLs are short-lived, audience/method/object bound where supported, never logged, and revoked by object/grant state. CDN/cache behavior must not retain private content beyond authorization. Views/downloads and denials create safe audit events.
+
+## Retention and deletion
+
+Retention begins from a named event such as run completion, report finalization, share expiry, integration removal, or account deletion. Each class has maximum/default/minimum, owner/exception authority, downstream/backups behavior, and notification timing. Extending retention requires reason, scope, approval, new deadline, and audit event.
+
+Deletion disables access immediately, cancels future processing, deletes primary objects/rows and derived exports/search/cache/notification copies, queues backup expiry according to documented windows, and retains only required value-free audit/integrity metadata. Record request, authority, inventory, per-system result, failures/retries, verification, and completion time.
+
+Correcting evidence creates a new report; finalized reports are not edited. Public ledger entries cannot be deleted and must be superseded/revoked with the original permanence disclosed.
+
+## Legal hold
+
+Only the designated legal authority creates a hold with case ID, scope, reason/reference, custodian, start, review/expiry, and approval. Hold freezes deletion for exact objects while preserving ordinary least-privilege access and encryption; it does not make data public or authorize new processing.
+
+Deletion requests return a safe held status without exposing case details. Periodic review prevents indefinite forgotten holds. Release records actor/time, resumes the original retention clock under documented policy, executes overdue deletion, and verifies backups/derivatives.
+
+## Active-pubnet safety
+
+Pubnet observation and submission are separate. Testnet is default. Active submission requires verified target ownership, organization-owned funded test identities, exact decoded transaction and network passphrase, destination/asset/amount/fee/time bounds, simulation when applicable, dual approval, dedicated signer, reconciliation/idempotency, refund/cleanup plan, budget/kill switch, and public-network evidence labeling.
+
+Never use real customer accounts, identity documents, bank credentials, production admin credentials, uncontrolled destinations, or open-ended payment/signature authority. Unknown submission status is reconciled by transaction/account/target state before retry. Safety-control failure blocks work; it is not a target conformance failure.
+
+## Report sharing and publication
+
+Use the public, partner, and private modes in [Verify and share a report](/reports/verification-and-sharing). Verify signature, ownership, cleanup, network/policy, redaction scan, included artifacts, audience/purpose/expiry, and explicit consent before release. Public views contain no bearer secret and repeat scope/limitations. Partner/private grants are authenticated and audited.
+
+Withdrawal revokes product access, tokens, cache variants, and future notifications but cannot recall downloaded copies or ledger history. Sharing never changes canonical report bytes.
+
+## Vulnerability reporting
+
+Follow [Security Policy](/SECURITY). Do not open public issues for suspected secret/PII exposure, unauthorized target access, signing/transaction weakness, tenant escape, runner sandbox bypass, report forgery, or contract/admin compromise. Use synthetic reproduction data and identify affected repository/version/digest, impact, prerequisites, safe steps, and mitigations without active credentials.
+
+Triage acknowledges receipt, restricts access, assigns severity/owner across repositories, preserves evidence, coordinates remediation/release, validates fixes and rotations/deletion, and schedules disclosure. Acknowledgement is not a bounty or remediation-date promise.
+
+## Incident communication
+
+Use one incident ID, severity, commander, security/privacy/legal/product/operations owners, affected tenants/data classes/components/versions/regions/time range, containment, user action, next update time, and approved channel. Separate confirmed facts, working hypotheses, and unknowns.
+
+Internal updates contain no raw secrets/PII. Customer notices are tenant-specific, state what happened/when/data/actions/current protection/contact, and avoid unsupported assurances. Public advisories identify affected/safe versions, severity, remediation, credit, and verification evidence when disclosure is safe. Regulatory/contractual notices follow the responsible authority and recorded deadlines.
+
+After recovery, publish a blameless review with timeline, root/control causes, impact, detection/response gaps, corrective owners/deadlines, test/runbook changes, and evidence that temporary access/holds/credentials were closed.
+
+## Release gate
+
+Production approval requires a reviewed data inventory, synthetic fixture suite, all symbolic prohibited-data cases, secret lifecycle and canary tests, local-redaction corpus, artifact authorization/tamper tests, retention/deletion/backup verification, legal-hold create/release exercise, pubnet-denial/approval/reconciliation tests, sharing expiry/withdrawal, private vulnerability channel, and incident communication tabletop. Runtime proof remains unavailable until compatible frontend/backend/runner releases and operator exercises exist.
