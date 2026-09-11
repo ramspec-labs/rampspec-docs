@@ -122,6 +122,16 @@
               "governance/docs-release-policy",
               "governance/docs-deployment"
             ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/index",
+              "contributing/frontend",
+              "contributing/backend",
+              "contributing/contracts",
+              "contributing/docs"
+            ]
           }
         ]
       },

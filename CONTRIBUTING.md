@@ -5,9 +5,10 @@ Thank you for improving RampSpec. Documentation changes are product changes: the
 ## Before starting
 
 1. Read the issue and confirm this repository owns the requested outcome.
-2. Link the authoritative API, schema, contract, SEP snapshot, release, or decision record.
-3. State whether examples are planned, fixture-validated, locally checked, testnet deployed, or pubnet deployed.
-4. Never add credentials, private endpoints, customer data, real identity documents, or unrestricted signing instructions.
+2. Follow the [repository-specific setup guide](contributing/index.mdx) and record the commands that actually ran.
+3. Link the authoritative API, schema, contract, SEP snapshot, release, or decision record.
+4. State whether examples are planned, fixture-validated, locally checked, testnet deployed, or pubnet deployed.
+5. Never add credentials, private endpoints, customer data, real identity documents, or unrestricted signing instructions.
 
 ## Authoring rules
 
@@ -23,6 +24,8 @@ Thank you for improving RampSpec. Documentation changes are product changes: the
 ## Pull requests
 
 Keep one independently reviewable outcome per pull request. Complete the pull request template, include the validation commands and results, identify cross-repository dependencies, and link the issue with `Closes #<number>` when applicable.
+
+Do not combine source and generated changes without recording the generator command, source release, and deterministic diff. A dependency update starts in the owning repository, then moves through tagged artifacts and explicit consumer pull requests; it is never copied manually between repositories.
 
 Maintainers may request protocol, security, accessibility, legal-language, or owning-repository review. All required checks and reviews must pass before merge.
 

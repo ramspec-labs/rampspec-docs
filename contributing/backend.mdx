@@ -1,0 +1,44 @@
+---
+title: "Contribute to the backend"
+description: "Ownership, setup, validation, fixture, network, and review requirements for rampspec-backend changes."
+keywords: ["backend", "API", "rules", "contributors"]
+---
+
+`rampspec-backend` owns APIs, durable workflows, rule and scenario engines, runners, CLI behavior, schemas, canonical reports, integrations, persistence, and hosted operations. It does not own the product UI, Soroban source, or long-form documentation.
+
+<Warning>
+  This repository currently contains only `implementation.md`. No workspace,
+  package manifest, lockfile, migration, service, test command, or CI workflow
+  exists. Runtime setup and validation are **Planned**.
+</Warning>
+
+## Setup available today
+
+Clone and inspect the plan with Git only:
+
+```powershell
+gh repo clone rampspec-labs/rampspec-backend
+Set-Location rampspec-backend
+git status --short
+git diff --check
+```
+
+Do not invent `pnpm`, database, Temporal, Redis, object-storage, container, migration, or service commands. The repository must first commit pinned Node and package-manager versions, a lockfile, environment schema, workspace scripts, safe defaults, and disposable development dependencies.
+
+## Change and test boundary
+
+Keep source plus its closest unit/contract test together. API changes include OpenAPI tests and standard problem responses; schema changes include valid and invalid corpora; workflow changes prove deterministic replay and activity failure; migrations prove empty install and supported upgrades; protocol changes include source pins, branch fixtures, cleanup, and report effects.
+
+Focused checks will target the changed package and its contract. Full checks must eventually cover clean frozen install, lint, typecheck, tests, build, migrations, generated drift, security scans, and deterministic fixture/report output. Until commands exist, only Git integrity can be checked and the implementation exit check remains unavailable.
+
+## Generated artifacts and fixtures
+
+The backend is the source of truth for OpenAPI, rule/scenario/suite/event/report schemas, SDK sources, and compatibility metadata. Edit their generators or authored inputs, not emitted bundles. Release jobs must reproduce output and publish tag, commit, path, schema/API version, generator version, and SHA-256 for consumers.
+
+Use synthetic data with explicit expected cleanup. Declare every fixture as mock, local, testnet, pubnet observation, or pubnet submission. Mutations default to local or testnet. Pubnet submission remains globally disabled unless governance, ownership, allowlist, value limits, authorization, preview, confirmation, signer policy, monitoring, and incident controls all pass.
+
+## Commits and review
+
+Use one runtime outcome per commit and pull request. Include migrations, compatibility, rollback/forward-fix, authorization, audit events, failure paths, deterministic evidence, exact checks, network mode, and downstream consumers. Backend maintainers review runtime behavior; protocol review is required for conformance interpretation, security review for trust/network/data boundaries, and operations review for persistence, workflow, runner, and deployment changes.
+
+Downstream docs or frontend work starts only after an immutable backend artifact exists. Link follow-up pull requests and do not paste generated output into consumers before release.

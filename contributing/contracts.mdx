@@ -1,0 +1,45 @@
+---
+title: "Contribute to the contracts"
+description: "Security-sensitive setup, build, fixture, network, and review requirements for rampspec-contracts changes."
+keywords: ["contracts", "Soroban", "Rust", "contributors"]
+---
+
+`rampspec-contracts` owns Soroban evidence and fixture source, generated specifications and bindings, WASM, checksums, deployment manifests, and contract verification metadata. It never owns full reports, URLs, secrets, KYC data, hosted state, or customer funds.
+
+<Warning>
+  This repository currently contains only `implementation.md`. No Cargo
+  workspace, lockfile, pinned Rust toolchain, Stellar CLI configuration,
+  contract source, tests, or CI exists. Contract setup and validation are
+  **Planned**.
+</Warning>
+
+## Setup available today
+
+Use Git to inspect the plan and checkout state:
+
+```powershell
+gh repo clone rampspec-labs/rampspec-contracts
+Set-Location rampspec-contracts
+git status --short
+git diff --check
+```
+
+Do not guess Rust, Soroban SDK, Stellar CLI, target, container, optimizer, format, lint, test, fuzz, binding, or deployment commands. The repository must first commit and pin all of them, including a lockfile and deterministic build container.
+
+## Change and test boundary
+
+Each contribution changes one narrow contract behavior or delivery capability. Add focused authorization, validation, event, storage, TTL, upgrade, error-number, invariant, property, and resource-budget tests as applicable. Full checks must eventually include formatting, Rust linting with warnings denied, unit/integration/property tests, fuzz compilation, deterministic WASM, generated spec/binding drift, checksum repetition, dependency review, and SBOM generation.
+
+Generated specifications, TypeScript bindings, optimized WASM, and checksums come from source and pinned tools. Never edit them manually. A release records source tag/commit, toolchain/container digests, generated paths, WASM SHA-256, contract/spec version, network passphrase, contract address when deployed, and verification command.
+
+## Fixtures and network safety
+
+Fixtures use synthetic keys and accounts with no real value. Run contract behavior locally first. Testnet deployment requires a reviewed manifest, bounded funded account, exact passphrase/RPC, simulation, authorization preview, and post-deployment verification. Pubnet deployment requires a separate explicit decision and operator ceremony; documentation, a local build, or testnet success is never authorization.
+
+Never store seed phrases or secret keys in source, fixtures, logs, generated bindings, shell history, or manifests. Contracts must not custody customer funds or publish sensitive report content.
+
+## Commits and review
+
+Use one security-relevant outcome per commit and pull request. Include threat and authorization impact, storage/TTL compatibility, error/event changes, resource deltas, generated diffs, deterministic hashes, exact checks, and network/deployment state. Contracts maintainers and a security reviewer approve privileged, upgrade, storage, auth, or publication changes; backend and docs owners review released interface consumption.
+
+The repository is contributor-ready only when a fresh checkout reproduces its crate graph, tests, WASM, specs, bindings, and checksums with pinned tools.

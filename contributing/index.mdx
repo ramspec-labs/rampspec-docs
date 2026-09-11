@@ -1,0 +1,69 @@
+---
+title: "Contributor setup"
+description: "Choose the owning RampSpec repository, establish a safe local checkout, and submit independently verifiable changes."
+keywords: ["contributing", "setup", "repository", "pull request"]
+---
+
+RampSpec accepts changes in four independently versioned private repositories. Start in the repository that owns the behavior, keep the change narrow, and describe every downstream update rather than editing another repository's generated output by hand.
+
+<Warning>
+  Only `rampspec-docs` currently has an executable project toolchain. The
+  frontend, backend, and contracts repositories contain implementation plans
+  only. Their setup and exit checks remain **Planned** until their foundational
+  commits provide pinned tools, lock files, scripts, tests, and CI.
+</Warning>
+
+## Choose the repository
+
+| Repository           | Contribution entry point | Current executable state                  |
+| -------------------- | ------------------------ | ----------------------------------------- |
+| `rampspec-frontend`  | [Frontend](./frontend)   | Plan review and Git checks only           |
+| `rampspec-backend`   | [Backend](./backend)     | Plan review and Git checks only           |
+| `rampspec-contracts` | [Contracts](./contracts) | Plan review and Git checks only           |
+| `rampspec-docs`      | [Documentation](./docs)  | Install, focused checks, tests, and build |
+
+Route UI behavior to frontend, runtime/API/rules/schemas to backend, Soroban source and artifacts to contracts, and authored guidance/navigation to docs. Report sensitive security issues through the owning repository's private security channel rather than a public issue.
+
+## Common prerequisites
+
+- access to the private `rampspec-labs` organization and selected repository;
+- Git configured with a contributor identity and credential helper;
+- an authenticated GitHub CLI or equivalent HTTPS credential for clone and pull request operations;
+- a supported PowerShell, shell, editor, and platform named by the repository once its toolchain exists;
+- no production credentials, customer records, private target URLs, real identity documents, or unrestricted signing keys in the checkout.
+
+Clone only the repository needed for the issue and create a focused branch from the protected default branch:
+
+```powershell
+gh auth status
+gh repo clone rampspec-labs/<repository>
+Set-Location <repository>
+git switch -c <type>/<issue>-<short-description>
+git status --short
+```
+
+Do not work from a release tag, force-push a shared branch, or weaken branch protection to merge a change.
+
+## Work and validation loop
+
+1. Read the repository plan, contribution policy, security policy, maintainer map, and issue acceptance criteria.
+2. Confirm ownership and list any cross-repository consumers before editing.
+3. Add or update the smallest source, fixture, and test set that proves the behavior.
+4. Run the page's focused checks, then its full checks from a clean dependency install.
+5. Review `git diff`, `git diff --check`, generated changes, secret scan results, and network evidence.
+6. Commit one independently reviewable outcome and open a pull request with exact command results.
+7. Obtain owning maintainer review plus protocol, security, accessibility, operations, or documentation review when the page requires it.
+
+Never describe a check as passing when it was unavailable, skipped, mocked, or run against a different network. Record those states separately.
+
+## Generated artifacts and fixtures
+
+Generated files move in one direction from their owner. Backend releases OpenAPI and JSON Schema bundles; contracts releases specs, bindings, WASM hashes, and deployment manifests; frontend releases user-visible behavior; docs imports pinned artifacts and documents released behavior. Every consumer update records source repository, immutable tag, commit, path, SHA-256, generator version, and compatibility decision.
+
+Fixtures use synthetic identities and destinations. Valid, invalid, boundary, replay, cancellation, cleanup, and regression cases must declare whether they are local, mocked, testnet, pubnet observation, or pubnet submission. Pubnet submission is prohibited until the documented activation decision exists.
+
+## Pull request evidence
+
+Every pull request contains the outcome, source of truth, evidence state, tests and exact results, safety/network declaration, generated-file status, compatibility impact, rollback or forward-fix note, documentation impact, and `Closes #<number>` when applicable. Link dependent pull requests without making them appear merged or released.
+
+The exit check for this guide is complete only when a fresh contributor can validate each repository independently. That is currently true only for `rampspec-docs`; the other three rows remain planned and must not be promoted by documentation alone.

@@ -1,0 +1,44 @@
+---
+title: "Contribute to the frontend"
+description: "Ownership, setup, checks, fixtures, safety, and review requirements for rampspec-frontend changes."
+keywords: ["frontend", "Next.js", "contributors", "generated client"]
+---
+
+`rampspec-frontend` owns the browser application, user interaction, accessibility, wallet connection, and consumption of released backend and contract interfaces. It does not execute protocol journeys, calculate authoritative results, store secrets, define APIs, or own Soroban source.
+
+<Warning>
+  This repository currently contains only `implementation.md`. No package
+  manifest, lockfile, application source, test command, or CI workflow exists.
+  Toolchain installation and application validation are **Planned**.
+</Warning>
+
+## Setup available today
+
+Prerequisites are private repository access and Git. Clone the repository, read the full plan, and verify the checkout without assuming a package manager:
+
+```powershell
+gh repo clone rampspec-labs/rampspec-frontend
+Set-Location rampspec-frontend
+git status --short
+git diff --check
+```
+
+Do not run or document `npm`, `pnpm`, Next.js, Storybook, browser-test, or generated-client commands until the repository commits its supported Node version, package manifest, lockfile, and scripts. The planned foundation selects strict TypeScript, Next.js App Router, `pnpm`, accessibility checks, and responsive browser coverage; the committed files remain authoritative.
+
+## Change and test boundary
+
+Keep application components, routes, state, browser telemetry, generated-client adapters, and UI tests here. Focused checks will cover the changed component or route, accessibility, long identifiers, responsive layouts, loading/error/denied states, and browser safety. Full checks must eventually include clean frozen install, generated-file drift, lint, typecheck, unit/component/browser tests, and production build.
+
+Until those scripts exist, record the full exit check as unavailable rather than passed. `git diff --check` proves whitespace integrity only.
+
+## Generated clients and fixtures
+
+Generate API types from one tagged backend OpenAPI artifact and read-only contract clients from one tagged contracts release. Never hand-edit either output. The pull request records source tag/commit, artifact hash, generator version/command, and the exact generated diff. Compatibility adapters are authored source and require focused tests.
+
+Use synthetic UI data. Browser fixtures must not include API keys, JWTs, secret references, raw traffic, real KYC data, private targets, or signing keys. Wallet and transaction previews must bind to the intended network and require explicit user confirmation; the browser never silently submits or signs.
+
+## Commits and review
+
+Use one UI outcome per commit and pull request. Include before/after behavior, viewport and accessibility evidence, focused/full command results, backend or contracts version impact, and screenshots only when they contain no sensitive data. Frontend maintainers review application behavior; accessibility review is required for interaction changes, security review for auth/wallet/telemetry work, and owning backend or contracts review for generated-interface changes.
+
+The repository becomes independently contributor-ready only after a clean checkout installs from its lockfile and all documented checks pass on the supported viewport matrix.

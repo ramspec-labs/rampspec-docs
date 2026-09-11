@@ -19,9 +19,9 @@ Generated runtime interfaces are imported from tagged releases. Do not manually 
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow, [SECURITY.md](SECURITY.md) for private vulnerability reporting, and [governance/docs-release-policy.mdx](governance/docs-release-policy.mdx) for documentation release rules.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for policy, [contributing/index.mdx](contributing/index.mdx) for the four-repository workflow, [SECURITY.md](SECURITY.md) for private vulnerability reporting, and [governance/docs-release-policy.mdx](governance/docs-release-policy.mdx) for documentation release rules.
 
-The local documentation toolchain is introduced in the next implementation unit. Until then, review Markdown structure and run `git diff --check` before opening a pull request.
+For this repository, install Node.js 20 or newer, run `npm ci`, and use `npm test` plus `npm run build` before opening a pull request. The repository-specific guide lists focused checks and generated-artifact rules.
 
 ## License
 

@@ -1,0 +1,77 @@
+---
+title: "Contribute to the documentation"
+description: "Runnable setup, checks, generated imports, examples, and review requirements for rampspec-docs."
+keywords: ["documentation", "Mintlify", "contributors", "validation"]
+---
+
+`rampspec-docs` owns authored guidance, navigation, examples, generated-reference import tooling, and documentation releases. It describes released runtime behavior but does not redefine APIs, schemas, rules, reports, UI behavior, or contracts.
+
+## Prerequisites and setup
+
+Use Git, private repository access, and Node.js 20 or newer. `npm ci` is the supported reproducible install because `package-lock.json` is committed.
+
+```powershell
+gh repo clone rampspec-labs/rampspec-docs
+Set-Location rampspec-docs
+node --version
+npm --version
+npm ci
+npm run dev
+```
+
+The development server is for authoring only. It does not prove links, generated imports, tests, or production export. Keep secrets and private target information out of local environment files and examples.
+
+## Focused checks
+
+Run the narrow validator for the changed surface, then inspect the diff:
+
+| Change                             | Focused command                                       |
+| ---------------------------------- | ----------------------------------------------------- |
+| MDX, navigation, or internal links | `npm run lint:mintlify`                               |
+| Authored content                   | `npm run lint:content` and `npm run lint:spelling`    |
+| External source links              | `npm run lint:external`                               |
+| OpenAPI import                     | `npm run lint:openapi`                                |
+| Schema bundle import               | `npm run lint:schemas`                                |
+| Contract bundle import             | `npm run lint:contracts`                              |
+| Release manifest                   | `npm run lint:manifests`                              |
+| Standards snapshot                 | `npm run lint:standards`                              |
+| References or code examples        | `npm run lint:references` and `npm run lint:snippets` |
+| Formatting                         | `npm run format:check`                                |
+
+Always run `git diff --check`. Use `npm run format` only for files in the intended change, then confirm formatting did not create unrelated churn.
+
+## Full checks
+
+Before opening or updating a pull request, run:
+
+```powershell
+npm test
+npm run lint:external
+npm run build
+git diff --check
+git status --short
+```
+
+`npm run build` runs type checking, all repository lint gates, a static Mintlify export, and extraction to `out/`. Review changed pages at phone and desktop widths, confirm navigation and code wrapping, and verify no content overlaps or disappears. Record the actual page count and any unavailable visual check.
+
+## Generated imports, fixtures, and examples
+
+Do not edit `generated/` manually. Import only an immutable owning-repository release and verify its declared digest before running the matching script:
+
+```powershell
+npm run import:openapi -- <pinned-artifact-and-metadata>
+npm run import:schemas -- <pinned-artifact-and-metadata>
+npm run import:contracts -- <pinned-artifact-and-metadata>
+```
+
+Arguments remain governed by the importing script and source release; inspect `--help` or the script before use. If no tagged source artifact exists, keep the reference unavailable or planned rather than manufacturing one.
+
+Store executable examples and fixtures under `examples/` or the owning test directory, use synthetic values, include the status in planned filenames when appropriate, and extend validators or tests so stale and unsafe content fails CI. Never include credentials, real identity/customer data, private endpoints, or unrestricted signing commands.
+
+## Commits, pull requests, and review
+
+Commit one documentation outcome at a time. The pull request records source of truth, evidence state, focused and full results, navigation/examples changed, visual review, generated source metadata, safety impact, downstream dependencies, and `Closes #<number>` when applicable.
+
+Documentation maintainers review all changes. Backend, contracts, or frontend owners approve claims about their released behavior. Protocol review covers SEP interpretation; security/privacy review covers sensitive or network-mutating guidance; operations review covers deployment and incident procedures; accessibility review covers navigation and visual interaction.
+
+When another repository must change, open and release the source change there first. Then import the immutable artifact in a separate docs pull request and update the compatibility manifest. A documentation commit never stands in for an unreleased runtime change.
