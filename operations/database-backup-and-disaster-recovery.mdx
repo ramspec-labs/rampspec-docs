@@ -1,0 +1,141 @@
+---
+title: "Database, backup, and disaster recovery"
+description: "Migrate and recover RampSpec relational, workflow, object, cryptographic, configuration, and evidence state through tested procedures."
+keywords: ["database", "backup", "point-in-time recovery", "disaster recovery"]
+---
+
+RampSpec recovery protects control state, workflow correctness, canonical evidence, cryptographic trust, and tenant isolation. Restoring availability is not enough: operators must prove the selected recovery point, reconcile side effects, verify reports/artifacts/signatures, and state any loss.
+
+<Warning>
+  No backend migration bundle, production backup, restore record, or disaster
+  recovery exercise exists. The 15-minute recovery point and four-hour recovery
+  time are **Initial targets**, not measured commitments.
+</Warning>
+
+## Data-system authority
+
+| System                           | Authoritative content                                                                 | Recovery source                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| PostgreSQL                       | Tenants, config, runs/findings/reports metadata, schedules/integrations/audit indexes | Continuous log archive plus encrypted snapshots                                       |
+| Temporal persistence             | Durable workflow/event history, timers, activity/task state                           | Provider/cluster persistence backup and supported recovery procedure                  |
+| Object storage                   | Canonical reports, redacted evidence/artifacts/exports, manifests                     | Versioning, replication, inventory, immutable backups where required                  |
+| KMS/secret provider              | Encryption/signing key service and protected secret versions                          | Provider-native replicated/recovery controls and dual-control metadata                |
+| Infrastructure/config repository | Network, identity, stores, services, policy/config schemas                            | Reviewed code, immutable release/config artifacts, state recovery process             |
+| Stellar ledger/Soroban           | Transactions, events, compact evidence state                                          | Network history/archive RPC plus verified deployment manifests/code hashes            |
+| Redis                            | Rate limits, caches, short idempotency/cursor windows                                 | Rebuild from durable systems; never a sole recovery source                            |
+| Search/index/read models         | Derived report/evidence/event views                                                   | Rebuild from PostgreSQL, objects, Temporal exports where supported, and ledger events |
+
+Document source of truth, consistency link, backup mechanism, encryption, region/account, owner, retention/hold, restore order, and verification for every table/object/index/key class. A cache or dashboard is never used to invent missing authoritative data.
+
+## Recovery objectives
+
+Initial control-data recovery point objective is no more than 15 minutes of confirmed durable writes lost. Initial control-plane recovery time objective is four hours from declared regional disaster to verified limited service. Measure PostgreSQL, workflow, object, key, and configuration loss separately; the effective recovery point is the oldest consistent required component.
+
+Canonical reports and required audit/evidence artifacts may require a stricter no-loss policy through durable write acknowledgement and cross-region replication. Define per-class objectives, exclusions, measurement clock, and dependency assumptions in the release/operator policy.
+
+An exercise records actual incident start, detection/declaration, selected recovery point, last confirmed source write, restored service milestones, full verification, and measured loss/time. Until representative exercises exist, objective status remains Initial.
+
+## Migration contract
+
+Every tagged backend release publishes migration ID/order/checksum, supported source schema/product versions, target version, backward/forward compatibility, locks/downtime, transaction behavior, data-size/resource estimate, preconditions, backup point, verification queries, rollback eligibility, forward-fix path, and privacy-safe diagnostics.
+
+Migrations are immutable and monotonic. Applied checksum drift is a release failure. Use a dedicated least-privilege migration identity and one advisory/application lock. Runtime identities cannot alter schema. Startup refuses an unsupported older/newer or partially applied schema.
+
+### Migration procedure
+
+1. verify release/migration artifacts and supported current path;
+2. inventory active workflows/runs/schedules/deliveries/evidence operations and determine drain/pause behavior;
+3. pass database integrity/replication/capacity checks and take a named recoverable point-in-time marker;
+4. rehearse on a recent isolated restore at representative size and record duration/locks/resources;
+5. deploy compatible workers/API according to backward-compatibility order;
+6. acquire the migration lock, run exactly once, and preserve statement/step state without values;
+7. verify schema version/checksums, constraints/indexes/count invariants, tenant links, sampled digests, and application compatibility;
+8. canary synthetic read/write/workflow/report/cleanup, then resume traffic gradually;
+9. record operator, release, source/target schema, backup marker, times, result, and remaining rollback deadline.
+
+On failure, stop writers, preserve logs/checkpoints, classify committed state, and follow the published rollback or forward-fix decision. Never rerun blindly, edit the migration ledger, or restore one component while leaving incompatible workflows/objects.
+
+## PostgreSQL protection
+
+Use encrypted continuous transaction-log archival, daily encrypted snapshots at minimum, multi-zone high availability, backup account/project separation, restricted backup/restore roles, checksums/integrity monitoring, retention/immutability, point-in-time restore markers for releases, and catalog/inventory alerts. Backups inherit tenant sensitivity and legal holds.
+
+Test that logs span every snapshot to the target time and that keys are recoverable. Monitor last successful archive/snapshot, lag, size/growth, restore eligibility, expiration, corruption signals, and provider limits. A “backup completed” status without restore verification is insufficient.
+
+### Point-in-time restore
+
+Restore into isolated network/account with no production ingress, integrations, schedules, runners, signing, evidence, or pubnet. Select time before the corrupt/destructive event while considering transaction time and cross-system consistency. Verify engine/extensions/settings/roles/schema and restore logs through the chosen point.
+
+Keep outbound side effects disabled. Reconcile PostgreSQL run/workflow/delivery/evidence records with Temporal, objects, and Stellar by immutable IDs/digests. Duplicate or unknown side effects require authoritative target/ledger lookup before retry.
+
+## Object protection
+
+Enable versioning, KMS encryption, lifecycle/retention/legal hold, inventory with content SHA-256, and cross-region replication for canonical reports and required audit/evidence artifacts. Replication destination uses separate access policy/account and cannot be deleted by ordinary application identities.
+
+Monitor object/metadata/versions, failed or delayed replication, delete markers, inventory drift, key access, and lifecycle conflicts. Restore into a new private prefix/bucket, scan, verify byte length/digest/media/class/redaction/owner/report links, then repoint through reviewed configuration. Never overwrite the only good version.
+
+Missing optional artifacts are explicit; missing required evidence may make reports unverifiable. Do not regenerate a canonical report with different bytes under the old identity/signature.
+
+## Temporal history
+
+Follow the selected managed/self-hosted Temporal version's supported persistence backup and recovery procedure, including namespace, cluster identity, shard/history/visibility dependencies, encryption, retention, and compatible server/worker builds. Do not treat visibility/search data alone as workflow history.
+
+Before backup/recovery, record active workflow IDs/run IDs/build/task queues and pause new schedules/admission if needed. After restore, start only compatible workers, validate replay determinism on sampled/all critical histories, reconcile pending activities/timers/signals with external side effects, and prevent duplicate callbacks/payments/publications.
+
+When history cannot be restored, do not reconstruct it from current status. Mark affected runs indeterminate/cancelled under policy, complete cleanup manually, preserve evidence, and create new runs only after reconciliation.
+
+## KMS and secret recovery
+
+Inventory keys by purpose/environment/provider/region, alias/version, policy, activation/retirement/revocation, encrypted-object/report dependencies, and recovery owner. Use provider-native multi-region/backup capabilities where available, dual control, separate break-glass authorization, and tested loss/disable/rotation procedures. Do not export raw key material as a generic backup.
+
+Recovery verifies provider/account/region, key ID/material continuity or documented rewrap/rotation, algorithm/purpose policy, workload identities, audit logs, and representative decrypt/sign/verify operations using synthetic data. Report-signing recovery must not sign a report that is not finalized; envelope-key recovery must verify old/new object access without broad grants.
+
+If key material is unrecoverable, state exactly which encrypted objects or signatures are affected. Do not call unreadable data restored. Revoke/rotate compromised keys and apply the published historical-signature decision.
+
+## Infrastructure reconstruction
+
+Rebuild network, DNS/TLS, identities, stores, KMS/secrets, Kubernetes/services, policy, telemetry, backups, and runner boundaries from reviewed infrastructure/configuration code and immutable release manifests in a clean account/region. State files/backends are themselves encrypted, access-controlled, backed up, and reconciled before apply.
+
+Manual emergency changes are captured, reviewed, and returned to code. Verify environment/region ownership, no cross-environment secret, private endpoints/default-deny policies, image/chart digests, schema compatibility, and provider limits before data restore.
+
+## Regional disaster sequence
+
+1. declare incident, freeze deploy/migrations/config/keys, stop risky admission/schedules/integrations/evidence/pubnet, and preserve cleanup/report reads if safe;
+2. determine blast radius and last consistent PostgreSQL/Temporal/object/key/config/ledger points;
+3. choose recovery region and point under incident commander plus database/workflow/security/privacy approval;
+4. reconstruct isolated infrastructure and restore keys/secrets metadata/access;
+5. restore PostgreSQL, Temporal, and objects without external side effects; rebuild Redis/indexes;
+6. reconcile runs/workflows/artifacts/deliveries/signatures/evidence/ledger and record loss/duplicates/unknowns;
+7. run tenant isolation, auth, migration, privacy/redaction, signature/report, runner/network, integration-disabled, and synthetic SEP-1 checks;
+8. enable read-only traffic, then controlled writes/testnet runs; keep pubnet/evidence and schedules gated;
+9. fail over DNS/ingress gradually, monitor objectives and old-region fencing;
+10. communicate recovery point/time/data impact and verify cleanup/backup/replication in the new primary.
+
+Never allow both regions to accept conflicting schedulers, workflows, callbacks, signing, or evidence submissions. Fence identities, queues, ingress, and write endpoints before promotion.
+
+## Evidence and ledger recovery
+
+Soroban state/events are external durable history, not restored from RampSpec backups. Verify network/passphrase, release/deployment manifest, live code hash, initial ledger, and event continuity; rebuild the index idempotently by transaction/event index and compare direct state. Historical transaction/evidence links remain valid even if the control database is lost.
+
+Off-chain canonical reports must be restored and independently verified before reconnecting commitments. A ledger commitment without its report proves only the hash was published. Superseded/revoked history and privacy leakage cannot be removed.
+
+## Restore exercise
+
+{/* example: examples/operations/restore-exercise.planned.json */}
+
+The stored [planned record](/examples/operations/restore-exercise.planned.json) requires measured times and component verification but contains no claimed results. Quarterly production-like staging exercises use synthetic data and a surprise recovery point selected after backup creation.
+
+Exercise full regional loss plus focused database corruption, deleted/changed object, Temporal worker/history failure, KMS disable/loss scenario, infrastructure rebuild, and index recreation. Include active long-running workflow, callback/delivery retry, schedule, finalized signed reports/artifacts, legal hold, and Soroban testnet lookup without permitting real outbound side effects.
+
+Pass only when the procedure has no undocumented step; selected point and loss are measured; every tenant/object/report/workflow link reconciles; reports/signatures/artifacts verify; no duplicate side effect occurs; target/testnet interactions stay disabled until approval; synthetic SEP-1 succeeds after enablement; backups/replication resume; and corrective issues have owners/dates.
+
+## Communication
+
+Internal updates state incident/recovery IDs, affected systems/regions/tenants/data classes, selected recovery point, estimated/confirmed loss, duplicate/unknown actions, service modes, containment, next milestone/update, and owners without raw customer/secret data.
+
+Customer messages distinguish unavailable, delayed, lost, duplicated, unverifiable, or safely retained data; identify time range and required action; and avoid claiming no loss before reconciliation. Notify privacy/legal/security authorities under recorded obligations. The public status page contains aggregate impact only.
+
+Afterward publish measured RPO/RTO, timeline, root/control causes, recovery deviations/manual steps, data/integrity findings, cost/capacity, communication performance, and corrective actions. Update migrations, automation, monitoring, tests, and runbooks before closing.
+
+## Release gate
+
+Production readiness requires migrations from every supported release, checksum/partial-failure tests, point-in-time and snapshot restore, object version/replication restore, Temporal compatible replay/reconciliation, KMS purpose recovery/rotation, clean infrastructure reconstruction, ledger index rebuild, regional fencing/failover, tenant/privacy/integrity checks, and a dated staging exercise with measured outcomes. All remain planned until backend/infrastructure releases and exercise evidence exist.

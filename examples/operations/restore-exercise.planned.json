@@ -1,0 +1,37 @@
+{
+  "schema": "https://schemas.rampspec.dev/restore-exercise/v1.planned.json",
+  "status": "not-executed",
+  "environment": "staging",
+  "exerciseAt": null,
+  "sourceRelease": "<release-manifest-digest>",
+  "selectedRecoveryPoint": null,
+  "declaredAt": null,
+  "readOnlyAt": null,
+  "writeServiceAt": null,
+  "fullyVerifiedAt": null,
+  "measuredRpoMinutes": null,
+  "measuredRtoMinutes": null,
+  "components": {
+    "postgresql": "pending",
+    "temporalHistory": "pending",
+    "objectStorage": "pending",
+    "kmsAndSecrets": "pending",
+    "infrastructure": "pending",
+    "redisAndIndexes": "pending",
+    "sorobanIndex": "pending"
+  },
+  "verification": {
+    "tenantIsolation": "pending",
+    "workflowReplay": "pending",
+    "sideEffectReconciliation": "pending",
+    "reportAndArtifactIntegrity": "pending",
+    "redactionAndDeletion": "pending",
+    "syntheticSep1": "pending",
+    "backupResumed": "pending"
+  },
+  "dataLoss": [],
+  "duplicateOrUnknownEffects": [],
+  "undocumentedSteps": [],
+  "correctiveActions": [],
+  "approvals": []
+}
