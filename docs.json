@@ -138,6 +138,10 @@
             ]
           },
           {
+            "group": "Protocols",
+            "pages": ["guides/protocols/sep-1"]
+          },
+          {
             "group": "Maintainers",
             "pages": ["guides/maintainers/spec-synchronization"]
           }

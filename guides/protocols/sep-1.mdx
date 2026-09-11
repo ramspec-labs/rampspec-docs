@@ -1,0 +1,138 @@
+---
+title: "SEP-1 discovery"
+description: "Test Stellar Info File transport, TOML structure, fields, URLs, accounts, assets, and cross-endpoint coherence safely."
+keywords: ["SEP-1", "stellar.toml", "discovery", "CORS", "assets"]
+---
+
+SEP-1 gives clients a common discovery document at the HTTPS path `/.well-known/stellar.toml` on the selected domain. RampSpec evaluates the file against the exact upstream snapshot, then applies separately labeled security and interoperability checks without turning them into new SEP requirements.
+
+<Warning>
+  SEP-1 is Active upstream at version 2.7.0 in the pinned snapshot, but no
+  RampSpec SEP-1 rule pack, fixture release, or finding catalog exists. Coverage
+  described here remains **Planned** and no example is live-target proof.
+</Warning>
+
+## Pinned source and scope
+
+The normative source is [SEP-1 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0001.md#specification). The source digest and metadata are recorded in the [standards baseline](/reference/standards-baseline).
+
+| Coverage layer | Included                                                                             | Classification                                                        |
+| -------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Transport      | Standard path, wildcard CORS, body size, and recommended content type.               | `MUST` or `SHOULD` according to the pinned text.                      |
+| Syntax         | TOML parse, duplicate keys, value types, table shape, and declared SEP version.      | `MUST` where the source defines the format.                           |
+| Fields         | General, documentation, principals, currencies, and validators.                      | `MUST` or `SHOULD` only where supported by cited text.                |
+| Safety         | TLS, redirects, DNS/address changes, parser limits, and malicious URL handling.      | `SECURITY`.                                                           |
+| Coherence      | Advertised endpoints, signing keys, accounts, assets, and related protocol behavior. | `INTEROP` unless the pinned SEP explicitly requires the relationship. |
+
+## Safe modes
+
+SEP-1 discovery is passive: it retrieves public metadata and does not authenticate, create customer state, invoke transfer endpoints, sign, or submit a Stellar transaction. It is suitable for discovery, contract, regression, and passive monitor modes.
+
+Run against a verified target. Public runners must recheck DNS and address classification before connection and every redirect, pin the approved origin policy, reject embedded credentials and forbidden ports, enforce time and byte limits, and preserve only redacted response metadata. A private home domain requires an outbound-only local runner.
+
+## Transport checks
+
+For the normalized home domain, retrieve exactly `/.well-known/stellar.toml` over HTTPS without appending a query or following an out-of-scope redirect.
+
+- The response must make the document available at the standard path.
+- The response must contain `Access-Control-Allow-Origin: *`.
+- The body must not exceed 100 KB; stop reading at the limit rather than buffering an oversized body.
+- `Content-Type: text/plain` is an upstream recommendation, so a mismatch is not a normative failure by default.
+- Record status, final URL, redirect chain, resolved addresses, TLS identity, headers, byte count, retrieval time, and exact body SHA-256.
+- Treat DNS, TLS, timeout, proxy, truncation, or transport failure as indeterminate unless a released rule explicitly defines a target requirement.
+
+Header names are case-insensitive. Parse media-type parameters rather than comparing a raw string. Do not confuse a cached earlier response with the current target observation.
+
+## TOML structure
+
+Parse the exact response bytes with the rule-pack's pinned TOML implementation and resource limits. Reject invalid syntax, duplicate keys, conflicting value types, malformed arrays/tables, excessive nesting or item counts, invalid text encoding, and trailing content the parser cannot account for.
+
+Validate each recognized field against the pinned SEP-1 type and constraint. Preserve unknown fields for evidence but do not fail them merely for being extensions. Use the declared `VERSION` to select known field semantics; do not silently reinterpret an unsupported future version.
+
+## General fields and endpoint URLs
+
+Validate `NETWORK_PASSPHRASE`, Stellar public keys, contract IDs, accounts, and endpoint URL types exactly as defined by the pinned source. Fields that require HTTPS must not accept insecure schemes, embedded credentials, fragments, ambiguous encodings, or malformed hosts.
+
+Recognize the protocol relationships represented by:
+
+- `TRANSFER_SERVER` for SEP-6;
+- `TRANSFER_SERVER_SEP0024` for SEP-24;
+- `KYC_SERVER` for SEP-12;
+- `WEB_AUTH_ENDPOINT` for SEP-10;
+- `WEB_AUTH_FOR_CONTRACTS_ENDPOINT` and `WEB_AUTH_CONTRACT_ID` for SEP-45;
+- `DIRECT_PAYMENT_SERVER` for SEP-31;
+- `ANCHOR_QUOTE_SERVER` for SEP-38;
+- `SIGNING_KEY`, `HORIZON_URL`, `ACCOUNTS`, federation, and URI signing metadata.
+
+Syntax validation does not authorize RampSpec to contact every declared URL. Reachability is a separate non-mutating probe requiring target policy and network-safety checks. A declared endpoint on another origin must be explicitly approved before contact.
+
+## Organization and principal data
+
+Validate `[DOCUMENTATION]` and `[[PRINCIPALS]]` names, types, formats, domain relationships, and URL constraints. Treat completeness recommendations separately from required syntax. Do not download identity photographs, attestations, bills, licenses, or other potentially sensitive linked material during default discovery.
+
+RampSpec does not determine whether an organization is licensed, an attestation is genuine, a principal identity is verified, or a business is trustworthy. It reports only the scoped format and relationship checks selected by the suite.
+
+## Accounts and currencies
+
+For each `ACCOUNTS` entry, validate the expected classic-account StrKey form and reject duplicates. Ledger ownership or control is not proven merely because a key is listed.
+
+For every `[[CURRENCIES]]` entry:
+
+- require a valid code within the pinned length rule when the source requires it;
+- distinguish classic Stellar asset issuers from SEP-41 contract identifiers;
+- validate status, display decimals, URLs, booleans, and numeric policy fields by type and range;
+- enforce the pinned mutual exclusion among `fixed_number`, `max_number`, and `is_unlimited`;
+- validate external currency TOML links without fetching them unless policy approves the destination;
+- compare duplicate codes, issuer/contract identity, and asset metadata deterministically;
+- treat reserve, redemption, regulation, and collateral claims as declarations, not independently verified facts.
+
+## Cross-field and endpoint coherence
+
+Coherence checks are explicit and classified. Examples include:
+
+- network passphrase agrees with the registered target and ledger sources;
+- `SIGNING_KEY` has the expected relationship to later SEP-10 or SEP-45 observations;
+- SEP-12 is advertised when a selected dependent flow requires it;
+- account and issuer identifiers use the target network and expected roles;
+- configured assets and methods agree with later `/info` responses;
+- home-domain and organization URLs meet their pinned same-domain relationship;
+- deprecated fields and interactive SEP-6 behavior receive their upstream labels.
+
+A later endpoint mismatch is not automatically a SEP-1 normative violation. The finding must cite the precise upstream rule or use `INTEROP`, `SECURITY`, or `POLICY` as appropriate.
+
+## Fixture corpus
+
+The released rule pack must include stored, hashed fixtures for:
+
+1. a minimal valid file and a complete valid file;
+2. each required transport failure, including missing wildcard CORS and oversized bodies;
+3. malformed TOML, duplicate keys, wrong value types, and parser-limit cases;
+4. insecure or malformed endpoint URLs and redirect targets;
+5. invalid classic accounts, contract IDs, asset codes, issuers, and numeric boundaries;
+6. currency entries for classic assets, SEP-41 contracts, templates, and external TOML;
+7. inconsistent network, signing-key, endpoint, account, and asset relationships;
+8. unknown extension fields and future versions that must fail or warn according to compatibility policy.
+
+Each fixture names its expected rule ID, classification, outcome, source anchor, and byte digest. Generated snippets are published only after `validate-snippets` confirms they match those stored files.
+
+## Common findings and remediation
+
+| Observation                                                                  | Expected classification                                        | Remediation                                                                           |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Standard file missing or body exceeds 100 KB                                 | Normative when the released rule cites the pinned requirement. | Publish the file at the exact path and reduce its encoded byte size.                  |
+| Wildcard CORS absent                                                         | `MUST`.                                                        | Return `Access-Control-Allow-Origin: *` for the TOML response.                        |
+| Non-plain content type                                                       | `SHOULD`.                                                      | Return a parsed `text/plain` media type unless a documented constraint prevents it.   |
+| TOML cannot be parsed or a field has the wrong type                          | `MUST` where defined by SEP-1.                                 | Validate the exact served bytes with the pinned parser before deployment.             |
+| Declared HTTPS endpoint is malformed or insecure                             | `MUST` for fields with an HTTPS requirement.                   | Publish a valid HTTPS URL without credentials or ambiguous encoding.                  |
+| Endpoint, account, asset, or network metadata conflicts with another service | Usually `INTEROP`; sometimes normative with an exact citation. | Correct the source of truth and regenerate the suite lock before retesting.           |
+| Linked evidence is unreachable or unverified                                 | Advisory unless the pinned text requires availability.         | Repair the link, but do not describe RampSpec format checks as identity verification. |
+
+Finding-detail links remain unavailable until the backend publishes stable rule IDs and a compatible generated catalog.
+
+## Exclusions
+
+This guide does not authorize crawling every declared URL, validating real identity documents, judging reserves or licenses, proving account control, authenticating users, moving assets, testing transfer journeys, or certifying an anchor. Those require separate suites, permissions, fixtures, and evidence.
+
+## Release gate
+
+Coverage becomes locally checked only when every stored fixture maps to a released rule, all source anchors resolve within the pinned SEP file, expected pass/fail/skipped outcomes pass in CI, and a controlled target produces an independently verified report. Until then, use [First SEP-1 run](/guides/first-sep1-run) only as the planned execution workflow and follow [Rule classification](/governance/rule-classification) when reviewing claims.
