@@ -120,7 +120,8 @@
             "pages": [
               "governance/repository-ownership",
               "governance/docs-release-policy",
-              "governance/docs-deployment"
+              "governance/docs-deployment",
+              "governance/releases-and-backports"
             ]
           },
           {

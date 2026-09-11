@@ -15,8 +15,11 @@
   ],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": "1.0.0" },
-    "productVersion": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "const": "1.1.0" },
+    "productVersion": {
+      "type": "string",
+      "pattern": "^(unreleased|[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$"
+    },
     "channel": { "enum": ["next", "preview", "stable"] },
     "releasedAt": { "type": ["string", "null"], "format": "date-time" },
     "components": {
@@ -51,9 +54,20 @@
                     "application",
                     "openapi",
                     "json-schema-bundle",
+                    "rule-pack",
+                    "scenario-bundle",
+                    "report-schema",
+                    "suite-lock-schema",
+                    "runner-image",
                     "contract-spec-bundle",
+                    "contract-bindings",
+                    "contract-wasm",
                     "deployment-manifest",
-                    "documentation-export"
+                    "documentation-export",
+                    "migration-bundle",
+                    "release-notes",
+                    "sbom",
+                    "provenance"
                   ]
                 },
                 "path": { "type": "string", "minLength": 1 },
@@ -71,6 +85,11 @@
         "apiMajor",
         "schemaMajor",
         "contractMajor",
+        "runnerProtocolMajor",
+        "rulePackVersion",
+        "scenarioSchemaVersion",
+        "reportSchemaVersion",
+        "suiteLockSchemaVersion",
         "breakingChanges",
         "migrationNotes"
       ],
@@ -78,6 +97,20 @@
         "apiMajor": { "type": ["integer", "null"], "minimum": 1 },
         "schemaMajor": { "type": ["integer", "null"], "minimum": 1 },
         "contractMajor": { "type": ["integer", "null"], "minimum": 1 },
+        "runnerProtocolMajor": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "rulePackVersion": { "$ref": "#/$defs/semanticVersionOrNull" },
+        "scenarioSchemaVersion": {
+          "$ref": "#/$defs/semanticVersionOrNull"
+        },
+        "reportSchemaVersion": {
+          "$ref": "#/$defs/semanticVersionOrNull"
+        },
+        "suiteLockSchemaVersion": {
+          "$ref": "#/$defs/semanticVersionOrNull"
+        },
         "breakingChanges": { "type": "array", "items": { "type": "string" } },
         "migrationNotes": { "type": "array", "items": { "type": "string" } }
       }
@@ -91,6 +124,12 @@
         "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
         "command": { "type": "string", "minLength": 1 }
       }
+    }
+  },
+  "$defs": {
+    "semanticVersionOrNull": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
     }
   }
 }

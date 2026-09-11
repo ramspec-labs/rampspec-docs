@@ -1,0 +1,122 @@
+---
+title: "Releases and backports"
+description: "Version, branch, candidate, migration, supply-chain, support, and coordinated disclosure rules across RampSpec repositories."
+keywords: ["release", "versioning", "backport", "SBOM", "provenance"]
+---
+
+RampSpec ships four independent repository releases and binds tested combinations through one compatibility manifest. A product version is a verified compatibility set, not permission to move every repository to the same version.
+
+<Warning>
+  RampSpec is pre-release. There are no runtime tags, supported release
+  branches, staging deployments, signed production artifacts, or coordinated
+  release candidates. This procedure and its checklist are **Planned**; only the
+  unreleased manifest shape is locally validated.
+</Warning>
+
+## Version contracts
+
+Use semantic `major.minor.patch` versions and immutable `v<version>` release tags. Pre-release candidates append a semantic suffix such as `-rc.1`. Never move or replace a published tag.
+
+| Surface                        | Version rule                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Frontend                       | Independent semantic version; declares supported API, schemas, reports, and contract clients.    |
+| Backend                        | Independent semantic version; publishes services, CLI, runner, SDK sources, and migrations.      |
+| Public API                     | Major in the path, such as `/v1`; OpenAPI document has a semantic release version.               |
+| JSON Schema bundle             | Semantic bundle version; every schema retains a stable `$id` and its own compatibility contract. |
+| Rule pack                      | Semantic version plus upstream SEP commit, file hashes, rule versions, and implementation hash.  |
+| Scenario schema and catalog    | Independent semantic versions; scenario source and compiler output have canonical digests.       |
+| Report schema                  | Independent semantic version; canonicalization/signature meaning changes require a major.        |
+| Suite-lock schema              | Independent semantic version; every emitted lock is immutable and content-addressed.             |
+| Runner protocol                | Explicit major negotiated by backend and runner before work is accepted.                         |
+| Contracts                      | Independent semantic version plus exact spec and optimized WASM SHA-256.                         |
+| Documentation                  | Independent semantic version bound to imported artifact hashes and product compatibility.        |
+| Product compatibility manifest | Semantic schema version plus one product version describing a tested four-repository set.        |
+
+Increment major for an incompatible consumer change, minor for compatible capability, and patch for compatible correction. Security severity does not decide version size: compatibility impact does. Deprecation starts in a compatible release with replacement and removal window; removal waits for the next allowed major.
+
+API additions must remain safe for clients that ignore unknown fields. Path-major compatibility does not excuse a breaking schema change within `/v1`. Rule, scenario, or policy changes that alter results require new versions and suite locks even when the HTTP shape is unchanged. Existing reports, locks, manifests, contract records, and signatures remain immutable.
+
+## Protected branches and change review
+
+The default branch and every supported `release/<major>.<minor>` branch are protected. Require pull requests, non-author approval, current required checks, resolved discussions, signed commits where organization policy requires them, linear or recorded merge history, secret/dependency/code scanning, and no force push or deletion. Release automation alone writes tags and release artifacts.
+
+Every candidate begins from a clean protected commit. The owning repository runs focused and full checks, generated-file drift, compatibility tests, security scans, license checks, reproducibility checks where applicable, and repository-specific staging tests. Changes to protocols, auth, signing, tenant boundaries, data handling, migrations, contracts, runners, or evidence require their named specialist reviewers.
+
+## Candidate contents by repository
+
+| Repository | Required release output                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Frontend   | Built application, release notes, supported browser/API/schema matrix, tests, SBOM, provenance, rollback reference, and signed tag.              |
+| Backend    | Services/images, OpenAPI, schemas, rule/scenario bundles, report/suite formats, SDK/CLI/runner artifacts, migrations, SBOM, provenance, and tag. |
+| Contracts  | Source, optimized WASM, specs, bindings, checksums, budgets, security references, deployment/upgrade manifests, SBOM, provenance, and tag.       |
+| Docs       | Static export, imported hashes, release notes, migration/support pages, example results, SBOM, provenance, and signed tag.                       |
+
+Each artifact entry records kind, repository-relative or release-asset path, lowercase SHA-256, source commit, builder/workflow identity, and verification procedure. Provenance binds source, inputs, builder, and output digest. The SBOM lists the resolved component inventory. Both are generated during release automation and verified from a clean environment; neither is a handwritten claim.
+
+## Coordinated candidate sequence
+
+1. Freeze the intended standards snapshot, feature set, disclosure scope, and compatibility/version decisions.
+2. Cut candidates from protected commits; do not release uncommitted or branch-only generated output.
+3. Backend and contracts produce signed candidate artifacts, migration material, digests, SBOMs, and provenance.
+4. Frontend regenerates clients from those immutable artifacts and tests the oldest/newest supported combinations.
+5. Deploy the candidate set to isolated staging with production-equivalent policy but synthetic data and distinct credentials.
+6. Run install/upgrade, API/schema, rule/scenario/report, runner, contract, frontend, security, privacy, backup/restore, rollback or forward-fix, and reference-journey checks.
+7. Docs imports exact artifacts, publishes version-specific guidance and migration notes, and builds its static export.
+8. Assemble and validate the compatibility manifest; independently recompute every artifact digest and confirm tag commits.
+9. Obtain release, security, operations, protocol, and repository approvals; resolve or explicitly defer non-blocking findings.
+10. Promote the same verified artifacts to stable, create signed immutable tags, publish release notes/manifests, and monitor rollback signals.
+
+Do not rebuild between candidate verification and promotion. A required code or generated change creates a new candidate number and repeats affected checks.
+
+## Staging and migrations
+
+Staging uses separate tenants, databases, queues, buckets, keys, runner pools, Stellar accounts, endpoints, and telemetry. Only synthetic fixtures are allowed. Testnet is the default for mutations; pubnet observation or submission follows its separate approval and cannot be implied by staging success.
+
+Backend database releases include checksummed ordered migrations, minimum source version, downtime/locking and resource expectations, backup point, forward and rollback policy, mixed-version compatibility, irreversible boundary, and restore test. Test every supported source release through the candidate. Prefer expand, migrate, verify, contract so old and new application versions overlap safely.
+
+Contract upgrades include old/new WASM hashes, storage/schema compatibility, authorization, pause decision, event and read continuity, resource budgets, local/testnet rehearsal, deployment transaction, and rollback or forward-fix decision. An incompatible storage meaning normally deploys a new contract rather than reinterpreting immutable evidence.
+
+## Support policy
+
+Each repository's `SECURITY.md` is the current source for supported versions and end dates. Before the first stable release, only the default branch is maintained and no backport promise exists. A stable release note must name:
+
+- supported major/minor branches and exact end-of-support date;
+- security-only versus general maintenance scope;
+- compatible API, schemas, rule/scenario/report/suite versions and contract hashes;
+- minimum upgrade path and migration prerequisites;
+- final patch and replacement release when support ends.
+
+The product support window is the intersection of its components. A docs archive remains available while a supported report, deployment, or integration references it, but archival availability is not runtime support.
+
+## Backport workflow
+
+Backport only a confirmed defect, security fix, compatibility repair, or documentation correction that affects a supported line. Do not backport a feature, broad refactor, dependency churn without need, schema break, rule reinterpretation, storage change, or new migration unless the release owner approves a documented exception.
+
+1. Fix and fully validate the owning default branch first, unless coordinated disclosure requires a private branch.
+2. Open a tracking record with affected/safe versions, severity, customer and evidence impact, dependencies, migration risk, and selected release branches.
+3. Apply the smallest source change to each branch through a new pull request; never copy generated artifacts without their generator input.
+4. Add the regression test and run the complete supported-branch matrix, including install/upgrade and oldest/newest consumers.
+5. Regenerate artifacts with the branch's pinned toolchain and review every digest and compatibility difference.
+6. Obtain owning maintainer plus security/protocol/operations review as applicable.
+7. Publish a new patch tag, notes, SBOM, provenance, migration/advisory text, and updated compatibility manifest.
+8. Verify deployment or consumer adoption, monitor, and close every temporary branch/access/disclosure control.
+
+Never rewrite a signed report or historical manifest to make a backport appear present. Publish a new advisory and release that identifies affected artifacts and replacement versions.
+
+## Coordinated disclosure releases
+
+Security work may use private forks or temporary restricted branches, minimum participants, sanitized CI, and embargoed release notes. Preserve review, tests, provenance, SBOM, tag signing, and compatibility checks; confidentiality does not waive them. Coordinate fixes for every affected repository, dependency, hosted environment, contract, key, and runner before disclosure.
+
+The advisory states affected and fixed versions, severity and safe impact summary, mitigations, upgrade steps, rotated/revoked trust material, known exploitation only when confirmed, credit by consent, and disclosure time. Do not include active secrets, private target evidence, personal data, or weaponized reproduction detail.
+
+## Rollback and release evidence
+
+Frontend/docs may roll back to a previously verified compatible artifact. Backend rollback is allowed only across compatible migrations and workflow histories; otherwise forward-fix while preserving evidence. Contract code and ledger history cannot be erased, so use documented pause, upgrade, replacement, or trust-policy procedures. A rollback always updates the active deployment record without moving tags or editing the original manifest.
+
+The planned checklist records the required proof without claiming a candidate exists:
+
+{/* example: examples/releases/coordinated-candidate.planned.json */}
+
+`examples/releases/coordinated-candidate.planned.json`
+
+The machine-readable [unreleased manifest](/examples/release-manifest.planned.json) validates schema version `1.1.0` with null compatibility versions and unavailable components. The implementation exit check remains blocked until all four repositories publish candidate artifacts and one staging run produces a verified manifest with complete hashes, versions, migrations, SBOMs, provenance, approvals, and test evidence.

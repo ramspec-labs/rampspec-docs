@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/release-manifest.schema.json",
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "productVersion": "unreleased",
   "channel": "next",
   "releasedAt": null,
@@ -42,6 +42,11 @@
     "apiMajor": null,
     "schemaMajor": null,
     "contractMajor": null,
+    "runnerProtocolMajor": null,
+    "rulePackVersion": null,
+    "scenarioSchemaVersion": null,
+    "reportSchemaVersion": null,
+    "suiteLockSchemaVersion": null,
     "breakingChanges": [],
     "migrationNotes": []
   },

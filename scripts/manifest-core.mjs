@@ -4,10 +4,23 @@ const ARTIFACT_KINDS = new Set([
   "application",
   "openapi",
   "json-schema-bundle",
+  "rule-pack",
+  "scenario-bundle",
+  "report-schema",
+  "suite-lock-schema",
+  "runner-image",
   "contract-spec-bundle",
+  "contract-bindings",
+  "contract-wasm",
   "deployment-manifest",
   "documentation-export",
+  "migration-bundle",
+  "release-notes",
+  "sbom",
+  "provenance",
 ]);
+const SEMANTIC_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+const RELEASE_TAG = /^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 
 /** @param {unknown} value */
 const isRecord = (value) =>
@@ -20,10 +33,13 @@ export function validateReleaseManifest(manifest) {
   if (!isRecord(manifest)) return ["manifest must be an object"];
 
   const root = /** @type {Record<string, unknown>} */ (manifest);
-  if (root.schemaVersion !== "1.0.0")
-    errors.push("schemaVersion must be 1.0.0");
-  if (typeof root.productVersion !== "string" || !root.productVersion)
-    errors.push("productVersion is required");
+  if (root.schemaVersion !== "1.1.0")
+    errors.push("schemaVersion must be 1.1.0");
+  if (
+    root.productVersion !== "unreleased" &&
+    !SEMANTIC_VERSION.test(/** @type {string} */ (root.productVersion))
+  )
+    errors.push("productVersion must be unreleased or a semantic version");
   if (!CHANNELS.has(/** @type {string} */ (root.channel)))
     errors.push("channel must be next, preview, or stable");
   if (root.releasedAt !== null && !isDateTime(root.releasedAt))
@@ -66,8 +82,10 @@ export function validateReleaseManifest(manifest) {
             `unavailable component ${name} cannot claim release data`,
           );
       } else {
-        if (typeof component.tag !== "string" || !component.tag)
-          errors.push(`released component ${name} requires a tag`);
+        if (!RELEASE_TAG.test(/** @type {string} */ (component.tag)))
+          errors.push(
+            `released component ${name} requires a tag formatted as a semantic v version`,
+          );
         if (!/^[0-9a-f]{40}$/.test(/** @type {string} */ (component.commit)))
           errors.push(
             `released component ${name} requires a 40-character commit`,
@@ -113,10 +131,28 @@ export function validateReleaseManifest(manifest) {
     const compatibility = /** @type {Record<string, unknown>} */ (
       root.compatibility
     );
-    for (const key of ["apiMajor", "schemaMajor", "contractMajor"]) {
+    for (const key of [
+      "apiMajor",
+      "schemaMajor",
+      "contractMajor",
+      "runnerProtocolMajor",
+    ]) {
       const value = compatibility[key];
       if (value !== null && (!Number.isInteger(value) || Number(value) < 1))
         errors.push(`compatibility.${key} must be null or a positive integer`);
+    }
+    for (const key of [
+      "rulePackVersion",
+      "scenarioSchemaVersion",
+      "reportSchemaVersion",
+      "suiteLockSchemaVersion",
+    ]) {
+      const value = compatibility[key];
+      if (
+        value !== null &&
+        !SEMANTIC_VERSION.test(/** @type {string} */ (value))
+      )
+        errors.push(`compatibility.${key} must be null or a semantic version`);
     }
     if (!Array.isArray(compatibility.breakingChanges))
       errors.push("compatibility.breakingChanges must be an array");
@@ -168,6 +204,50 @@ export function validateReleaseManifest(manifest) {
     );
   if (released && root.releasedAt === null)
     errors.push("a released manifest requires releasedAt");
+
+  if (root.channel === "stable" && Array.isArray(root.components)) {
+    const releasedNames = new Set(
+      root.components
+        .filter((value) => isRecord(value) && value.status === "released")
+        .map((value) => /** @type {Record<string, unknown>} */ (value).name),
+    );
+    if ([...COMPONENTS].some((name) => !releasedNames.has(name)))
+      errors.push("a stable manifest requires all four released components");
+
+    for (const value of root.components) {
+      if (!isRecord(value) || !Array.isArray(value.artifacts)) continue;
+      const kinds = new Set();
+      for (const artifact of value.artifacts) {
+        if (isRecord(artifact)) kinds.add(artifact.kind);
+      }
+      for (const required of ["sbom", "provenance"]) {
+        if (!kinds.has(required))
+          errors.push(`stable component ${value.name} requires ${required}`);
+      }
+    }
+
+    const compatibility = isRecord(root.compatibility)
+      ? /** @type {Record<string, unknown>} */ (root.compatibility)
+      : {};
+    for (const key of [
+      "apiMajor",
+      "schemaMajor",
+      "contractMajor",
+      "runnerProtocolMajor",
+      "rulePackVersion",
+      "scenarioSchemaVersion",
+      "reportSchemaVersion",
+      "suiteLockSchemaVersion",
+    ]) {
+      if (compatibility[key] === null || compatibility[key] === undefined)
+        errors.push(`stable compatibility requires ${key}`);
+    }
+    const verification = isRecord(root.verification)
+      ? /** @type {Record<string, unknown>} */ (root.verification)
+      : {};
+    if (verification.status !== "verified")
+      errors.push("a stable manifest requires verified status");
+  }
 
   return errors;
 }

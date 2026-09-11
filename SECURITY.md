@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-RampSpec is pre-release. Only the current default branch is maintained until the first stable documentation release. Supported versions and backport windows will be listed here when stable releases exist.
+RampSpec is pre-release. Only the current default branch is maintained until the first stable documentation release. Supported versions and backport windows will be listed here when stable releases exist and follow [the release and backport policy](governance/releases-and-backports.mdx).
 
 ## Report a vulnerability privately
 

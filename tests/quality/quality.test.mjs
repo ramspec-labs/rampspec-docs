@@ -105,7 +105,7 @@ test("snippet validation requires stored example files", () => {
 
 test("release manifest validation rejects incomplete release claims", () => {
   const invalid = {
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     productVersion: "1.0.0",
     channel: "stable",
     releasedAt: null,
@@ -123,6 +123,11 @@ test("release manifest validation rejects incomplete release claims", () => {
       apiMajor: 1,
       schemaMajor: 1,
       contractMajor: 1,
+      runnerProtocolMajor: 1,
+      rulePackVersion: "1.0.0",
+      scenarioSchemaVersion: "1.0.0",
+      reportSchemaVersion: "1.0.0",
+      suiteLockSchemaVersion: "1.0.0",
       breakingChanges: ["changed report shape"],
       migrationNotes: [],
     },
@@ -140,6 +145,9 @@ test("release manifest validation rejects incomplete release claims", () => {
   assert.match(errors, /breaking changes require migration notes/);
   assert.match(errors, /verified manifests require verifiedAt/);
   assert.match(errors, /a released manifest requires releasedAt/);
+  assert.match(errors, /stable manifest requires all four released components/);
+  assert.match(errors, /stable component backend requires sbom/);
+  assert.match(errors, /stable component backend requires provenance/);
 });
 
 test("OpenAPI validation requires stable operation identifiers and responses", () => {

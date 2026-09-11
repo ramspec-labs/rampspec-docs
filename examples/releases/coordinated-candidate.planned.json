@@ -1,0 +1,48 @@
+{
+  "status": "planned",
+  "candidate": null,
+  "productVersion": null,
+  "manifest": "examples/release-manifest.planned.json",
+  "components": {
+    "frontend": { "tag": null, "commit": null, "status": "unavailable" },
+    "backend": { "tag": null, "commit": null, "status": "unavailable" },
+    "contracts": { "tag": null, "commit": null, "status": "unavailable" },
+    "docs": { "tag": null, "commit": null, "status": "unavailable" }
+  },
+  "versions": {
+    "apiMajor": null,
+    "schemaMajor": null,
+    "contractMajor": null,
+    "runnerProtocolMajor": null,
+    "rulePackVersion": null,
+    "scenarioSchemaVersion": null,
+    "reportSchemaVersion": null,
+    "suiteLockSchemaVersion": null
+  },
+  "gates": {
+    "protectedCommits": "unavailable",
+    "requiredReviews": "unavailable",
+    "repositoryChecks": "unavailable",
+    "generatedDrift": "unavailable",
+    "signedTags": "unavailable",
+    "artifactDigests": "unavailable",
+    "sbomArtifacts": "unavailable",
+    "provenance": "unavailable",
+    "staging": "unavailable",
+    "migrationMatrix": "unavailable",
+    "compatibilityMatrix": "unavailable",
+    "rollbackOrForwardFix": "unavailable",
+    "supportWindows": "unavailable",
+    "manifestVerification": "unavailable"
+  },
+  "approvals": {
+    "frontend": null,
+    "backend": null,
+    "contracts": null,
+    "docs": null,
+    "security": null,
+    "operations": null,
+    "protocol": null
+  },
+  "blockingReason": "No repository has published a coordinated release candidate."
+}

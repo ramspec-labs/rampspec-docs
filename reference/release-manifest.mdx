@@ -14,12 +14,12 @@ A RampSpec release manifest binds the four repositories and their generated arti
 
 ## Compatibility contract
 
-| Component | Compatibility key                                            | Breaking change                                                                                    |
-| --------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Frontend  | Backend API major and consumed schema major.                 | Removing a supported backend major or changing a required response field.                          |
-| Backend   | API major, schema major, runner protocol, and report format. | Removing or changing an operation, field, rule meaning, event, or canonical report representation. |
-| Contracts | Contract major, spec hash, network, and deployment manifest. | Changing storage, method arguments, events, authorization, or commitment semantics.                |
-| Docs      | Product version and imported artifact hashes.                | Publishing guidance or examples that require a different runtime compatibility set.                |
+| Component | Compatibility key                                                                              | Breaking change                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Frontend  | Backend API major and consumed schema major.                                                   | Removing a supported backend major or changing a required response field.                          |
+| Backend   | API major, schema major, runner protocol, rule pack, scenario, report, and suite-lock formats. | Removing or changing an operation, field, rule meaning, event, or canonical report representation. |
+| Contracts | Contract major, spec hash, network, and deployment manifest.                                   | Changing storage, method arguments, events, authorization, or commitment semantics.                |
+| Docs      | Product version and imported artifact hashes.                                                  | Publishing guidance or examples that require a different runtime compatibility set.                |
 
 Additive API fields remain compatible when consumers ignore unknown fields. Removal, type changes, required-field additions, semantic changes, and altered contract interfaces require a new major version, migration notes, and a stated compatibility window.
 
@@ -31,11 +31,14 @@ The machine-readable schema is [`schemas/release-manifest.schema.json`](/schemas
 - exactly one frontend, backend, contracts, and docs component record;
 - repository, release status, immutable tag, full commit SHA, and artifacts;
 - artifact kind, repository-relative path, and lowercase SHA-256 digest;
-- compatible API, JSON Schema, and contract major versions;
+- compatible API, JSON Schema, contract, and runner-protocol major versions;
+- exact semantic versions for rule packs and scenario, report, and suite-lock schemas;
 - every breaking change and at least one migration note when a break exists;
 - verification status, timestamp, and reproducible command.
 
 An unavailable component must use null tag and commit values and an empty artifact list. A released component must provide all three. This prevents a planning document from resembling release evidence.
+
+A stable manifest requires all four released components, complete compatibility versions, verified status, and an SBOM plus provenance artifact for every component. Release tags use immutable semantic `v` tags. Contract bundles also bind optimized WASM hashes and network-specific deployment manifests; a tag alone never identifies deployed code.
 
 ## Verification procedure
 
@@ -52,4 +55,4 @@ The repository keeps an executable [unreleased example](/examples/release-manife
 
 ## Release sequence
 
-The backend and contracts owners publish their tagged artifacts first. The frontend owner verifies its generated clients against those tags. The docs owner then imports hashes, validates the complete manifest, publishes migration guidance, and releases the matching documentation channel. See [repository ownership](/governance/repository-ownership) for review routing.
+The backend and contracts owners publish their tagged artifacts first. The frontend owner verifies its generated clients against those tags. The docs owner then imports hashes, validates the complete manifest, publishes migration guidance, and releases the matching documentation channel. See [repository ownership](/governance/repository-ownership) for review routing and [releases and backports](/governance/releases-and-backports) for the complete delivery procedure.
