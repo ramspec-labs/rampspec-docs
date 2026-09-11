@@ -110,7 +110,15 @@
         "groups": [
           {
             "group": "SDK",
-            "pages": ["sdk/overview"]
+            "pages": [
+              "sdk/overview",
+              "sdk/api-client",
+              "sdk/report-verifier",
+              "sdk/schema-helpers",
+              "sdk/webhook-verification",
+              "sdk/runner-integration",
+              "sdk/contract-lookups"
+            ]
           }
         ]
       },

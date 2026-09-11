@@ -1,0 +1,79 @@
+---
+title: "Runner integration"
+description: "Build reviewed local provider adapters with typed capabilities, signed leases, bounded actions, redaction, evidence upload, health, cancellation, and cleanup."
+keywords:
+  ["runner SDK", "provider adapter", "capability", "signed lease", "cleanup"]
+---
+
+The runner SDK will support first-party runner components and reviewed local provider adapters. It does not let customers upload executable scenario plugins or turn the runner into a general remote agent.
+
+<Warning>
+  No runner SDK, protocol, adapter API, or conformance kit exists. All exports
+  and lifecycle callbacks below are **Planned** and cannot compile.
+</Warning>
+
+## Eligible integrations
+
+An adapter may expose a narrow secret provider, signing provider, controlled fixture provider, artifact key provider, or local service connector defined by a released interface. It declares ID, version, supported platforms, capability IDs, configuration schema, health checks, input and output schemas, side effects, timeouts, redaction classes, and cleanup behavior.
+
+It cannot register arbitrary actions, execute commands, accept caller URLs or paths, enumerate secrets, read private keys, bypass policy, alter suite locks, submit unverified transactions, upload unlisted artifacts, or call the control-plane database.
+
+## Planned registration
+
+{/* example: examples/sdk/runner-integration.planned.ts */}
+
+The stored [planned runner example](/examples/sdk/runner-integration.planned.ts) registers a metadata-only provider with explicit health, resolve, and revoke operations. It deliberately has no real provider package or secret path.
+
+## Lifecycle
+
+1. verify runner SDK and adapter compatibility from the release manifest;
+2. validate adapter configuration without resolving secret values;
+3. register a namespaced capability below organization and runner policy;
+4. report health and limits without sensitive provider metadata;
+5. accept only a valid signed lease bound to this runner and capability;
+6. receive typed, already authorized input and an abort signal;
+7. enforce local provider policy and perform the bounded operation;
+8. return typed structured output through classification and redaction;
+9. reconcile unknown outcomes, revoke dynamic access, and run cleanup;
+10. unregister or drain safely during upgrade and shutdown.
+
+The SDK supplies job and step context, monotonic deadline, structured safe logger, policy view, evidence writer, redactor, cancellation, and cleanup registration. The adapter cannot obtain another job's context or widen a capability.
+
+## Typed outcomes
+
+```ts
+type AdapterResult<T> =
+  | { kind: "success"; value: T; audit: AdapterAudit }
+  | { kind: "denied"; code: string; audit: AdapterAudit }
+  | { kind: "unavailable"; code: string; retryAllowed: boolean }
+  | { kind: "unknown-outcome"; recoveryRef: string }
+  | { kind: "cancelled"; cleanupRequired: boolean };
+```
+
+Exact types will come from the SDK. Audit fields are allowlisted and value-free. Exceptions are caught at the SDK boundary, sanitized, and mapped to an explicit infrastructure or security result; they cannot make a step pass.
+
+## Secret and signing adapters
+
+Secret adapters accept an opaque reference and typed purpose and return sensitive bytes through a protected value wrapper that cannot be serialized or logged. The SDK registers safe variants with local redaction and destroys the wrapper after the action.
+
+Signing adapters accept a complete typed intent, validate network and policy independently, and return a signature or signed envelope plus non-secret audit metadata. They expose no raw-key operation or arbitrary-byte signing for value-moving workflows.
+
+Follow the [local secrets and offline operation](../operations/runners/local-security) contract for resolution, rotation, signing, redaction, encryption, offline bundles, and backups.
+
+## Cancellation and cleanup
+
+Every operation receives an abort signal and deadline, but adapters must assume cancellation can arrive after a remote side effect. A declared reconciliation callback determines known success, known failure, or unknown outcome before retry. Cleanup actions are idempotent, bounded, registered before the side effect, and receive only the recovery reference they own.
+
+Process termination persists encrypted recovery state through SDK facilities. On restart, the adapter cannot resume general work until the runner verifies the lease, policy, and recovery ownership.
+
+## Browser and server boundary
+
+The runner SDK is server-only. It requires an isolated local-runner process and must not be bundled into a browser, frontend, untrusted plugin host, or general application server. A separate browser worker capability may be controlled by the runner, but page scripts never access SDK context or provider handles.
+
+## Compatibility and conformance
+
+Adapters pin the runner protocol, SDK major, capability schema versions, configuration schema, supported operating systems and architectures, and provider API range. A changed result meaning, secret wrapper, lifecycle hook, cleanup obligation, or signing-intent schema is breaking.
+
+Release requires an adapter conformance kit covering config rejection, capability scope, cross-job isolation, lease signature, cancellation at every boundary, timeout, provider outage, retry and reconciliation, redaction escape corpus, secret serialization attempts, unknown exceptions, cleanup failure, rotation, drain, upgrade, and revocation.
+
+Until the kit and package exist, no third-party adapter can be called supported or safe by this documentation.

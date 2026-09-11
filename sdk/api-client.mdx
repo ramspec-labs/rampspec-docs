@@ -1,0 +1,82 @@
+---
+title: "API client"
+description: "Use the planned generated TypeScript client with scoped authentication, cursor pagination, idempotency, problem details, cancellation, and browser-safe boundaries."
+keywords:
+  [
+    "API client",
+    "authentication",
+    "pagination",
+    "problem details",
+    "idempotency",
+  ]
+---
+
+The generated API client will bind a tagged backend OpenAPI document to typed operations and errors. It must preserve the wire contract rather than hiding unknown outcomes or inventing retries.
+
+<Warning>
+  No client package or OpenAPI artifact exists. The import path, exported names,
+  operation names, fields, and example are **Planned** placeholders and cannot
+  compile until a backend release replaces them.
+</Warning>
+
+## Compatibility inputs
+
+Pin an exact package version from the [SDK matrix](./overview), then verify its embedded OpenAPI digest, generator version, API major, supported Node.js and browser versions, module format, and compatible product release manifest. The client's source tag and registry artifact must resolve to the same backend commit.
+
+Construct a client with one exact API origin selected from configuration, not user content. Reject embedded credentials, fragments, alternate schemes, or a base origin that differs from the approved environment. Do not globally disable TLS verification or redirect credentials to another origin.
+
+## Authentication boundary
+
+Server applications use a scoped service-account token provider that returns short-lived credentials just in time. Browser applications use the product's browser session or an explicitly released public-client flow; they must never embed service-account secrets, refresh tokens, local-runner identity, or signing credentials.
+
+The token provider receives operation ID, required scopes, audience, and abort signal. It returns a token through memory without logging it. The client applies it only to the matching origin and removes it on every redirect. Authentication expiry can trigger one provider refresh only when the operation's retry contract permits it.
+
+## Planned request pattern
+
+{/* example: examples/sdk/api-client.planned.ts */}
+
+The stored [planned API example](/examples/sdk/api-client.planned.ts) demonstrates configuration, explicit abort deadline, cursor iteration, and typed error handling without a real package name, API URL, operation, or payload.
+
+## Cursor pagination
+
+Use the operation's generated page and cursor types. Start without a cursor, process items in returned order, then pass the exact continuation token until it is absent. Treat the token as opaque: never decode, edit, sort, or combine it with another filter or tenant.
+
+Keep the original filters, page size, authorization subject, and target snapshot constant across pages. Detect a repeated cursor, duplicate stable item ID, item outside the filter, or page count above the local bound. Cancellation returns an explicit cancelled result and discards a partial collection unless the caller requested streaming results.
+
+Concurrent mutation can change a live collection. Use a released snapshot or consistency option when the operation exposes one; otherwise record the observation window and do not present page completeness as a stable snapshot guarantee.
+
+## Problem details and typed errors
+
+The client will expose a closed discriminated result for known categories and an `unknown-response` branch for a response that fails the generated schema.
+
+```ts
+type ClientFailure =
+  | { kind: "authentication"; code: string; correlationId?: string }
+  | { kind: "authorization"; code: string; correlationId?: string }
+  | { kind: "validation"; code: string; fields?: readonly string[] }
+  | { kind: "conflict"; code: string; retryAllowed: boolean }
+  | { kind: "rate-limit"; retryAfter?: number }
+  | { kind: "infrastructure"; code: string; retryAllowed: boolean }
+  | { kind: "unknown-response"; status: number; bodyDigest: string }
+  | { kind: "cancelled" };
+```
+
+Exact exports and fields will come from the release. Application code must exhaustively handle the union. Safe messages, status, operation, correlation ID, and retry metadata may be retained; authorization headers, cookies, request bodies, customer fields, and raw error payloads may not.
+
+## Idempotency and retry
+
+Send an idempotency key only when the generated operation declares it. Generate it once per logical mutation and preserve the exact body, actor, target, and key across a permitted retry. A changed body under the same key is a conflict, not a new request.
+
+Retry only generated retryable categories within caller deadline, server guidance, and bounded attempts. Before retrying an unknown mutation outcome, query its stable resource or idempotency status. Validation, authorization, policy denial, deterministic conflict, and unknown schema are not retried automatically.
+
+## Browser and server exports
+
+The browser entry may expose same-origin session operations, typed resources, pagination, report downloads allowed by policy, and event consumption. It cannot import filesystem, process, local secret-provider, service-account, runner registration, administrative signing, or unrestricted base-URL utilities.
+
+The server entry can accept a service-account provider and streamed file sources but still uses scoped operations and size limits. Conditional export tests must prove that a browser bundle never pulls server code or secret-reading dependencies.
+
+## Verification cases
+
+The release test must compile the stored example and prove successful pagination, empty and multi-page results, repeated cursor detection, schema-invalid success body, generated validation problem, expired auth with one allowed refresh, denied scope, rate limit, cancellation, idempotent replay, key/body conflict, transient read retry, and unknown mutation reconciliation.
+
+Until a pinned package and OpenAPI document exist, no operation or error shape on this page is an available API. The example remains excluded from TypeScript compilation and the page remains Planned.

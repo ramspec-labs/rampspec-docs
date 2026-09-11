@@ -1,0 +1,74 @@
+---
+title: "Contract lookups"
+description: "Verify a deployment manifest and Soroban code hash before reading evidence commitments, attestors, supersession, revocation, pause, and configuration."
+keywords:
+  [
+    "Soroban bindings",
+    "contract lookup",
+    "code hash",
+    "deployment manifest",
+    "evidence commitment",
+  ]
+---
+
+Read-only contract bindings will let browsers and Node.js services inspect compact RampSpec evidence commitments without holding an administrative or attestor signer. Every lookup begins from a verified contracts release and network deployment manifest.
+
+<Warning>
+  No contract, binding package, WASM, deployment manifest, network address, or
+  testnet deployment exists. Method and type names in this guide are conceptual
+  and **Planned**; the generated contract specification will be authoritative.
+</Warning>
+
+## Trust inputs
+
+Pin the contracts package version, source tag and commit, contract spec digest, binding digest, WASM SHA-256, network passphrase, contract ID, RPC origin, deployment transaction, code hash, storage/interface major, and verification time from a compatible product release manifest.
+
+Do not accept a contract ID, RPC server, network, or key from an unverified report alone. An application can select only reviewed deployment IDs. Test-only deployments remain visibly test-only.
+
+## Lookup sequence
+
+1. validate release and deployment manifests and all artifact digests;
+2. connect to the exact configured network and verify network passphrase;
+3. query the contract instance and compare its live executable code hash with the released WASM hash;
+4. compare interface and storage versions with generated bindings;
+5. read the requested commitment and related status records at a chosen ledger;
+6. verify attestor validity, report and suite-lock digests, supersession, revocation, pause, and expiry or TTL semantics;
+7. return a typed verified, absent, unverified, or infrastructure result.
+
+No data is interpreted as a RampSpec commitment before steps 1 through 4 succeed.
+
+## Planned usage
+
+{/* example: examples/sdk/contract-lookups.planned.ts */}
+
+The stored [planned contract example](/examples/sdk/contract-lookups.planned.ts) supplies a trusted manifest and report digest, performs an integrity check, and handles a code-hash mismatch without returning decoded state as verified.
+
+## Typed result
+
+```ts
+type CommitmentLookup =
+  | { kind: "verified"; commitment: Readonly<Commitment>; ledger: number }
+  | { kind: "absent"; reportDigest: string; ledger: number }
+  | { kind: "unverified"; reason: "code-hash" | "interface" | "manifest" }
+  | { kind: "infrastructure"; code: string; retryAllowed: boolean };
+```
+
+Exact types and method-derived fields will come from generated specs. `absent` means the verified contract has no record at the queried state; it does not prove no commitment exists on another network or deployment. `infrastructure` is never converted to `absent`.
+
+## Browser and server boundaries
+
+The browser entry accepts only preconfigured manifests and read-only RPC clients. It cannot take an arbitrary RPC URL from query parameters, discover admin signers, or expose write methods. Cache keys include network, contract ID, code hash, ledger, method, and arguments; a response from one deployment cannot satisfy another.
+
+The server entry may use bounded retries, archive RPC, and batch reads when the release supports them. Both entries must validate response XDR, ledger sequence and close time, and proof or simulation metadata required by the generated binding.
+
+## Meaning boundary
+
+A verified lookup proves that a reviewed contract at a known code hash returned particular compact state. It does not prove the off-chain report was correct, all artifacts remain available, the attestor was independent, the anchor is certified, or Stellar Development Foundation endorsed the result.
+
+Consumers independently verify the report and compare its canonical digest, suite lock, target/network identity, and publication status with the commitment. Superseded and revoked records remain historical facts but cannot be displayed as current evidence. Pause affects permitted writes according to the released contract and does not turn existing reads invalid.
+
+## Required cases
+
+Compile the example and test known deployment with present and absent commitments, unknown network, wrong passphrase, malformed contract ID, wrong RPC, changed code hash, incompatible interface or storage major, mismatched WASM/spec/binding digests, malformed XDR, unavailable and stale RPC, ledger reorganization policy, unauthorized manifest substitution, superseded record, revoked record, expired TTL, disabled attestor, and test-only labeling.
+
+Until generated specs, bindings, manifests, and a verified deployment exist, this guide cannot name a callable method or successful network result.

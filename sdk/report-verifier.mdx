@@ -1,0 +1,71 @@
+---
+title: "Report verifier"
+description: "Verify canonical RampSpec reports, signatures, key rotation, suite locks, release compatibility, artifact digests, and policy decisions offline."
+keywords:
+  ["report verification", "RFC 8785", "SHA-256", "Ed25519", "tamper detection"]
+---
+
+The report verifier will decide whether a RampSpec evidence report is structurally valid, compatible, untampered, correctly signed, and internally consistent. It does not rerun the target or certify the reported system.
+
+<Warning>
+  No verifier package, report schema, key-set format, or canonical example has
+  been released. All TypeScript symbols and result fields are **Planned**.
+</Warning>
+
+## Verification inputs
+
+Supply exact bytes or a parsed value under a bounded size, the matching report JSON Schema, suite lock, product release manifest, trusted verification-key set, and referenced artifact bytes or trusted digest inventory. Select trust material through local policy, never through a URL or key embedded only in the unverified report.
+
+The release manifest binds report schema major, backend and verifier versions, suite-lock format, canonicalization algorithm, signature algorithm, and artifact types. An unknown required version fails closed.
+
+## Verification order
+
+1. enforce size, nesting, count, and duplicate-key limits while parsing;
+2. validate against the exact report schema ID;
+3. resolve a compatible release manifest and suite lock by verified digest;
+4. remove only the schema-defined signature value from the signed payload;
+5. canonicalize through RFC 8785 and compute SHA-256;
+6. select a trusted Ed25519 key valid for the report's signing time and scope;
+7. verify the signature over the specified canonical payload or digest form;
+8. verify every required artifact's type, size, SHA-256, and redaction metadata;
+9. recompute counts, statuses, score basis points, exceptions, and gate policy;
+10. return one typed decision with all diagnostics.
+
+Do not “repair” number formats, timestamps, Unicode, ordering, missing fields, or unknown algorithms before verification. A derived HTML, PDF, JUnit, or SARIF file is not the canonical input.
+
+## Planned usage
+
+{/* example: examples/sdk/report-verifier.planned.ts */}
+
+The stored [planned verifier example](/examples/sdk/report-verifier.planned.ts) uses local bytes and trust inputs and handles `verified`, `invalid`, `untrusted-key`, and `incompatible` outcomes explicitly.
+
+## Result contract
+
+```ts
+type VerificationResult =
+  | { kind: "verified"; reportId: string; reportDigest: string; gate: string }
+  | { kind: "invalid"; diagnostics: readonly VerificationDiagnostic[] }
+  | { kind: "untrusted-key"; keyId: string; reportDigest: string }
+  | { kind: "incompatible"; required: string; supported: string }
+  | { kind: "cancelled" };
+```
+
+Exact exports will come from the package. Diagnostics have stable code, safe JSON pointer when available, severity, expected class, and observed digest or type. They do not echo secret or sensitive field values.
+
+## Key rotation
+
+Trust configuration maps key ID to public key, issuer, purpose, validity interval, status, and provenance. A report signed before a key's activation, after retirement policy, by a revoked key, or for another issuer or purpose is not verified. Unknown-key status remains distinct from a bad signature.
+
+Refreshing keys is an explicit caller operation from an authenticated, pinned source. Verification itself performs no network access. Retain rotation history long enough to verify supported reports and record the key-set digest used for each decision.
+
+## Browser and server use
+
+The browser entry accepts in-memory or streamed user-selected data within strict limits and Web Crypto support declared by the release. It performs no automatic fetch and stores no report, key, or artifact unless the application explicitly does so.
+
+The server entry may read streams and large artifact inventories under configured limits. Both entries must produce the same canonical digest and decision for identical inputs across supported operating systems.
+
+## Required cases
+
+The release must compile the example and verify a known-valid report; changed finding, artifact digest, signature, suite lock, and manifest; missing required artifact; unknown, future, retired, and revoked keys; bad signature; duplicate JSON key; unsupported schema or algorithm; count and gate mismatch; expired exception; oversized input; and cancellation.
+
+Every invalid case must return a stable non-verified result and no partially trusted report object. Until those vectors and a pinned package exist, this page is a verification design, not an available security control.

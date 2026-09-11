@@ -1,0 +1,79 @@
+---
+title: "Webhook verification"
+description: "Verify RampSpec webhook signatures over exact request bytes with timestamp freshness, replay protection, key rotation, schema checks, and safe responses."
+keywords:
+  [
+    "webhook signature",
+    "raw body",
+    "replay protection",
+    "timestamp",
+    "key rotation",
+  ]
+---
+
+Webhook verification authenticates one delivery before an application parses or acts on its event. The verifier operates on exact request bytes, a bounded header set, recipient configuration, current time, and durable replay state.
+
+<Warning>
+  No webhook utility package, signature scheme, event schema, or test vector has
+  been released. Header names, algorithms, exports, and examples are **Planned**
+  and must not be wired to an endpoint.
+</Warning>
+
+## Server-only boundary
+
+Verification belongs at the server request boundary. Browser code cannot safely hold webhook secrets, receive the original server request, or provide durable replay protection. Disable framework body parsing for the webhook route or retain the exact bytes before parsing; re-serialized JSON is not equivalent.
+
+Enforce HTTPS at the edge, request size and time limits, one expected media type, allowed methods, and rate limits before cryptographic work. Do not log headers or body on failure.
+
+## Planned usage
+
+{/* example: examples/sdk/webhook-verification.planned.ts */}
+
+The stored [planned webhook example](/examples/sdk/webhook-verification.planned.ts) reads an already bounded raw body, verifies it, reserves the event ID, validates the typed event, and acknowledges only after durable handoff.
+
+## Verification sequence
+
+1. require exactly the released signature and timestamp header representation;
+2. parse without duplicate components or ambiguous whitespace;
+3. reject a timestamp outside the configured past and future tolerance;
+4. resolve the recipient's exact secret or public-key version from trusted config;
+5. construct the released signed payload from timestamp and exact raw bytes;
+6. verify the allowed algorithm using constant-time comparison where relevant;
+7. parse JSON only after signature success and reject duplicate keys;
+8. validate the event against the exact schema ID and release manifest;
+9. atomically reserve recipient and event ID in replay storage;
+10. enqueue or persist the verified event before returning success.
+
+If the signature is valid but processing cannot be durably accepted, return the released retryable response. An invalid signature, stale request, schema failure, or replay gets the documented non-success response without disclosing which secret version or event exists.
+
+## Planned result
+
+```ts
+type WebhookDecision<T> =
+  | { kind: "verified"; event: T; eventId: string; keyId: string }
+  | { kind: "invalid-signature" }
+  | { kind: "stale" }
+  | { kind: "replay"; eventId: string }
+  | { kind: "invalid-event"; diagnostics: readonly string[] }
+  | { kind: "configuration-error"; code: string };
+```
+
+Exact fields will come from the release. Failure objects never contain raw body, provided signature, resolved secret, customer fields, or private target data.
+
+## Rotation
+
+Recipient configuration can expose current and narrowly overlapping previous key metadata. Select candidate keys by a released key identifier when present, otherwise apply a strictly bounded documented order. Both versions remain scoped to one recipient and algorithm.
+
+Create the new secret through a dedicated write-only path, validate a signed test delivery, activate it, drain deliveries using the previous version, then revoke and destroy the old value. Retain value-free delivery and rotation history. An attacker cannot select an arbitrary key source through headers.
+
+## Replay and idempotency
+
+Replay storage keys include recipient, event ID, and signature or body digest with retention longer than the accepted delivery window and retry horizon. The first verified delivery reserves the event atomically. Approved retries return the prior acknowledgement or perform idempotent handoff; they never repeat the business action.
+
+Event ordering is not inferred from arrival time. Consumers use event IDs and resource versions and query authoritative state after gaps.
+
+## Required cases
+
+Compile and run official vectors for valid current and overlap keys, modified body, re-serialized JSON, missing/duplicate/malformed headers, wrong secret or key, wrong recipient, stale and future timestamps, replay, repeated approved delivery, oversized body, invalid JSON, duplicate JSON keys, unknown event type, wrong schema, storage failure, handler timeout, and rotation retirement.
+
+Until the backend publishes a scheme and vectors, do not implement these placeholder headers or return codes as if they were the RampSpec contract.

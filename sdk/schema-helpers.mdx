@@ -1,0 +1,67 @@
+---
+title: "Schema helpers"
+description: "Validate rule, scenario, suite-lock, event, and report documents against exact backend-owned JSON Schema IDs and compatible bundles."
+keywords:
+  [
+    "JSON Schema",
+    "validation",
+    "scenario schema",
+    "report schema",
+    "diagnostics",
+  ]
+---
+
+Schema helpers will load the backend's complete JSON Schema 2020-12 bundle and validate RampSpec documents by exact schema ID. They are convenience APIs over released schemas, not an alternate source of truth.
+
+<Warning>
+  The five-kind schema bundle and helper package do not exist. Imports, schema
+  IDs, document fields, and result types below are **Planned**.
+</Warning>
+
+## Bundle admission
+
+Verify the package version and embedded bundle digest against the product release manifest. The bundle must include exactly the released rule, scenario, suite-lock, event, and report schemas, resolve every reference internally or through a pinned allowlist, and contain named valid and invalid examples.
+
+Reject duplicate `$id` values, unsupported drafts, unresolved references, unknown required formats, remote-reference fetches, digest mismatch, or a schema whose `x-rampspec-kind` and version metadata disagree with its index.
+
+## Planned usage
+
+{/* example: examples/sdk/schema-helpers.planned.ts */}
+
+The stored [planned schema example](/examples/sdk/schema-helpers.planned.ts) selects an exact ID, validates an unknown input without coercion, and handles structured diagnostics.
+
+## Validation contract
+
+Input remains `unknown` until a successful result narrows it. Validation does not remove unknown fields, apply defaults, convert strings to numbers, normalize decimals, repair dates, resolve environment variables, fetch URLs, or execute formats with side effects.
+
+```ts
+type SchemaResult<T> =
+  | { valid: true; value: T; schemaId: string; bundleDigest: string }
+  | { valid: false; errors: readonly SchemaDiagnostic[] };
+```
+
+Exact types will be generated. A diagnostic exposes stable keyword, schema ID, safe instance pointer, schema pointer, expected type or constraint, and message. Sensitive values are omitted; callers should not attach the original document to logs.
+
+## Kind-specific checks
+
+JSON Schema proves shape. The helper may expose explicit semantic validators from the released package:
+
+- rule references and classifications match the pinned standards snapshot;
+- scenario actions, fixtures, dependencies, matrices, policy, and cleanup resolve;
+- suite locks have complete immutable digests and compatible catalogs;
+- events have monotonic identity and valid run-state transitions;
+- reports reconcile results, counts, findings, evidence, signatures, and gate inputs.
+
+Semantic validation uses only provided pinned catalogs and manifests. It cannot silently query the control plane or accept a branch artifact.
+
+## Browser and server boundaries
+
+A browser-safe bundle may omit server-only high-volume helpers but must use the same schemas and diagnostics. It cannot load schemas from arbitrary URLs. The server entry supports bounded streams or buffers and explicit catalog inputs; it does not read environment configuration automatically.
+
+Both builds must reject malicious nesting, huge arrays, duplicate keys before parsed-object validation, hostile patterns, reference cycles outside bundle policy, and incompatible schema majors within documented limits.
+
+## Required cases
+
+Compile the example against a pinned package and run every named bundle example, one wrong kind, unknown schema ID, duplicate ID, unresolved reference, remote reference, invalid format, unknown field where closed, missing cleanup, scenario cycle, report-count mismatch, deeply nested input, oversized input, and sensitive diagnostic redaction.
+
+The docs import check described in [Generated JSON Schemas](/reference/schemas) must agree with the helper's bundle digest. Until that import and package release occur, no YAML fragment or report can claim SDK validation from this page.
