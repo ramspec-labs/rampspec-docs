@@ -1,0 +1,126 @@
+---
+title: "Contract administration and upgrades"
+description: "Operate attestors, pause controls, two-step administration, TTL maintenance, reproducible upgrades, and recovery for RampSpec Soroban contracts."
+keywords: ["contract admin", "attestor", "TTL", "upgrade", "WASM"]
+---
+
+Contract administration protects evidence integrity and availability. Administrative authority never establishes that an off-chain report is correct, and it must remain separate from report signing and routine attestor publication.
+
+<Warning>
+  No audited contract, generated binding, maintenance interface, administrator,
+  deployment manifest, or testnet rehearsal exists. Method names and procedures
+  here are **Planned** until a tagged contracts release makes them executable.
+</Warning>
+
+## Roles and separation
+
+| Role                   | Allowed responsibility                                                                    | Prohibited shortcut                                       |
+| ---------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Contract administrator | Attestor registry, pause, pending admin, authorized upgrades, emergency revocation policy | Routine evidence publication or report signing by default |
+| Pending administrator  | Inspect proposal and accept with its own authorization                                    | Acting before acceptance or redirecting proposal          |
+| Attestor               | Publish/supersede/revoke evidence within policy                                           | Upgrade, pause, register itself, or sign reports          |
+| Maintenance identity   | Call only released TTL-extension methods under resource/rate limits                       | Change evidence, attestors, admin, pause, or code         |
+| Release operator       | Build/verify artifacts and assemble transactions                                          | Approve and sign its own privileged change alone          |
+| Indexer                | Read events/state and rebuild derived views                                               | Treat cache/index state as contract authority             |
+
+Use distinct Stellar addresses and keys, hardware/KMS-backed signing, documented thresholds, least-privilege scopes, and independent approvers. Record public address/fingerprint and policy metadata, never seeds.
+
+## Preflight for every privileged action
+
+1. verify the contracts release tag/commit, spec/binding/WASM digests, deployment manifest, network passphrase, contract ID, live code hash, interface/storage version, and current ledger;
+2. read current admin/pending-admin, pause, attestors, schema, TTL, and relevant evidence directly from the verified contract;
+3. bind intent to exact method/arguments, expected old/new state, event, resource budget, fees, time/ledger bounds, and incident/change record;
+4. simulate and reject unexpected authorization, sub-invocation, storage footprint, event, return value, or resource use;
+5. obtain required human approvals and sign with the expected address only;
+6. submit idempotently, reconcile unknown outcomes by transaction hash/state/event, and verify postconditions;
+7. update the audit record and deployment/release manifest where required.
+
+A UI or runbook never supplies network, RPC, contract, WASM hash, or signer from untrusted report/query input.
+
+## Manage attestors
+
+Registration binds address, metadata hash, purpose, environment/network, owner, approval, activation, expiry/review date, and allowed publisher policy. The metadata document is off-chain, versioned, redacted, and digest-verified.
+
+Before enabling, verify signer control and run one non-mutating authorization check. Use `register_attestor` for a new record and `set_attestor_enabled` for lifecycle changes only if those names match the generated spec. Confirm `attestor_set` event and live state.
+
+Disable immediately on owner loss, key compromise, role change, expired review, policy violation, or decommission. Disabling blocks new publication but does not erase historical records. Inventory active/queued signing requests, revoke backend signer access, rotate related secrets, assess publications, and revoke/supersede evidence separately where justified.
+
+## Pause and resume
+
+The planned invariant is precise: pause blocks publish, supersede, and upgrade; reads and authorized revocation remain available. It does not cancel submitted ledger transactions, revoke attestors, expire evidence, hide history, or repair compromised records.
+
+Before pausing, identify the incident/change, read current state, simulate `set_paused(true)`, approve, submit, verify `pause_changed`, then prove a new publication is rejected while read and revoke behavior matches the generated tests. Notify publishers/indexers.
+
+Resume only after root cause and signer/deployment integrity are verified. Re-read code hash/admin/attestors, reconcile queued work rather than replaying blindly, simulate, approve, submit, verify event/state, and perform one bounded synthetic publication on the allowed environment. A failed resume keeps the system paused.
+
+## Two-step administrator transfer
+
+The current administrator proposes one exact new address; the proposed address independently accepts. The proposal records old/new addresses, network/contract/code hash, reason, expiry/cancellation policy, approvals, transaction/event, and signer-control evidence.
+
+Before proposal, prove the candidate is not a contract/test-fixture address by mistake and can authorize on the intended network. Confirm `admin_proposed` while old admin remains active. Before acceptance, both parties reverify the unchanged proposal and deployment. The candidate invokes `accept_admin`; confirm `admin_changed`, new authority succeeds, and old authority fails.
+
+Wrong-address, expired, replaced, already-accepted, self-transfer, unexpected pending state, or uncertain submission stops the procedure. If the candidate cannot accept, use the released cancellation/replacement path; never share the old key as a workaround.
+
+## Storage and TTL inventory
+
+Instance state contains administrator, pending administrator, pause, and schema version. Persistent state contains evidence and attestor records. For every key class, the release must document durability class, initial TTL, extension threshold/amount, maximum, caller authorization, per-call key limit, resource/cost budget, archive behavior, and restoration support.
+
+Maintain an inventory of active/recent/superseded/revoked evidence, attestors, instance/code state, oldest TTL, projected expiration, last extension, and indexed event range. Contract state is authoritative; indexes are rebuildable views.
+
+## Maintenance cadence and cost
+
+Run TTL maintenance well before the archival threshold, with enough margin for scheduler, RPC, signer, and ledger outages. Select keys from verified state/index checkpoints, bound each batch, simulate, compare expected footprint and resources, authorize with the dedicated identity, submit, and reread TTL at a finalized ledger.
+
+Measure CPU/memory instructions, read/write bytes, event bytes, transaction size, base/resource/refundable fees, records per batch, total live records, monthly growth, and retry reserve on local and testnet. Pubnet launch requires measured price assumptions, budget owner, alert thresholds, and funded reserve. Never present an estimate as measured cost.
+
+On missed maintenance, pause new publication if safety margin is breached, prioritize instance/code/admin/attestor and policy-required records, verify archive restoration behavior, rebuild indexes from events, and document evidence whose direct state is no longer available. Do not fabricate restored state from a cache.
+
+## Reproducible WASM
+
+An upgrade candidate comes from a protected tag and full commit with pinned Rust/Stellar toolchain, lock files, container digest, source date/build flags, optimized WASM, generated spec JSON/XDR, bindings, WASM SHA-256, SBOM/provenance, test and resource-budget results, and security review.
+
+At least two clean builders reproduce byte-identical optimized WASM or the release documents and resolves nondeterminism. Compare generated interface, errors, events, auth requirements, storage access, and budgets against the deployed release. An unexplained digest or spec difference blocks promotion.
+
+## Schema and compatibility protection
+
+Prefer additive behavior that preserves old record interpretation. The deployed schema/storage version is explicit. An upgrade cannot silently change hash construction, evidence ID, bitmap, status, counts/score meaning, event topics/data, authorization, pause semantics, key encoding, or TTL behavior.
+
+If old data needs transformation, publish a versioned migration with resumable checkpoints, idempotency, resource limits, invariant checks, and rollback/forward plan. A breaking evidence representation normally deploys a new contract and migration index; old records remain under their original code/schema rather than being reinterpreted.
+
+## Testnet rehearsal
+
+{/* example: examples/contracts/upgrade-rehearsal.planned.json */}
+
+The stored [planned rehearsal record](/examples/contracts/upgrade-rehearsal.planned.json) enumerates required evidence but contains no deployment or signer. A real rehearsal starts from a production-like testnet snapshot/fixture and follows only released scripts:
+
+1. reproduce old/new WASM and verify all bundle digests;
+2. run unit, integration, property, fuzz, resource, binding/spec, and compatibility suites;
+3. deploy/initialize old code and seed active, superseded, revoked, attestor, pause, and near-threshold TTL cases;
+4. export state/event/index checkpoints and verify pre-upgrade reads;
+5. rehearse pause if required, simulate upgrade, review auth/footprint/events/budget, and submit the reviewed hash;
+6. verify live code hash/schema, every old read/status/link, auth rejection, new publication, supersede/revoke, pause, TTL, and event sequence;
+7. replay all events into an empty index and compare it with direct state;
+8. exercise rollback eligibility or the forward-fix path and verify no undocumented step;
+9. record transactions, ledgers, hashes, costs, times, approvers, results, and remaining gaps.
+
+## Rebuild the event index
+
+Pin network, deployment, initial deployment ledger, expected code hashes/schema intervals, and finalized-ledger policy. Read events in bounded ledger ranges, verify cursor continuity and decoded types against the spec active at each ledger, apply idempotently by transaction/event index, and checkpoint only after durable writes.
+
+Rebuild into an empty index, then compare counts, IDs, status transitions, attestors, pause/admin/upgrade history, and sampled/full direct state. Detect duplicates, gaps, unknown code hash/schema, cycles, impossible transitions, or ledger reorganization as blocking. Switching read traffic requires a reviewed atomic cutover and retained old index.
+
+## Rollback and forward fix
+
+Before submission, classify whether the host/platform and old WASM permit a reviewed rollback without corrupting new state. Roll back only when old code can safely interpret every write made by the new code and the exact old WASM remains verified. Pause first when possible, stop publishers/maintenance, capture ledger/event/state checkpoints, simulate rollback, approve, submit, verify, and reindex.
+
+If any new write is incompatible, rollback is prohibited. Keep writes paused, preserve reads/revocation where safe, build a reviewed forward fix or new deployment, migrate/index explicitly, and communicate evidence interpretation. Never claim database or index rollback changed ledger history.
+
+## Manifest and communication
+
+After successful change, publish a new contracts deployment manifest with tag/commit, spec/binding/WASM/provenance digests, network/passphrase/RPC, contract ID, deployment/upgrade transaction and ledger, old/new code hashes, schema/storage/interface versions, admin/attestor policy addresses, test-only flag, verification time/command, migration notes, support window, and security review.
+
+Update the cross-repository release manifest only after backend bindings/publisher, SDK lookups, frontend explorer, and docs verify compatibility. Announce pause windows, observable changes, migration, index status, rollback/forward decision, and recipient action without exposing addresses beyond public policy or any secret.
+
+## Release gate
+
+Required evidence covers every authorization branch, two-step transfer failures/success, pause/read/revoke invariants, attestor add/disable, TTL advancement/archive/restore, budget limits, reproducible build, unauthorized/wrong-hash upgrade, compatible old-state reads, schema rejection, event reindex, rollback-safe and forward-only cases, and deployment-manifest verification. The current repository can validate only this procedure and fixture shape; operational completion remains unavailable until an audited tagged contract release exists.

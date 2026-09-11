@@ -80,6 +80,7 @@
             "pages": [
               "contracts/overview",
               "contracts/evidence-guide",
+              "contracts/administration-and-upgrades",
               "reference/contract-storage"
             ]
           },

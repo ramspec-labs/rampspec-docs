@@ -1,0 +1,25 @@
+{
+  "schema": "https://schemas.rampspec.dev/contract-upgrade-rehearsal/v1.planned.json",
+  "status": "not-executed",
+  "network": "testnet",
+  "deploymentManifest": "<verified-manifest-path>",
+  "oldWasmSha256": "<old-wasm-sha256>",
+  "newWasmSha256": "<new-wasm-sha256>",
+  "reproducibleBuilds": [],
+  "checks": {
+    "authorization": "pending",
+    "pauseReadRevoke": "pending",
+    "adminTransfer": "pending",
+    "oldStateCompatibility": "pending",
+    "newPublication": "pending",
+    "ttlMaintenance": "pending",
+    "resourceBudget": "pending",
+    "eventReindex": "pending",
+    "recoveryDecision": "pending",
+    "manifestVerification": "pending"
+  },
+  "transactions": [],
+  "measuredCosts": [],
+  "approvals": [],
+  "exerciseAt": null
+}
