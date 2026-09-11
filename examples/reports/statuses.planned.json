@@ -1,0 +1,55 @@
+{
+  "schema": "https://schemas.rampspec.dev/report-examples/v1.planned.json",
+  "sharedScope": {
+    "targetId": "tgt_testnet_example",
+    "network": "testnet",
+    "suiteLockDigest": "sha256:<suite-lock-digest>",
+    "standardsSnapshotDigest": "sha256:<standards-snapshot-digest>",
+    "runnerClass": "public"
+  },
+  "examples": [
+    {
+      "reportId": "rep_passed_example",
+      "workflowState": "completed",
+      "gate": "passed",
+      "coverage": "complete",
+      "counts": { "passed": 20, "failed": 0, "warnings": 0, "skipped": 0 }
+    },
+    {
+      "reportId": "rep_failed_example",
+      "workflowState": "completed",
+      "gate": "failed",
+      "coverage": "complete",
+      "counts": { "passed": 19, "failed": 1, "warnings": 0, "skipped": 0 }
+    },
+    {
+      "reportId": "rep_blocked_example",
+      "workflowState": "blocked",
+      "gate": "blocked",
+      "coverage": "none",
+      "reasonCode": "ACTIVE_NETWORK_APPROVAL_REQUIRED"
+    },
+    {
+      "reportId": "rep_indeterminate_example",
+      "workflowState": "completed",
+      "gate": "indeterminate",
+      "coverage": "partial",
+      "reasonCode": "RUNNER_EVIDENCE_INCOMPLETE"
+    },
+    {
+      "reportId": "rep_cancelled_example",
+      "workflowState": "cancelled",
+      "gate": "cancelled",
+      "coverage": "partial",
+      "cleanup": "completed"
+    },
+    {
+      "reportId": "rep_partial_example",
+      "workflowState": "completed",
+      "gate": "failed",
+      "coverage": "partial",
+      "counts": { "passed": 18, "failed": 0, "warnings": 0, "skipped": 2 },
+      "reasonCode": "REQUIRED_COVERAGE_MISSING"
+    }
+  ]
+}

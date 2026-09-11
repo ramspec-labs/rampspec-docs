@@ -1,0 +1,128 @@
+---
+title: "Interpret a report"
+description: "Read report identity, scope, coverage, findings, gate decisions, timelines, baselines, and derived artifacts without overstating the evidence."
+keywords: ["reports", "coverage", "findings", "gate", "artifacts"]
+---
+
+A RampSpec report is an immutable account of one resolved run. Read its identity and scope before its score or finding summary. A report is a conformance result under a pinned suite and standards snapshot, not certification, regulatory approval, production safety approval, or proof about behavior outside the tested window.
+
+<Warning>
+  The canonical report schema, renderer, and complete fixture bundle have not
+  been released by the backend and frontend repositories. The examples here are
+  **Planned** interpretation fixtures, not signed reports.
+</Warning>
+
+## Start with identity and scope
+
+Verify these fields as one unit:
+
+| Field                       | What it establishes                                                          | Common mistake                                          |
+| --------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Report/run ID               | The immutable report and execution it describes                              | Treating a corrected rerun as the same report           |
+| Created and execution times | When observation and finalization occurred                                   | Assuming current behavior from old evidence             |
+| Target                      | Verified home domain, target ID, ownership time, and endpoint set            | Generalizing to another deployment or brand             |
+| Network                     | Local simulation, testnet, pubnet observation, or approved pubnet submission | Calling testnet evidence production evidence            |
+| Suite                       | Suite ID/version and lock digest                                             | Assuming a similarly named suite has identical rules    |
+| Standards                   | SEP versions, commits, lifecycle status, and snapshot digest                 | Reading against today’s SEP text instead of pinned text |
+| Runner                      | Runner identity, class, version, image digest, capabilities, and isolation   | Ignoring differences between public/local evidence      |
+| Effective policy            | Gate, coverage, exception, value, mutation, and cleanup rules                | Recomputing the decision under an unstated policy       |
+
+An expired ownership proof does not alter history, but it blocks using the old report as evidence of current control. Display names and URLs are not stable identifiers.
+
+## Run state versus result
+
+Workflow state explains whether execution reached report finalization. Result explains what the finalized evidence means.
+
+| State/result     | Meaning                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Passed           | Required coverage completed and the selected gate policy found no blocking result.                                                    |
+| Failed           | A valid report contains one or more blocking conformance/security findings.                                                           |
+| Blocked          | Policy prevented or stopped execution, such as missing approval or prohibited network; do not attribute nonconformance to the target. |
+| Indeterminate    | Infrastructure, dependency, integrity, or evidence failure prevents a reliable target conclusion.                                     |
+| Cancelled        | Execution stopped by an authorized actor or policy; completed evidence may be retained but the required gate is not satisfied.        |
+| Partial coverage | Some rules were not executed or not evidenced; gate outcome depends on explicit coverage policy and required-rule set.                |
+
+`completed` can accompany failed conformance because it means the workflow produced a valid report. `failed`, `blocked`, and `indeterminate` are not interchangeable: only the first establishes a tested target behavior violation.
+
+{/* example: examples/reports/statuses.planned.json */}
+
+The stored [planned status fixtures](/examples/reports/statuses.planned.json) exercise all six presentations. They omit real signatures and are not verifier vectors.
+
+## Classifications, severity, and finding status
+
+Classification states why a check exists: `NORMATIVE` for upstream must/shall requirements, `INTEROPERABILITY` for ecosystem compatibility, `SECURITY` for cited security controls, and `QUALITY` for reliability or operability guidance. See [Rule classification](/governance/rule-classification).
+
+Severity expresses impact under the pinned policy, not textual force. A normative failure can be critical, high, medium, or low. A quality warning does not become a SEP violation because it is severe.
+
+Finding status records the observation: passed, failed, warning, skipped, not applicable, blocked, indeterminate, or excepted as defined by the released schema. Each row must expose rule ID/version, classification, severity, exact upstream pointer, observed behavior, safe evidence references, remediation, timestamps, attempts, and applicable exception. Filters never remove counts from the summary.
+
+## Score versus gate
+
+The display score uses basis points as a summary. The gate evaluates explicit rules. A high score cannot override one critical/high blocking finding, missing required coverage, cleanup failure, signature/integrity failure, or infrastructure-indeterminate result.
+
+Always display score denominator, weighting policy, passed/failed/warning/skipped counts, and gate-policy version. Compare scores only when suite lock, standards snapshot, policy, coverage, and scoring version are compatible.
+
+## Coverage and skipped rules
+
+Coverage is the set of selected rules for which the required execution and evidence completed. Show selected, executed, passed, failed, warned, skipped, not-applicable, blocked, and indeterminate counts with stable rule lists.
+
+Every skip needs a machine code and safe explanation, such as unsupported target feature declared before the run, unavailable credential, policy restriction, prior blocking prerequisite, or infrastructure fault. A skipped required rule fails coverage policy unless an explicit compatible rule says otherwise. `not applicable` requires a proven applicability predicate; users cannot use it as an unchecked skip.
+
+Partial coverage must be prominent beside the gate, not hidden in an appendix. State which claims cannot be made.
+
+## Infrastructure-indeterminate evidence
+
+Runner crash, DNS/Horizon/RPC outage, target connection failure, browser failure, expired credential, queue timeout, artifact loss, report-signature failure, or event gap may make a result indeterminate. Separate:
+
+- target observations completed before failure;
+- unexecuted or untrusted checks;
+- owning infrastructure boundary;
+- retry/reconciliation decisions;
+- whether cleanup completed;
+- what a rerun must reproduce.
+
+Do not convert unavailable evidence to passed or emit a target finding unless the rule actually observed target behavior.
+
+## Exceptions
+
+An approved exception is time-bound, target-bound, rule-bound, policy-visible, and attributed to an authorized approver with rationale and expiry. It does not change the observed finding; the report shows both original status and gate treatment. Expired, wrong-target, wrong-rule-version, or out-of-policy exceptions do not apply.
+
+## Timeline
+
+Read the immutable event sequence from configuration resolution through admission, runner assignment, steps/retries, callbacks, ledger observations, cleanup, report generation, signature, and optional publication. Use monotonic sequence IDs for order and wall-clock timestamps for correlation. Gaps, clock uncertainty, replayed events, and retries remain visible.
+
+A retry is another attempt at the same logical action, not proof that the first attempt had no effect. Side-effecting steps must show reconciliation before retry.
+
+## Artifacts and retention
+
+Each artifact entry identifies type, media type, byte size, SHA-256 digest, creation source, redaction policy/version, encryption/key reference metadata, retention deadline, and access class. A missing, digest-mismatched, expired, or unauthorized artifact is explicit.
+
+Artifacts are supporting evidence; the canonical report records their claims and digests. External links are access-controlled and expiring, while the immutable artifact identity remains stable.
+
+## Baseline comparison
+
+A baseline is a previously verified report approved for the same target/environment/network and compatible suite, standards, policy, runner/evidence, and schema line. Show its report ID/digest, approver, reason, approval time, and expiry/replacement status.
+
+Diff findings by stable fingerprint as new, resolved, unchanged, reclassified, skipped, or indeterminate. A renamed rule, changed applicability, changed severity, or missing artifact is not silently presented as resolution. Baseline comparison aids triage; the current report’s gate remains authoritative.
+
+## Output inventory
+
+| Output         | Role and limitations                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Canonical JSON | Authoritative signed report, deterministic schema/version, finding and artifact inventory.                                            |
+| HTML           | Derived accessible interactive rendering; verify against its canonical digest.                                                        |
+| PDF-ready HTML | Print-stable HTML with repeated identity, page-safe tables, and no hidden interactive-only evidence; a generated PDF remains derived. |
+| JUnit XML      | CI compatibility mapping that may collapse statuses; canonical JSON controls interpretation.                                          |
+| SARIF          | Repository-located findings only; remote protocol findings must not use invented paths.                                               |
+| Redacted HAR   | Bounded HTTP metadata/body evidence after local redaction; never authoritative by itself.                                             |
+| XDR            | Redacted envelope/transaction evidence with network, hash, simulation/submission status, and signing-data policy.                     |
+| Screenshot     | Visual evidence with viewport/time/step/browser metadata and privacy masking.                                                         |
+| Trace          | Bounded protocol/browser/workflow spans with correlation IDs and privacy-filter version.                                              |
+
+Every derived export names the canonical report ID/digest, exporter name/version, generation time, content digest, redaction/access class, and any information it cannot represent. Regenerating an export never mutates the canonical report.
+
+## Interpretation checklist
+
+Before citing a result, verify the report signature state, target/network/time, ownership, suite lock, standards snapshot, runner/evidence class, gate policy, exact coverage and skips, blocking/indeterminate findings, cleanup, exceptions, artifact integrity/retention, baseline compatibility, and disclaimer. Quote the report ID and canonical digest, not a mutable page URL alone.
+
+The production exit check requires released schema fixtures for every result, frontend rendering tests, accessibility and print checks, and independent verifier tests. Those runtime checks remain unavailable until the owning repositories publish compatible tagged artifacts.

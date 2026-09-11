@@ -80,6 +80,10 @@
             "pages": ["contracts/overview", "reference/contract-storage"]
           },
           {
+            "group": "Reports",
+            "pages": ["reports/interpretation"]
+          },
+          {
             "group": "Reference",
             "pages": [
               "reference/terminology",
