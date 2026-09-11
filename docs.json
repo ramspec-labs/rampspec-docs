@@ -220,7 +220,8 @@
               "operations/deployment-and-configuration",
               "operations/self-hosting",
               "operations/observability-and-capacity",
-              "operations/database-backup-and-disaster-recovery"
+              "operations/database-backup-and-disaster-recovery",
+              "operations/production-readiness"
             ]
           },
           {

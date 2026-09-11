@@ -1,0 +1,70 @@
+---
+title: "Production readiness evidence checklist"
+description: "The fail-closed launch gate that binds evidence from RampSpec frontend, backend, contracts, and documentation releases."
+keywords: ["production readiness", "launch", "checklist", "evidence"]
+---
+
+RampSpec production approval requires compatible, independently verifiable evidence from all four repositories. Documentation, local checks, or a testnet result cannot approve a pubnet launch by themselves.
+
+<Warning>
+  Production approval is blocked. Only the documentation repository has an
+  executable toolchain; no compatible product tags, runtime release, testnet
+  deployment, contract review, pilot, or pubnet authorization is recorded.
+</Warning>
+
+## How the gate works
+
+Each checklist item has exactly one accountable owner, required reviewers, a status, and a link to its current evidence. An unchecked item blocks launch. A checked item is valid only when its link resolves to an immutable released artifact, test run, deployment record, signed review, or approved not-applicable decision that identifies scope and approver.
+
+Allowed states are `blocked`, `in-review`, `verified`, and `not-applicable`. `Not-applicable` is not shorthand for missing evidence: its decision must explain why the control cannot affect the release and name the approving security or product owner. Expired, mutable, inaccessible, mismatched, or superseded evidence resets the item to `blocked`.
+
+The machine-readable [readiness record](/examples/operations/production-readiness.planned.json) is the source for automation. This page explains the controls; it does not override the record.
+
+## Release and setup
+
+- [ ] **Compatible tags:** frontend, backend, contracts, and docs have immutable tags and commits in one validated product manifest. Current evidence: [release manifest status](/reference/release-manifest).
+- [ ] **Clean setup:** a new supported environment can install, build, test, and start every repository from its tag with no undocumented state. Current evidence: [contributor setup status](/contributing/index).
+
+The manifest verifies artifact digests and compatibility ranges. A branch name, draft release, successful docs build, or manually copied generated file does not satisfy either check.
+
+## Execution and rule evidence
+
+- [ ] **Runner isolation:** local and hosted runners enforce network, filesystem, process, resource, secret, and cleanup boundaries under adversarial tests. Current evidence: [local runner security status](/operations/runners/local-security).
+- [ ] **Rule fixtures:** every released stable rule has positive, negative, boundary, skipped, not-applicable, indeterminate, and migration coverage where relevant. Current evidence: [rule contribution status](/contributing/rules).
+- [ ] **Required testnet journeys:** released scenarios complete the required SEP-1 discovery, SEP-6 or SEP-24 transfer, and SEP-31 plus SEP-38 corridor paths on controlled testnet targets. Current evidence: [scenario cookbook status](/guides/scenario-cookbook).
+- [ ] **SEP-10 and SEP-45 adversarial paths:** replay, expiry, domain binding, signer, authorization, malformed envelope, and contract-account cases pass against pinned versions. Current evidence: [test mode status](/guides/test-modes).
+
+Skipped prerequisites remain visible and do not count as successful coverage. A mocked ledger or local Anchor Platform run does not satisfy the testnet journey checks.
+
+## Evidence and contracts
+
+- [ ] **Report verification:** schema, artifact hashes, signature, signer authorization, redaction relationship, freshness, and advisory state verify independently. Current evidence: [verification status](/reports/verification-and-sharing).
+- [ ] **Contract review:** released Soroban source, WASM, specs, bindings, hashes, deployment manifest, threat scope, independent review, and remediation records agree. Current evidence: [contract overview status](/contracts/overview).
+
+A valid signature establishes integrity and signer possession, not completeness, security, legal approval, or production fitness. A planned contract that is not deployed cannot satisfy the contract review.
+
+## Data and operations
+
+- [ ] **Tenant, deletion, and restore controls:** isolation, authorization, erasure, retention, backup, restore, and regional recovery tests pass with synthetic records. Current evidence: [data operations status](/security/data-handling-and-operations).
+- [ ] **Runbook ownership:** API, database, workflow, runner, evidence, dependency, network, security, and restore runbooks have primary and backup owners with current escalation routes. Current evidence: [incident runbook status](/operations/incidents/index.mdx).
+- [ ] **Pubnet gates:** a signed activation record names scope, allowed accounts/assets/contracts, limits, monitoring, rollback, approvers, and expiry before any live submission. Current evidence: [pubnet incident boundary](/operations/incidents/pubnet-attempt.mdx).
+
+Read-only pubnet observation is not submission approval. Any authorization mismatch, missing rollback owner, or expired activation fails closed.
+
+## Validation and claims
+
+- [ ] **Pilots:** scoped pilots have written authorization, reproducible evidence, privacy controls, measured outcomes, and publication permission. Current evidence: [funding evidence status](/funding/evidence-and-claims).
+- [ ] **Critical issues:** no open, deferred, disputed, or unverified critical security or correctness issue affects the release scope. Current evidence: [security policy](/SECURITY.md).
+- [ ] **Terminology:** UI, API, CLI, reports, contracts, docs, release notes, and public funding material use approved result and evidence language consistently. Current evidence: [terminology baseline](/reference/terminology).
+
+Pilot participation is not adoption. Closing an issue administratively does not prove remediation unless the released fix and regression evidence are linked.
+
+## Approval record
+
+The release owner freezes the proposed manifest and readiness record, then obtains independent approvals from frontend, backend, contracts, docs, security, protocol, operations, and product owners. A person may hold more than one role only when the conflict policy permits it; no author can be the sole approver of their security-sensitive work.
+
+Any artifact change after approval invalidates affected checks and requires a new readiness-record revision. The final decision records approved scope, exclusions, rollback trigger, release time, and public evidence URL. The absence of an assigned required owner blocks approval.
+
+## Current exit status
+
+All fourteen checklist entries link to their current status and expected evidence boundary. None is checked because no complete compatible runtime release exists. The checklist implementation is complete, but production readiness and its exit requirement remain blocked until every item reaches `verified` or an approved `not-applicable` decision.

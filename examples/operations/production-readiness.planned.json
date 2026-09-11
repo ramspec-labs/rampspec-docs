@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "production-readiness",
+  "releaseId": null,
+  "status": "blocked",
+  "updatedAt": "2026-09-11",
+  "checks": [
+    {
+      "id": "compatible-tags",
+      "owner": "release-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "validated product release manifest with four immutable tags and commits",
+      "evidenceUrl": "/reference/release-manifest"
+    },
+    {
+      "id": "clean-setup",
+      "owner": "repository-maintainers",
+      "status": "blocked",
+      "requiredEvidence": "clean-room install, build, test, and start records for all four tags",
+      "evidenceUrl": "/contributing/index"
+    },
+    {
+      "id": "runner-isolation",
+      "owner": "security-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "released runner isolation and adversarial test report",
+      "evidenceUrl": "/operations/runners/local-security"
+    },
+    {
+      "id": "rule-fixtures",
+      "owner": "protocol-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "released rule pack and complete fixture test report",
+      "evidenceUrl": "/contributing/rules"
+    },
+    {
+      "id": "required-testnet-journeys",
+      "owner": "backend-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "testnet deployment and required journey reports",
+      "evidenceUrl": "/guides/scenario-cookbook"
+    },
+    {
+      "id": "sep10-sep45-adversarial",
+      "owner": "protocol-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "versioned adversarial authentication results",
+      "evidenceUrl": "/guides/test-modes"
+    },
+    {
+      "id": "report-verification",
+      "owner": "backend-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "released verifier and independent verification results",
+      "evidenceUrl": "/reports/verification-and-sharing"
+    },
+    {
+      "id": "contract-review",
+      "owner": "contracts-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "released artifacts, deployment manifest, independent review, and remediation record",
+      "evidenceUrl": "/contracts/overview"
+    },
+    {
+      "id": "tenant-deletion-restore",
+      "owner": "security-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "tenant isolation, deletion, retention, backup, and restore test results",
+      "evidenceUrl": "/security/data-handling-and-operations"
+    },
+    {
+      "id": "runbook-ownership",
+      "owner": "operations-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "current primary and backup ownership for every incident class",
+      "evidenceUrl": "/operations/incidents/index"
+    },
+    {
+      "id": "pubnet-gates",
+      "owner": "release-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "signed pubnet activation and rollback decision",
+      "evidenceUrl": "/operations/incidents/pubnet-attempt"
+    },
+    {
+      "id": "pilots",
+      "owner": "product-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "authorized pilot records and reproducible measured outcomes",
+      "evidenceUrl": "/funding/evidence-and-claims"
+    },
+    {
+      "id": "critical-issues",
+      "owner": "security-owner-unassigned",
+      "status": "blocked",
+      "requiredEvidence": "signed critical-issue query and disposition for the frozen release",
+      "evidenceUrl": "/SECURITY.md"
+    },
+    {
+      "id": "terminology",
+      "owner": "@Hallab7",
+      "status": "blocked",
+      "requiredEvidence": "cross-repository terminology audit for released surfaces",
+      "evidenceUrl": "/reference/terminology"
+    }
+  ],
+  "verifiedCount": 0,
+  "notApplicableCount": 0,
+  "blockingCount": 14,
+  "approvals": [],
+  "approvedAt": null,
+  "publicEvidenceUrl": null,
+  "notice": "Planning status only. This record does not approve a production or pubnet launch."
+}
