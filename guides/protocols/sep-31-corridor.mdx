@@ -1,0 +1,163 @@
+---
+title: "SEP-31 corridor journey"
+description: "Test a controlled cross-border payment from partner authentication through customer onboarding, quote linkage, Stellar settlement, payout, and refund evidence."
+keywords:
+  ["SEP-31", "cross-border payment", "corridor", "partner anchor", "settlement"]
+---
+
+SEP-31 connects a sending anchor, a receiving anchor, and two off-chain customer accounts through a Stellar settlement. RampSpec models the route as one correlated journey rather than a collection of individually successful HTTP calls.
+
+<Warning>
+  SEP-31 is Active upstream at version 3.1.0, but RampSpec has no released
+  SEP-31 adapter, controlled payout rail, or stored corridor corpus. This guide
+  is **Planned** and does not authorize a real payment.
+</Warning>
+
+## Pinned source and scope
+
+The normative source is [SEP-31 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0031.md#specification). The [standards baseline](/reference/standards-baseline) records its digest and Active status.
+
+This journey tests the receiving anchor's `DIRECT_PAYMENT_SERVER` from the perspective of an approved sending-anchor partner. The four roles stay distinct:
+
+| Role             | Controlled responsibility                                      |
+| ---------------- | -------------------------------------------------------------- |
+| Sending client   | Supplies synthetic origin identity and capped source funds.    |
+| Sending anchor   | Authenticates, creates the payment, and submits Stellar funds. |
+| Receiving anchor | Receives Stellar value and initiates the external payout.      |
+| Receiving client | Receives value at an organization-owned sandbox destination.   |
+
+The sending and receiving anchors must have a bilateral test agreement. No scenario may infer partner authorization from a public endpoint.
+
+## Lock the corridor
+
+Before discovery, lock the target hosts, test network and passphrase, both anchor identities and signing keys, sending account, receiving account, Stellar input asset, off-chain output asset, funding method, maximum amount and fees, sender and receiver customer types, controlled payout destination, refund account and memo, callback origin, allowed egress, expiry budget, cleanup owner, and expected policy.
+
+Use only synthetic customer data and capped testnet value. The payout destination must be a sandbox or organization-owned sink. Production customer records, live banking details, mainnet funds, unrestricted callback hosts, and operator-held secrets are forbidden.
+
+## Discover the receiving anchor
+
+Read `/.well-known/stellar.toml` over HTTPS and pin `DIRECT_PAYMENT_SERVER`, `WEB_AUTH_ENDPOINT`, `KYC_SERVER` when customer data is required, `ANCHOR_QUOTE_SERVER` when conversion is supported, `SIGNING_KEY`, and network passphrase. Cross-origin redirects or an endpoint outside the allowlist fail before credentials are sent.
+
+Call SEP-31 `GET /info` and select one exact `receive` asset. Record its funding methods, limits, fees, quote support, quote requirement, and SEP-12 sender and receiver types. Reject ambiguous asset codes, invalid issuer configuration, contradictory limits, an unavailable method, or capabilities that change after the run lock.
+
+## Authenticate the sending anchor
+
+Complete [SEP-10](./sep-10) or an explicitly supported [SEP-45](./sep-45) partner flow with the account approved by the receiving anchor. Validate challenge domain, home domain, network, nonce, time bounds, client-domain authorization when used, and signing thresholds before exchanging it for a JWT.
+
+Send the bearer token to every protected SEP-31, SEP-12, and SEP-38 endpoint only when audience and origin match. The authenticated account identifies the sending anchor relationship. It is not assumed to be the source account for the eventual Stellar payment.
+
+## Register both customers
+
+Handle sender and receiver independently. For each role:
+
+1. call SEP-12 `GET /customer` with the advertised type and transaction context when available;
+2. submit only requested synthetic fields through `PUT /customer`;
+3. retain the returned customer ID under the correct role;
+4. poll with bounded backoff until `ACCEPTED`, or stop on a terminal rejection;
+5. record requested-field names and redacted validation results, never raw identity values.
+
+A previously accepted customer can be reused only when the target, authenticated partner, type, fixture version, consent scope, and validity window all match. Swapping `sender_id` and `receiver_id`, using another partner's ID, or substituting an accepted ID after transaction creation must fail without revealing customer data.
+
+## Select conversion behavior
+
+Test each supported route separately:
+
+- receiving the same economic asset one-for-one after disclosed fees;
+- sending-anchor conversion before the Stellar payment;
+- Stellar path payment with verified liquidity and bounded destination amount;
+- receiving-anchor conversion using [SEP-38](./sep-38).
+
+For an indicative SEP-38 price, pass `destination_asset` and treat the output as variable. For a firm quote, create it under the same authenticated identity, then pass both `destination_asset` and `quote_id`. The SEP-31 asset, issuer, input amount, destination asset, customer context, delivery method, and transaction creation time must match the quote.
+
+Do not send funds when quote retrieval fails, the quote changed, or its remaining lifetime cannot cover transaction creation and ledger submission. Horizon's successful transaction `created_at` must precede firm-quote expiry.
+
+## Create the transaction
+
+Call `POST /transactions` with the exact decimal input amount, Stellar asset code and issuer, selected funding method, sender and receiver IDs when required, destination asset or quote ID when applicable, and paired refund memo fields. Use current SEP-12 customer records instead of deprecated transaction-level identity fields.
+
+Validate the response status and persistent transaction ID. Payment instructions may be absent while the receiving anchor performs preprocessing. Re-read `GET /transactions/:id` until the status is `pending_sender`, then take the current `stellar_account_id`, memo type, memo, input amount, and asset from that response. Never pay using stale creation-response instructions.
+
+A `400 customer_info_needed` response triggers another role-specific SEP-12 query and update before a complete transaction retry. Deprecated `transaction_info_needed`, `pending_transaction_info_update`, and `PATCH /transactions/:id` behavior is isolated as compatibility evidence and does not replace SEP-12.
+
+## Register and verify callbacks
+
+Optionally register the run's allowlisted HTTPS collector through `PUT /transactions/:id/callback`; `204` confirms registration and `404` means the runner must poll. Replacing a callback must retire the earlier destination for that transaction.
+
+For every callback, parse `Signature: t=<timestamp>, s=<base64>` and verify freshness, exact raw body, the receiving anchor's pinned SEP-1 signing key, and this payload:
+
+```text
+<timestamp>.<sending-anchor-host>.<exact-request-body>
+```
+
+Reject malformed, stale, future, replayed, wrong-host, wrong-key, or modified-body callbacks before parsing their state as evidence. `X-Stellar-Signature` is recorded only as deprecated compatibility. A valid callback is a notification, so the runner still reconciles its transaction object with an authenticated `GET` response. On collector downtime, bounded polling is the recovery path; callback retry is not assumed.
+
+## Submit the Stellar payment
+
+Build the payment from the latest `pending_sender` record. Verify network, source, destination, asset and issuer, exact amount, memo type and value, sequence, time bounds, operation count, and fee before signing. The signing component receives an intent digest, not an arbitrary transaction supplied by the target.
+
+Submit once. If the response is unknown or times out, reconcile by transaction hash, source sequence, destination, asset, amount, memo, and ledger window before retrying. The anchor must match incoming funds by memo rather than assuming the SEP-10 account is the payment source.
+
+Record the successful transaction hash, ledger, close time, operation index, source, destination, asset, amount, and memo digest. A successful submission alone does not prove corridor completion.
+
+## Follow delivery state
+
+Poll with bounded exponential backoff and incorporate only verified callbacks. Require monotonic timestamps and transitions allowed by the locked state graph.
+
+| Status                            | Required interpretation                                            |
+| --------------------------------- | ------------------------------------------------------------------ |
+| `pending_receiver`                | Receiving anchor is preparing to accept funds or retry a payout.   |
+| `pending_sender`                  | Current Stellar payment instructions are ready.                    |
+| `pending_stellar`                 | A matched payment is awaiting finality or internal confirmation.   |
+| `pending_external`                | External delivery is underway but not independently confirmed.     |
+| `pending_customer_info_update`    | Correct only fields identified through the appropriate customer.   |
+| `pending_transaction_info_update` | Exercise only in the explicit deprecated-compatibility scenario.   |
+| `completed`                       | Both Stellar input and controlled external receipt must reconcile. |
+| `expired`, `error`, `refunded`    | Terminal or compensating outcome with corresponding evidence.      |
+
+When customer data needs correction after funding, query sender and receiver separately, update only rejected fields, verify acceptance, and require a transition through receiving-anchor processing before another payout attempt. Repeated polls and callbacks must not duplicate settlement or payout.
+
+## Prove the external payout
+
+Independently query the controlled provider or sandbox receipt. Verify the receiving-client destination fingerprint, output asset, gross and net amounts, fees, provider status, immutable external ID, and completion time. For quote-linked transactions, `amount_in`, `amount_out`, assets, and `fee_details` must match the quote. For a market conversion, record the applied rate and its observation time.
+
+One external ID maps to one SEP-31 transaction and one logical payout. A `completed` API state without a successful matching provider record is false completion; a successful provider record while the API remains terminally failed is state divergence.
+
+## Refund path
+
+Use a dedicated refundable fixture for failed delivery. Lock the refund destination and memo before payment. Verify each `refunds.payments[]` Stellar transaction independently and enforce:
+
+```text
+refunds.amount_refunded = sum(refunds.payments[].amount)
+refunds.amount_fee = sum(refunds.payments[].fee)
+```
+
+A full refund accounts for the input amount minus disclosed refund fees and reaches `refunded`. A partial refund remains explicit in the transaction amounts and timeline. The deprecated `refunded` boolean is never accepted as the sole refund proof.
+
+## Local runner pairing
+
+The public control plane may schedule and receive redacted evidence, but corridor execution belongs on a registered local runner with approved network reach. The pairing contract binds runner identity, organization, project, target, scenario digest, capability set, egress allowlist, maximum value, credential handles, and expiry.
+
+Before execution the runner must prove heartbeat freshness, compatible release manifest, isolated workspace, secret-provider availability, controlled signer access, callback reachability, and cleanup capacity. It uploads hashes, classifications, redacted protocol records, and approved receipts; private keys, bearer tokens, customer fields, and full financial destinations remain local.
+
+## Evidence and findings
+
+The report correlates discovery and rule-pack digests, bilateral profile, authenticated partner, customer-role fixture IDs, quote and expiry, SEP-31 transaction ID, instruction versions, callback signatures and replay decisions, Stellar hash and ledger, external receipt, status timeline, amount and fee math, refund payments, runner identity, redaction record, and cleanup result.
+
+| Failure                                             | Finding                    | Remediation                                                         |
+| --------------------------------------------------- | -------------------------- | ------------------------------------------------------------------- |
+| Unapproved account can create a transaction.        | Partner authorization gap  | Bind SEP-10 subject to the bilateral sending-anchor allowlist.      |
+| Sender and receiver records can be exchanged.       | Customer-role isolation    | Bind each customer ID to role, type, partner, and transaction.      |
+| Transaction terms differ from a firm quote.         | Quote linkage failure      | Atomically validate identity, assets, amounts, method, and expiry.  |
+| Payment is matched by auth account instead of memo. | Settlement matching error  | Match the unique memo and independently verify the ledger payment.  |
+| Callback accepts a stale or modified body.          | Callback integrity failure | Verify freshness, host-bound payload, exact bytes, and signing key. |
+| Completed status lacks a matching payout receipt.   | False completion           | Gate completion on an independently correlated provider result.     |
+| Refund totals or destination cannot be reconciled.  | Refund accounting failure  | Validate every refund operation and decimal invariant.              |
+| A secret or customer field leaves the local runner. | Sensitive-data disclosure  | Use handles, local redaction, and an upload field allowlist.        |
+
+Every listed finding blocks the controlled corridor gate.
+
+## Validation and release gate
+
+The stored suite must cover partner authentication, discovery, sender and receiver onboarding, same-asset and all supported conversion strategies, indicative and firm pricing, transaction creation, preprocessing, signed callbacks and polling, exact Stellar matching, controlled payout, post-funding information correction, full and partial refunds, timeout reconciliation, and cleanup. The paired negative suite defines malformed and adversarial cases separately.
+
+No released backend adapter, local runner, or controlled SEP-31 and SEP-38 corpus exists. The exit check becomes available only when one clean private-lab journey reaches a reconciled terminal state using compatible released components, and the exact evidence bundle verifies independently without exposing customer or signing data.
