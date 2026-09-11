@@ -1,0 +1,159 @@
+---
+title: "SEP-10 web authentication"
+description: "Test SEP-10 classic, memo, muxed, threshold, and client-domain authentication without signing an unsafe challenge."
+keywords:
+  [
+    "SEP-10",
+    "web authentication",
+    "challenge transaction",
+    "muxed account",
+    "JWT",
+  ]
+---
+
+SEP-10 authenticates control of a Stellar account through a specially formed, non-executable challenge transaction. RampSpec must decode and validate the complete challenge before any fixture signer is allowed to add a signature.
+
+<Warning>
+  SEP-10 is Active upstream at version 3.4.1 in the pinned snapshot, but the
+  RampSpec adapter, signer fixture, rule pack, and controlled service are not
+  released. The coverage and examples below remain **Planned**.
+</Warning>
+
+## Pinned source and roles
+
+The normative source is [SEP-10 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0010.md#authentication-endpoint). The [standards baseline](/reference/standards-baseline) records its digest.
+
+| Role                  | Bound identity                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| Home Domain           | Domain whose SEP-1 file advertises `WEB_AUTH_ENDPOINT` and `SIGNING_KEY`.                 |
+| Server Account        | Classic `G...` account in the Home Domain's `SIGNING_KEY`.                                |
+| Web Auth Domain       | Domain hosting the authentication endpoint; it may differ from the Home Domain.           |
+| Client Account        | Classic `G...` or muxed `M...` account being authenticated.                               |
+| Client Domain Account | Classic signing account discovered from the optional client domain's SEP-1 `SIGNING_KEY`. |
+
+Resolve and pin these roles before requesting a challenge. A redirect, DNS change, or key change cannot silently rewrite the suite lock.
+
+## Safe test boundary
+
+Use synthetic Stellar testnet accounts and a verified controlled service. The challenge's sequence number is zero specifically so it cannot be executed on Stellar, but a malformed response might contain a valid transaction. Therefore:
+
+1. decode XDR with the locked network passphrase and bounded parser;
+2. perform every structural, account, operation, time, and signature assertion locally;
+3. reject unexpected operations, sources, signatures, fee behavior, and network values;
+4. only then ask the isolated fixture signer to sign the exact verified envelope hash;
+5. submit it only to the approved token endpoint, never Horizon or RPC;
+6. destroy automated signing material at fixture expiry.
+
+The runner enforces request, challenge, signing, token, and replay limits. Production accounts, wallets, tokens, and customer sessions are prohibited.
+
+## Challenge request matrix
+
+Exercise each supported identity form independently:
+
+| Case           | Request identity                                              | Required isolation                                                               |
+| -------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Classic        | `G...` account with no memo.                                  | Session subject identifies only that account.                                    |
+| Shared classic | `G...` account plus ID memo.                                  | Different memos behave as different users and produce distinct subjects.         |
+| Muxed          | `M...` account with no separate memo.                         | Subject preserves the muxed address.                                             |
+| Threshold      | Existing classic account with configured signers and weights. | Only the selected authority policy may authenticate.                             |
+| Unfunded       | Classic account absent from the ledger.                       | Exact master-key signature policy applies without invented ledger thresholds.    |
+| Client domain  | Supported account form plus approved `client_domain`.         | Domain signing and claim are verified independently from client-account control. |
+
+A memo is permitted only with a classic account and must be an ID memo. Do not send a memo with a muxed account. Test omitted and explicit `home_domain` behavior only when the target advertises multi-domain support.
+
+## Challenge response checks
+
+On the successful response, require the pinned response status and JSON shape, decode the XDR, and validate:
+
+- transaction source equals the Server Account;
+- sequence number is exactly zero;
+- time bounds exist and the runner clock is currently within them;
+- the optional memo exactly matches the valid request;
+- at least one operation exists;
+- the first operation is Manage Data sourced by the Client Account;
+- its key is the selected Home Domain followed by ` auth` and fits the 64-character limit;
+- its value is exactly 64 bytes representing a cryptographic-quality 48-byte random nonce encoded as specified;
+- the envelope has a correct Server Account signature under the locked network passphrase;
+- the `web_auth_domain` operation is sourced by the Server Account and has the expected value;
+- a present `client_domain` operation is sourced by the discovered Client Domain Account and matches the requested domain;
+- every other permitted future-reserved Manage Data operation is sourced by the Server Account;
+- the optional `network_passphrase`, when returned, matches the locked network.
+
+Reject extra operation types, ambiguous or duplicate reserved keys, wrong sources, stale/future time bounds, missing server signature, unexpected memo, bad nonce size, network mismatch, or any envelope that could be submitted to the ledger.
+
+## Client-domain checks
+
+When the target chooses to verify the requested client domain, retrieve its SEP-1 file under the same discovery safety controls, extract a classic `G...` `SIGNING_KEY`, and pin the body and key digests. Verify the client-domain signature separately and require the resulting session token to carry the matching `client_domain` claim.
+
+If the server attempts verification but cannot fetch the client-domain signing key, test the pinned error behavior. If the server does not support or select that domain for verification, test the upstream behavior separately; do not mislabel an optional unsupported-domain decision as signature success.
+
+## Signer and threshold checks
+
+For an existing account, obtain signer weights and thresholds from a fresh trusted Stellar testnet data source at verification time. Exclude the Server Account's signature from client authority. Reject invalid, duplicate, unrelated, over-counted, and stale signer sets.
+
+Test the target's declared policy explicitly:
+
+- medium threshold for authority comparable to moving funds;
+- high threshold for complete account authority;
+- a documented lower signer policy only when the application deliberately accepts its reduced assurance;
+- master-key signature for a supported account that does not yet exist.
+
+Possession of a master key does not automatically meet an existing account's threshold, and one third-party signer does not prove complete authority. The report states exactly which threshold or signer policy was proven.
+
+## Token submission and replay
+
+Submit the signed challenge using each encoding the pinned source requires: JSON and form-encoded. The server must repeat structural, time, server-signature, client-signature, client-domain, operation-source, sequence-zero, and selected-threshold validation before issuing a token.
+
+Replay the same signed challenge within and after its validity window. The service must not issue more than one session JWT for one challenge. Also test malformed base64, malformed XDR, missing signatures, wrong network, expired/future bounds, altered operations, wrong sources, under-threshold signatures, unrelated signatures, and an invalid client-domain signature.
+
+Rate and concurrency limits keep adversarial cases bounded. A policy or rate rejection is recorded separately from a malformed-challenge conformance result.
+
+## Session JWT checks
+
+Decode without trusting, select only an allowed algorithm/key, verify the signature, then validate the claims required by the pinned source:
+
+- `iss` identifies the expected issuing server URI;
+- `sub` is the classic account, classic account plus memo separated as specified, or muxed account;
+- `iat` is present and reasonable under recorded clock tolerance;
+- `exp` is present, after issue time, and not expired;
+- `client_domain` is present and exact only when the verified challenge included it.
+
+Unknown critical headers, algorithm confusion, missing claims, wrong identity form, excessive lifetime, and claim type errors fail. Audience restriction, token identifiers, maximum lifetime, and replay-cache behavior are valuable `SECURITY` or `POLICY` checks when selected, but they must not be called SEP-10 violations unless the pinned source requires them.
+
+Never place a token value in evidence. Store only its header/claim allowlist, redaction labels, signature outcome, key identifier, timestamps, and token digest.
+
+## Fixture corpus
+
+The released adapter must provide hashed fixtures for:
+
+1. funded and unfunded classic accounts;
+2. classic accounts with ID memos and pairs of isolated memo users;
+3. muxed accounts and invalid muxed-plus-memo requests;
+4. low, medium, and high thresholds with master, third-party, server, duplicate, and unrelated signers;
+5. verified, unsupported, unreachable, mismatched, and incorrectly signed client domains;
+6. valid challenge JSON plus malformed XDR, sequence, time, nonce, operation, source, memo, network, and signature variants;
+7. successful JSON and form token submissions plus replay, expiry, and concurrency cases;
+8. valid and invalid session JWT claims, algorithms, keys, identity subjects, lifetimes, and optional domain claim.
+
+Every private key is generated for the test, never committed, and destroyed after use. Fixture manifests retain only public accounts, signer/threshold expectations, body hashes, and expected rule outcomes.
+
+## Findings and remediation
+
+| Observation                                                             | Classification                                                              | Remediation                                                                            |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Challenge sequence is not zero or contains an unsafe operation          | `MUST`, with critical security impact.                                      | Correct challenge construction and block all signing until local validation passes.    |
+| Server signature, source account, domain operation, or nonce is invalid | `MUST`.                                                                     | Bind construction to the selected SEP-1 keys/domains and use cryptographic randomness. |
+| Challenge is expired, unbounded, or accepted outside its bounds         | `MUST` plus possible `SECURITY`.                                            | Enforce server and client time checks with a small recorded clock tolerance.           |
+| Under-threshold or unrelated signer receives a token                    | `MUST` for selected upstream threshold behavior; critical security finding. | Recompute weights from current ledger state and exclude the server signature.          |
+| Memo or muxed user is collapsed into another subject                    | `MUST` where the pinned identity rule applies.                              | Preserve the exact memo/muxed subject and isolate session storage.                     |
+| Client-domain proof or claim is inconsistent                            | `MUST` when domain verification is exercised.                               | Pin the discovered key, verify its signature, and issue the exact claim.               |
+| Same challenge issues multiple tokens                                   | Normative replay finding.                                                   | Consume challenges atomically and reject every replay.                                 |
+| JWT audience or local maximum-lifetime policy fails                     | `SECURITY` or `POLICY` unless directly required upstream.                   | Restrict token acceptance without changing the claimed SEP rule source.                |
+
+Stable finding-detail links remain unavailable until the tagged rule pack publishes IDs and source anchors.
+
+## Exclusions and release gate
+
+This guide does not validate authorization for every endpoint that later accepts the JWT, wallet user experience, custody, KYC, production signer security, or legal identity. It never authorizes a public-network transaction.
+
+Coverage becomes reproducible only after success and adversarial commands run against controlled services with the released adapter, all fixtures validate, signer material is destroyed, and reports verify independently. Until then, follow [Test modes and network safety](/guides/test-modes) and treat every described RampSpec capability as planned.

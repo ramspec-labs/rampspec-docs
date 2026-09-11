@@ -139,7 +139,7 @@
           },
           {
             "group": "Protocols",
-            "pages": ["guides/protocols/sep-1"]
+            "pages": ["guides/protocols/sep-1", "guides/protocols/sep-10"]
           },
           {
             "group": "Maintainers",
