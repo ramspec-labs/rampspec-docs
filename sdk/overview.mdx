@@ -1,10 +1,176 @@
 ---
 title: "SDK overview"
 description: "The entry point for RampSpec client, verifier, runner, schema, webhook, and contract packages."
+keywords:
+  [
+    "SDK",
+    "API client",
+    "report verifier",
+    "runner SDK",
+    "webhooks",
+    "contract bindings",
+  ]
 ---
 
-The RampSpec SDK surface is planned as a set of narrow packages for API clients, report verification, runner integration, schema helpers, webhook signatures, and read-only contract lookups.
+RampSpec's SDK surface is a set of narrow packages for typed API access, independent evidence verification, runner integrations, generated schemas, webhook security, and read-only Soroban lookups. Each package has one owning repository and one release status.
 
-## Availability
+<Warning>
+  No RampSpec SDK package, package name, registry namespace, version, or runtime
+  support policy has been released. The backend and contracts repositories
+  currently contain implementation plans only and have no tags. Every module
+  below is **Planned**.
+</Warning>
 
-No package release is published yet. Install commands will be added only after the backend or contracts repository publishes a compatible package and the command is checked in a clean environment.
+## Status vocabulary
+
+| Status         | Meaning                                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------------------- |
+| `Planned`      | Documented design only; no installable artifact or supported API.                                           |
+| `Experimental` | Tagged prerelease exists with source, integrity, compatibility, and limitations; breaking changes expected. |
+| `Released`     | Tagged supported artifact exists, appears in a product manifest, and passes clean-install and usage checks. |
+
+Documentation never derives status from a branch, package search result, code directory, or roadmap entry. Each non-Planned row must link an immutable source tag, full commit, registry artifact and integrity data, supported runtime matrix, changelog, license, and compatible [release manifest](/reference/release-manifest).
+
+## Current package matrix
+
+| Module               | Owning repository    | Package and version | Runtime support | Status  |
+| -------------------- | -------------------- | ------------------- | --------------- | ------- |
+| Generated API client | `rampspec-backend`   | Not assigned        | Not published   | Planned |
+| Report verifier      | `rampspec-backend`   | Not assigned        | Not published   | Planned |
+| Runner SDK           | `rampspec-backend`   | Not assigned        | Not published   | Planned |
+| Schema helpers       | `rampspec-backend`   | Not assigned        | Not published   | Planned |
+| Webhook utilities    | `rampspec-backend`   | Not assigned        | Not published   | Planned |
+| Read-only bindings   | `rampspec-contracts` | Not assigned        | Not published   | Planned |
+
+The docs repository does not reserve package names on behalf of either owner. Names shown in future install commands must come from a verified registry publication and immutable repository tag.
+
+## Installation boundary
+
+When a package is released, its page will provide commands in this form with real manifest values:
+
+```powershell
+npm install <verified-package-name>@<exact-version>
+```
+
+```bash
+pnpm add <verified-package-name>@<exact-version>
+```
+
+The placeholders are intentionally non-runnable. Do not remove the exact version, replace it with a mutable tag, or infer a package name from the module label. Maintainers must test every published command in a clean project using each supported package manager and runtime.
+
+A consumer verifies registry provenance, integrity, license, source tag and commit, dependency policy, exported API report, and release-manifest compatibility before installation. Lock the resolved artifact and retain the lockfile in the consuming repository.
+
+## Generated API client
+
+The backend owns an OpenAPI 3.1 document and generated TypeScript client. The client is intended to cover:
+
+- authentication and scoped service-account credentials;
+- organizations, projects, targets, ownership, and discovery;
+- secret-reference metadata without value reads;
+- runner registration and lifecycle;
+- spec snapshots, rules, scenarios, suites, policies, and locks;
+- run creation, cancellation, event replay, findings, reports, artifacts, and exceptions;
+- schedules, GitHub integrations, webhooks, and notifications;
+- pagination, idempotency, rate limits, and structured problem details.
+
+Generation must be deterministic from the tagged `openapi.json`; hand-written additions cannot drift from operations or schemas. Browser and server exports must be explicit. The browser build cannot expose service-account secret helpers, local file access, unrestricted base-URL overrides, or server-only credential providers.
+
+See [API reference](/api-reference/endpoints) for the current generated-reference boundary. It is also Planned because no backend OpenAPI release exists.
+
+## Report verifier
+
+The verifier is intended to work independently from the RampSpec API. It accepts a canonical report, release manifest, suite lock, verification-key set, and referenced artifact digests, then returns a typed decision with diagnostics.
+
+Its contract includes RFC 8785 JSON canonicalization, SHA-256, signature-field exclusion, Ed25519 verification, key validity and rotation, schema and compatibility validation, artifact digest checking, gate recomputation, exception visibility, and fail-closed handling of unknown algorithms or versions.
+
+Verification performs no target requests and does not upload the report. Browser support, streaming input, maximum sizes, Web Crypto behavior, Node versions, and command-line wrappers remain unspecified until a release publishes and tests them.
+
+## Runner SDK
+
+The runner SDK is intended for first-party runner components and reviewed provider adapters. It is not a framework for arbitrary scenario code. Planned responsibilities include:
+
+- mutual-TLS registration, renewal, revocation, and outbound lease transport;
+- signed lease verification and compatible release negotiation;
+- typed capability and provider registration;
+- bounded action lifecycle, cancellation, reconciliation, and cleanup;
+- structured events with idempotent acknowledgement;
+- local classification, redaction, encryption, and artifact-manifest enforcement;
+- heartbeat, health, upgrade, and offline bundle primitives.
+
+The SDK must not expose raw job-command execution, unrestricted HTTP, cluster credentials, secret-list operations, private-key reads, policy bypass, or direct control-plane database access. Public API stability for adapter authors is separate from private worker internals.
+
+Use the [public runner security](../operations/runners/public-runner), [local runner installation](../operations/runners/local-runner), and [local secrets guide](../operations/runners/local-security) as the security contract until generated API documentation exists.
+
+## Schema helpers
+
+Schema helpers wrap the backend's tagged JSON Schema 2020-12 bundle for rules, scenarios, suite locks, events, and reports. They are intended to provide exact schema IDs, typed validation results, reference resolution, canonical diagnostics, and compatibility checks.
+
+They cannot redefine a schema, coerce invalid values, fetch unknown remote references, or treat a filename as a schema ID. Consumers select an exact bundle version and preserve unknown optional fields only where the schema allows them.
+
+The [generated schema reference](/reference/schemas) remains authoritative about provenance and import. No helper can be released before the complete five-kind bundle and named examples exist.
+
+## Webhook utilities
+
+Webhook utilities are intended to sign and verify RampSpec integration deliveries over the exact received body. Planned helpers cover signature-header parsing, timestamp freshness, constant-time comparison, event IDs, delivery attempts, replay detection, key rotation, and typed event-schema validation.
+
+Verification must require an explicitly configured secret reference or public-key policy, exact expected algorithm, exact raw bytes, bounded body size, accepted timestamp window, and recipient-specific replay storage. It returns a decision; it does not parse or execute an unverified event first.
+
+Utilities cannot register endpoints, manage secrets, retry deliveries, or authorize a caller by themselves. Those operations belong to backend APIs and organization policy.
+
+## Read-only contract bindings
+
+The contracts repository owns generated TypeScript bindings, contract specifications, WASM hashes, and network deployment manifests. The read-only package is intended to query evidence commitments, attestor status, supersession, revocation, pause state, configuration, and contract code hash.
+
+It selects a network only from a verified deployment manifest and compares the live contract code hash before interpreting state. Unknown networks, contract IDs, code hashes, storage versions, or binding majors fail as unverified.
+
+Write operations are intentionally outside the default SDK surface. Publishing, superseding, revoking, pausing, administration, TTL extension, and upgrades require separately reviewed operator tooling and signers. Read-only bindings never imply that a report is certified or that a deployment is audited.
+
+## Error contract
+
+Every package will expose typed errors that preserve category without leaking credentials or sensitive payloads. The common planned categories are invalid input, authentication, authorization, policy blocked, conformance failure, infrastructure failure, indeterminate result, incompatible version, unsupported capability, integrity failure, cancellation, cleanup failure, and rate limit.
+
+Errors include stable code, safe message, operation, whether retry is allowed, correlation fingerprint, and cause class where safe. They do not include bearer tokens, cookies, secret values, raw customer fields, private endpoints, signed envelopes, webhook secrets, or unredacted provider responses.
+
+Network and infrastructure errors cannot be converted to conformance failures, and a verifier never returns success with ignored unknown critical fields.
+
+## Runtime and module format policy
+
+The backend design targets TypeScript with strict compiler settings and an active Node.js LTS, but that design is not a support promise. Each release must state exact supported Node versions, browsers if applicable, module formats, TypeScript floor, package-manager test matrix, Web Crypto assumptions, operating systems, architectures, and optional peer dependencies.
+
+Server-only and browser-safe entry points must be separate and covered by export-map tests. Importing a browser entry must not load Node built-ins, environment secrets, filesystem code, or server credential providers. Tree shaking, source maps, declaration files, and bundled dependency policy are release-tested properties, not assumptions.
+
+## Versioning and compatibility
+
+Each package follows semantic versioning after its first stable release. A breaking export, input or output type, error code meaning, canonicalization rule, signature representation, schema major, runner protocol, contract interface, or supported-runtime removal requires a major release and migration notes.
+
+Generated packages additionally embed source artifact digest and generator version. Two builds from the same source, generator, and platform-independent inputs must be byte-identical or semantically canonical where packaging metadata prevents byte identity.
+
+The product release manifest declares compatible API, schema, runner, report, and contract majors. Consumers should reject an incompatible combination rather than try to adapt silently.
+
+## Security and provenance
+
+Every package release requires protected source tag, full commit, reproducible build workflow, dependency lock, component inventory, vulnerability policy, provenance attestation, registry integrity, license files, changelog, API snapshot, and maintainer approvals. Publishing credentials are short-lived and release-environment scoped.
+
+The package must contain no source secrets, test credentials, private registry URLs, internal target names, production contract IDs outside verified manifests, or undeclared network calls. Install scripts are prohibited unless a documented, reviewed requirement is approved.
+
+A compromised or vulnerable version is marked blocked in release metadata; documentation retains the incident and migration path and does not continue recommending it.
+
+## Promotion checklist
+
+To move one matrix row from Planned to Experimental:
+
+1. publish a signed prerelease tag and registry artifact from the owning repository;
+2. record full source and artifact provenance, license, integrity, and supported runtimes;
+3. add the package to a compatible product manifest;
+4. import its generated API or schema references where applicable;
+5. run clean-install, type, unit, security, and minimal usage checks;
+6. publish limitations, unstable APIs, and migration expectations;
+7. update only that row and its usage guide.
+
+Promotion to Released additionally requires stable tag, compatibility testing with oldest and newest supported peers, complete usage examples, API review, upgrade path, security gates, and adoption evidence appropriate to the package.
+
+## Current verification record
+
+The local `rampspec-backend` checkout has no tags and contains only `implementation.md` at commit `173773f`. The local `rampspec-contracts` checkout has no tags and contains only `implementation.md` at commit `197dcdc`. The machine-readable example release manifest marks every component unavailable with null tags and commits.
+
+These checkout observations establish the current Planned status; they are not permanent identifiers to publish as releases. Reverify repository tags, registry state, artifacts, and the product manifest whenever this page changes.
