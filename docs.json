@@ -145,7 +145,8 @@
               "guides/protocols/sep-45",
               "guides/protocols/sep-9",
               "guides/protocols/sep-12",
-              "guides/protocols/sep-6-deposit"
+              "guides/protocols/sep-6-deposit",
+              "guides/protocols/sep-6-withdrawal"
             ]
           },
           {

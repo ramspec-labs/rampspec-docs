@@ -1,0 +1,162 @@
+---
+title: "SEP-6 withdrawals and history"
+description: "Test same-asset and cross-asset withdrawals, payment matching, transaction history, late funds, and refunds."
+keywords:
+  ["SEP-6", "withdrawal", "transaction history", "refunds", "payment matching"]
+---
+
+An SEP-6 withdrawal sends a Stellar asset to an anchor and delivers an external asset to the customer. RampSpec treats initiation, the Stellar payment, external settlement, history, and any refund as distinct evidence-bearing steps.
+
+<Warning>
+  SEP-6 is Active upstream at version 4.3.0, but RampSpec has no released
+  withdrawal adapter, controlled payout rail, or stored success and negative
+  examples. This guide is **Planned** and does not authorize a payment.
+</Warning>
+
+## Pinned source and boundary
+
+The normative source is [SEP-6 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0006.md#withdraw). The [standards baseline](/reference/standards-baseline) records its digest.
+
+This page covers `GET /withdraw`, optional `GET /withdraw-exchange`, `GET /transaction`, and `GET /transactions`. Use the [deposit guide](./sep-6-deposit) for inbound external funding. Interactive withdrawal UI belongs to SEP-24 and is not a substitute for this non-interactive API flow.
+
+## Locked prerequisites
+
+Before initiation, lock the target and network, SEP-1 and `/info` digests, exact asset and issuer, advertised funding method, authenticated customer identity, controlled payout destination, source account, maximum amount and fee budget, callback origin, refund destination, and cleanup owner.
+
+The controlled source account must hold only capped testnet value. The external receiver must be a sandbox or organization-owned sink. Production financial details, real customer data, and pubnet signing are prohibited.
+
+## Discover the route
+
+Read `/info.withdraw[asset_code]` for `enabled`, `authentication_required`, funding methods, amount limits, and fee fields. For a non-equivalent pair, require `/info.withdraw-exchange`, compatible SEP-38 prices, and the selected external destination asset.
+
+Use `funding_method`; `type` is deprecated. Financial account details belong in [SEP-12](./sep-12), not `dest`, `dest_extra`, or other query parameters. Legacy fields are tested only in an explicitly enabled compatibility case and are redacted before transport logs.
+
+If authentication is required, send a valid [SEP-10](./sep-10) or [SEP-45](./sep-45) JWT on initiation and history requests. The authenticated subject identifies the customer, while the optional withdrawal `account` identifies the payment source and may differ only when the locked case permits it.
+
+## Same-asset initiation
+
+Call `GET /withdraw` with the exact `asset_code` and advertised `funding_method`. Optional inputs include the controlled source account, amount, country, customer ID, locale, callback, location, and paired `refund_memo` and `refund_memo_type`.
+
+A `200` response begins the withdrawal. Record the anchor transaction ID, anchor receiving account, payment memo and type, estimated time, limits, fees, and extra information. The controlled profile requires a transaction ID even though the base response makes it optional.
+
+Do not submit a Stellar transaction from the initiation response alone. Query `GET /transaction?id=<id>` until the record reaches `pending_user_transfer_start`, then use its current:
+
+- `withdraw_anchor_account` as the payment destination;
+- `withdraw_memo` and `withdraw_memo_type` exactly as returned;
+- `amount_in` as the amount to send, including any additive fee policy;
+- `amount_in_asset` when the transaction is quote-linked;
+- action deadline and quote expiry as hard execution limits.
+
+If SEP-12 work is required, query the customer with the anchor transaction ID and the applicable customer type. Resume only after accepted synthetic KYC and a refreshed SEP-6 transaction response.
+
+## Cross-asset initiation
+
+Use `GET /withdraw-exchange` when the Stellar source asset and external destination asset are non-equivalent. Lock the SEP-38 identifiers, amount, funding/delivery method, and quote policy.
+
+For market-rate testing, capture the indicative price without treating it as guaranteed. For firm-rate testing, obtain a SEP-38 quote and pass its ID. The request source asset, destination asset, source amount, and funding method must match the quote or produce `400` with no payable transaction.
+
+Submit the Stellar payment before quote expiry to require the agreed rate. A payment after expiry follows the anchor's disclosed policy; SEP-6 does not require one universal outcome. The fixture therefore locks one expected action: reject before payment, process at a newly disclosed rate with consent, hold for review, or refund. Silence, hidden repricing, or loss of funds fails the case.
+
+## Submit exactly once
+
+Construct the payment from the refreshed transaction record and verify network passphrase, source, destination, asset code and issuer, amount, memo type/value, sequence, time bounds, and fee before signing. Simulate when the operation type supports it, then submit once.
+
+An accepted Horizon response is not completion. Persist the transaction hash and reconcile it against the anchor record. If submission times out or returns an unknown outcome, search the selected network by hash, source sequence, destination, amount, asset, memo, and time window before any retry. Never rebuild the same intent with a new sequence until reconciliation proves the original was not accepted.
+
+### Duplicate payment case
+
+Submit a second controlled payment carrying the same matching data only in a dedicated negative fixture. The anchor must not pay the external destination twice. It must associate the extra value with an observable hold or refund path and expose unambiguous operator action. Record both Stellar hashes and the single external payout identifier.
+
+### Underpayment and overpayment
+
+Exercise exact, below, and above `amount_in` separately. The expected action is target policy, not invented by RampSpec. Each case locks whether the anchor rejects, waits, requests an adjustment, applies a disclosed tolerance, or refunds. The amount delta and fee treatment must be visible and mathematically reconcilable.
+
+### Late payment
+
+Do not deliberately send after a deadline outside a controlled refundable fixture. A late case records the user-action deadline, quote expiry, ledger close time, anchor receipt time, policy selected before submission, terminal status, and refund or payout result.
+
+## Status contract
+
+Poll `GET /transaction` with bounded backoff or consume a callback whose signature and body are verified. Accept only transitions allowed by the locked state graph.
+
+| Status                                                      | Withdrawal meaning                                                      |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `incomplete`                                                | Required information is still absent.                                   |
+| `pending_customer_info_update`                              | Complete transaction-bound SEP-12 fields.                               |
+| `pending_transaction_info_update`                           | Supply only the explicitly requested transaction fields.                |
+| `pending_user_transfer_start`                               | Current Stellar payment instructions are ready.                         |
+| `pending_stellar`                                           | The submitted Stellar transaction is not final.                         |
+| `pending_anchor` or `on_hold`                               | The anchor is processing or reviewing received funds.                   |
+| `pending_external`                                          | The controlled external payout is awaiting confirmation.                |
+| `pending_user_transfer_complete`                            | External funds are available for customer pickup; withdrawal only.      |
+| `completed`                                                 | Both reported sides are complete and independent correlation must pass. |
+| `expired`, `too_small`, `too_large`, `error`, or `refunded` | Terminal or compensating result requiring matching evidence.            |
+
+`pending_user` requires a safe, redacted action description. `user_action_required_by` appears only while user action is possible. Status and completion timestamps cannot move backward, and repeated polling or callback delivery cannot duplicate an action.
+
+## Transaction lookup
+
+`GET /transaction` accepts exactly one useful selector: anchor `id`, `stellar_transaction_id`, or `external_transaction_id`. A successful response contains one transaction object; unknown records return `404`. Cross-tenant, cross-account, and wrong-memo selectors must behave as not found rather than reveal ownership.
+
+For every record validate kind, status, amounts/assets, fee details, quote ID, redacted source/destination, Stellar instructions, timestamps, external and Stellar IDs, update requests, refunds, and messages. Fields that do not apply to the current kind or status must be absent rather than copied from another transaction.
+
+## History behavior
+
+Call `GET /transactions` with asset code and account, then exercise `no_older_than`, `limit`, repeated `kind`, and exclusive `paging_id` independently. Require:
+
+- time-descending ordering and stable page boundaries;
+- no duplicate or missing record while paging a frozen fixture;
+- only `withdrawal` and `withdrawal-exchange` when those kinds are selected;
+- an empty array, not an error, when no records match;
+- the authenticated account to match the request when authentication is enabled;
+- account-plus-memo isolation for every shared-account response;
+- consistent transaction objects between history and single lookup.
+
+Create two synthetic users under one classic account with different authenticated memos. Each history must contain only its own records, including failed and refunded transactions.
+
+## Settlement correlation
+
+For the Stellar input, query the locked network independently and verify the transaction succeeded, included the exact payment operation, used the expected source and anchor destination, asset and issuer, amount and memo, and closed inside the run window.
+
+For the external output, verify a controlled receipt with the expected asset, net amount, redacted destination fingerprint, provider status, and immutable external ID. One external ID maps to one anchor transaction and one logical payout. A completed anchor record without both required observations is a false-completion finding.
+
+## Refund semantics
+
+Use the `refunds` object; the older `refunded` boolean is compatibility data only. Validate:
+
+```text
+refunds.amount_refunded = sum(refunds.payments[].amount)
+refunds.amount_fee = sum(refunds.payments[].fee)
+```
+
+Each payment identifies whether its ID is `stellar` or `external`. The refund destination memo follows `refund_memo` and `refund_memo_type` when both were supplied; otherwise it follows the original withdrawal payment memo. Correlate Stellar refunds to successful operations and external refunds to controlled provider receipts.
+
+A full refund returns the recorded input less only the disclosed refund fee and reaches `refunded`. A partial refund remains explicit in amounts and status history. Duplicate, late, underpaid, overpaid, expired-quote, failed-payout, and cancelled fixtures each assert the target's locked refund policy.
+
+## Deprecated behavior
+
+Do not treat `non_interactive_customer_info_needed`, `customer_info_status`, `/fee`, `dest`, `dest_extra`, `type`, `memo_type` for user identification, wallet name/URL, or the `refunded` boolean as current implementation proof. Capture them in a compatibility section when encountered and require the current SEP-12, funding-method, fee-details, and refunds paths for release gating.
+
+The interactive branches of SEP-6 are deprecated in favor of SEP-24. A URL or UI returned by a legacy SEP-6 implementation is evidence of compatibility only, not a passing SEP-24 journey.
+
+## Evidence and findings
+
+Evidence includes release and discovery digests, target/network, authenticated subject class, customer/transaction fixture IDs, kind, assets, method, quote/expiry, requested and actual amounts, fee/refund math, instruction digest, Stellar hash/ledger/operation, external receipt, status timeline, callbacks, retry decisions, history pages, and cleanup.
+
+| Failure                                                | Finding                    | Remediation                                                     |
+| ------------------------------------------------------ | -------------------------- | --------------------------------------------------------------- |
+| Payment instructions change without a refreshed query. | Stale instruction risk     | Version instructions and require a final pre-sign lookup.       |
+| Unknown submission causes another payment.             | Duplicate payment risk     | Reconcile immutable ledger data before retrying.                |
+| Shared-account history crosses memo identities.        | Customer isolation failure | Bind every query to the full authenticated subject.             |
+| Firm quote is silently repriced before expiry.         | Quote integrity failure    | Bind transaction economics to the quote and reject mismatch.    |
+| Completed record lacks matching external payout.       | False completion           | Require provider confirmation before completion.                |
+| Refund totals or destinations do not reconcile.        | Refund accounting failure  | Use decimal invariants and verify every refund payment.         |
+| Sensitive payout details appear in URLs or reports.    | Sensitive-data disclosure  | Move fields to SEP-12 and redact before logging or persistence. |
+
+All listed findings except advisory legacy-field observations block the controlled release gate.
+
+## Validation and release gate
+
+The stored suite must cover same-asset and cross-asset success, market and firm quotes, missing/invalid auth, KYC updates, exact/under/over payment, duplicate and late payments, quote expiry, every applicable state, callbacks and polling, lookup selectors, pagination, shared-account isolation, external and ledger matching, full/partial refund, invalid transitions, timeout, retry, and cleanup.
+
+No backend withdrawal release or stored executable corpus exists, so the exit check cannot yet run. The page becomes release-ready only when all success and negative examples execute from versioned files and their evidence is pinned by a compatible release manifest.
