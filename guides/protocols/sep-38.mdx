@@ -1,0 +1,154 @@
+---
+title: "SEP-38 quotes"
+description: "Test asset discovery, indicative prices, authenticated firm quotes, fees, precision, delivery methods, and expiry."
+keywords:
+  ["SEP-38", "RFQ", "indicative price", "firm quote", "asset conversion"]
+---
+
+SEP-38 lets an anchor quote exchanges between Stellar and off-chain assets for use by protocols such as SEP-6, SEP-24, and SEP-31. RampSpec tests the quote service independently, then verifies that a consuming transaction preserves the selected quote.
+
+<Warning>
+  SEP-38 is Draft upstream at version 2.5.0. Its rules are opt-in and
+  non-blocking by default. RampSpec has no released SEP-38 adapter, schema, or
+  invalid fixture corpus, so this guide is **Planned**.
+</Warning>
+
+## Pinned source and status
+
+The normative source is [SEP-38 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0038.md#specification). The [standards baseline](/reference/standards-baseline) records its digest and Draft status.
+
+Every report identifies the snapshot, rule-pack version, and whether draft failures affect the selected release policy. A draft-rule failure cannot silently become a stable conformance failure. Reclassification requires the specification synchronization and approval process.
+
+## Endpoint contract
+
+| Endpoint         | Authentication            | Purpose                                               |
+| ---------------- | ------------------------- | ----------------------------------------------------- |
+| `GET /info`      | Optional SEP-10/SEP-45    | Discover assets and delivery/country capabilities.    |
+| `GET /prices`    | Optional SEP-10/SEP-45    | List indicative counterpart assets and unit prices.   |
+| `GET /price`     | Optional SEP-10/SEP-45    | Calculate one indicative pair and amount.             |
+| `POST /quote`    | Required SEP-10 or SEP-45 | Create a customer-bound firm quote.                   |
+| `GET /quote/:id` | Required SEP-10 or SEP-45 | Retrieve the same customer-owned quote before expiry. |
+
+All requests and responses use JSON. Errors return an appropriate status, including `400` for invalid input and `403` for absent or invalid required authentication, plus an `error` string. The runner records status and a redacted digest, not bearer tokens or personalized pricing inputs.
+
+## Asset identifiers
+
+Accept only complete `<scheme>:<identifier>` values from the released schema. The pinned version defines:
+
+- `stellar:<asset>` using the SEP-11 asset form, preserving asset code and issuer together;
+- `iso4217:<currency>` using a valid three-character ISO 4217 code.
+
+Reject unknown schemes, missing issuer, native/issued ambiguity, malformed separators, whitespace, case substitution, percent-encoding tricks, unsupported currency, or an identifier that changes after URL decoding. String equality follows the locked canonicalization rules; display aliases never enter requests.
+
+## Discover assets and pairs
+
+Call `GET /info` and validate each unique asset. Delivery methods apply only to non-Stellar assets: `sell_delivery_methods` describe how a customer delivers that asset to the anchor; `buy_delivery_methods` describe how the customer receives it. Each entry has a stable name and human description.
+
+Fiat assets may list ISO 3166-2 or permitted ISO 3166-1 alpha-2 country codes. Absence of a country list does not prove global availability.
+
+An asset list is not a pair list. For each intended direction, call `GET /prices`; only a returned counterpart establishes pair support. Delivery-method names must agree with the consuming SEP's advertised funding methods.
+
+## Buy and sell semantics
+
+The client always sells `sell_asset` and receives `buy_asset`. Direction is not inferred from whether an asset is Stellar or fiat.
+
+For `GET /prices`, provide exactly one of `sell_asset` or `buy_asset`, never both. A `sell_amount` belongs only with `sell_asset`; a `buy_amount` belongs only with `buy_asset`. The response returns `buy_assets` or `sell_assets` respectively, with indicative unit `price` and required decimal precision.
+
+For `GET /price` and `POST /quote`, provide both assets and exactly one of `sell_amount` or `buy_amount`. The response supplies both final amounts. Fees may make the returned amount differ from the requested amount, so the client must use the response rather than recomputing from the request.
+
+Test both amount directions for every pair:
+
+- fixed sell: how much of the buy asset is received;
+- fixed buy: how much of the sell asset is required.
+
+Swapping assets is a different directional market and may legitimately return a different price, fee, methods, or availability.
+
+## Indicative pricing
+
+`GET /prices` and `GET /price` are indicative. They can include current margins and fees but do not guarantee execution economics. A report labels the observation time and does not compare a later market conversion as if the indicative value were binding.
+
+`GET /price` returns:
+
+| Field         | Meaning                                                                |
+| ------------- | ---------------------------------------------------------------------- |
+| `price`       | One unit of buy asset expressed in sell asset, excluding explicit fee. |
+| `total_price` | One unit of buy asset expressed in sell asset, including fee.          |
+| `sell_amount` | Total sell asset the anchor will accept.                               |
+| `buy_amount`  | Total buy asset the anchor will provide.                               |
+| `fee`         | Fee total, asset, and optional itemized details.                       |
+
+The runner stores decimal strings exactly and records freshness. It never labels an indicative response as a quote.
+
+## Firm quote lifecycle
+
+Authenticate, then send `POST /quote`. Lock assets, amount direction, consuming `context`, country, delivery method, and optional desired `expire_after` before the request.
+
+If an off-chain side advertises more than one applicable method, provide the corresponding sell or buy delivery method. Do not provide both method directions for one quote. If the anchor cannot meet an `expire_after` on or after the requested time, expect `400`; it may return a later expiry when it can meet the request.
+
+A successful creation returns `201` with a unique ID, expiry, prices, assets, amounts, methods, and fee. Verify:
+
+- response assets and delivery methods equal the request;
+- exactly one input amount direction was used and both output amounts are positive;
+- expiry is a valid UTC timestamp later than creation and satisfies the requested constraint;
+- the quote belongs to the authenticated subject and target;
+- `GET /quote/:id` under the same identity returns semantically identical terms;
+- another tenant/account receives not-found or denied behavior without quote disclosure.
+
+Retrieve immediately before linking the quote to SEP-6, SEP-24, or SEP-31. The consuming request must match asset direction, amount, delivery method, context, customer identity, and quote ID. The resulting transaction preserves the quote economics when the anchor receives funds within the quoted conditions.
+
+An expired quote is immutable history, not a renewable token. Reject creation of a new transaction from it. A consuming protocol may define late-fund policy, but it must not silently claim the expired rate was guaranteed.
+
+## Precision and rounding
+
+Use arbitrary-precision decimal arithmetic. Never parse quote values as binary floating-point or round intermediate operations. The response's declared asset decimal precision controls comparison tolerance; it does not permit excess precision on the wire.
+
+Validate the core invariant:
+
+```text
+sell_amount = total_price * buy_amount
+```
+
+Then validate fee placement:
+
+```text
+sell_amount - fee.total = price * buy_amount  # fee asset is sell_asset
+sell_amount = price * (buy_amount + fee.total) # fee asset is buy_asset
+```
+
+Apply the invariant whose fee asset matches. Normalize scale only at the documented final boundary and record the exact unrounded values, rounding mode, precision, and delta. `fee.details[].amount` must sum to `fee.total`; each detail has a name and optional description.
+
+Seed repeating decimals, maximum precision, trailing zeros, half-boundary rounding, very small/large amounts, and fee-in-either-asset cases. A server cannot hide a failed invariant by returning fewer decimals.
+
+## Country and delivery methods
+
+Run each supported country/method combination separately because it may affect price and expiry. If multiple countries are advertised for the chosen fiat asset, provide a country code. Reject a country or method not present in `/info` and prove no quote was created.
+
+Cross-check SEP-6/24 funding methods and SEP-31 delivery context. Case changes, display descriptions, and stale methods do not count as matches. Personalized authenticated pricing is reported as scoped to that identity and cannot be used as a public rate claim.
+
+## Invalid corpus
+
+The stored corpus includes missing/both assets, same asset, unsupported pair, wrong scheme, malformed issuer/currency, missing/both amounts, zero, negative, non-decimal, exponent, excessive precision, overflow, unavailable country/method, both method directions, invalid context, absent/expired/wrong-audience JWT, impossible expiry, quote lookup by another identity, unknown ID, modified retrieved terms, and linkage mismatch.
+
+Every invalid request must return the locked status/schema, create no reusable quote, expose no other customer's pricing, and avoid echoing credentials or sensitive routing data.
+
+## Evidence and remediation
+
+Evidence records target and snapshot digests, authentication class, endpoint, canonical request hash, assets/direction, requested and returned amounts, price/total price, fee asset/details, precision and rounding result, country/method, quote ID/creation/expiry, retrieval/linkage result, status, duration, and redacted error.
+
+| Failure                                                           | Finding                     | Remediation                                                     |
+| ----------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------- |
+| `/info` lists an asset but `/prices` invents an unsupported pair. | Pair discovery drift        | Publish coherent capabilities and validate pair direction.      |
+| Buy/sell direction or amount is reversed.                         | Quote direction failure     | Model explicit assets and require exactly one amount direction. |
+| Price, amount, or fee invariant fails.                            | Quote accounting failure    | Use decimal arithmetic and one declared rounding boundary.      |
+| Wrong customer can retrieve a quote.                              | Quote isolation failure     | Bind quote ID to authenticated subject and target.              |
+| Quote terms mutate between create and lookup.                     | Quote immutability failure  | Store immutable terms and return the original representation.   |
+| Expired/mismatched quote starts a transaction.                    | Quote linkage failure       | Revalidate identity, terms, context, and expiry at consumption. |
+| Draft failure blocks without opt-in policy.                       | Status classification error | Keep Draft rules advisory unless the locked policy opts in.     |
+
+Isolation, accounting, immutability, and invalid active linkage are blockers when the draft pack is selected as blocking. Classification errors always block report publication.
+
+## Validation and release gate
+
+The released pack must cover every endpoint, both price directions, supported/unsupported pairs, both fee placements, delivery/country matrices, precision boundaries, authentication, creation/retrieval ownership, expiry, consuming-protocol linkage, and the complete invalid corpus. Golden responses must validate against the generated schema and deterministic decimal evaluator.
+
+No backend SEP-38 release exists, so requests and fixtures cannot yet execute. Publication becomes eligible only when the released Draft pack produces stable findings and remediation text, and default suites demonstrably keep it non-blocking unless explicitly enabled.
