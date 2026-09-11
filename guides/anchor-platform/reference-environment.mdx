@@ -1,0 +1,133 @@
+---
+title: "Anchor Platform reference environment"
+description: "Start and verify the controlled Anchor Platform environment used for RampSpec integration and protocol evidence."
+keywords:
+  [
+    "Anchor Platform",
+    "Docker Compose",
+    "business server",
+    "callbacks",
+    "testnet",
+  ]
+---
+
+The reference environment is a disposable, controlled integration target. It joins the Anchor Platform SEP services, a synthetic business server, event delivery, configured assets, and Stellar testnet fixtures so contributors can reproduce findings without real customers or production funds.
+
+<Warning>
+  RampSpec has not released the reference Compose bundle, images, fixture
+  manifest, or health-check script. Therefore no RampSpec startup command is
+  valid yet. This page defines the required bundle and verification record and
+  remains **Planned**.
+</Warning>
+
+## Pinned release bundle
+
+A usable release must provide these files as one checksummed backend artifact:
+
+```text
+anchor-platform-reference/
+  compose.yaml
+  compose.lock.json
+  .env.example
+  config/
+    stellar.toml
+    assets.yaml
+    events.yaml
+  fixtures/
+    customers.json
+    accounts.json
+    scenarios.json
+  scripts/
+    prepare
+    health
+    seed
+    teardown
+  README.md
+```
+
+`compose.lock.json` records the RampSpec backend tag and commit, Anchor Platform release and commit, every container image by immutable digest, configuration and fixture SHA-256 values, expected Docker and Compose versions, network passphrase, and supported operating systems. Mutable image tags such as `latest` are prohibited.
+
+The official [Anchor Platform repository](https://github.com/stellar/anchor-platform) documents a Docker Compose quickstart. RampSpec's bundle is a pinned test harness around that upstream deployment, not a fork or replacement.
+
+## Service topology
+
+| Component                   | Reference responsibility                                                 | Exposure                                                                |
+| --------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| SEP server                  | Serves the public SEP surface and `/.well-known/stellar.toml`.           | Loopback by default; the explicit test-runner network only when needed. |
+| Platform Server             | Reads and updates transaction state through the internal API.            | Private Compose network only.                                           |
+| Business server             | Returns synthetic KYC, rate, quote, rail, and off-chain state decisions. | Callback network only; no host exposure unless a test requires it.      |
+| Event service and processor | Delivers transaction-state events and records delivery attempts.         | Private network; run-scoped callback destination.                       |
+| Payment observer            | Correlates controlled Stellar payments through Horizon or RPC.           | Outbound testnet access only.                                           |
+| PostgreSQL                  | Stores platform and fixture transaction state.                           | Private network with a disposable volume.                               |
+| Kafka                       | Carries platform and event messages.                                     | Private network with no host listener by default.                       |
+| SEP-24 UI                   | Provides the synthetic interactive flow when selected.                   | Loopback browser origin only.                                           |
+| RampSpec local runner       | Executes locked suites and collects redacted evidence.                   | Outbound access to approved services; no Docker socket.                 |
+
+The official [Anchor Platform architecture](https://developers.stellar.org/docs/platforms/anchor-platform/admin-guide/architecture) is authoritative for upstream responsibilities. In particular, the Platform Server stays private and the anchor-owned business server handles callbacks and internal-system integration.
+
+## Configuration contract
+
+The checked-in example environment contains no usable secret. The preparation script generates run-scoped values for callback authentication, SEP-10 signing, token signing, database access, and synthetic fixture encryption. Secret files are ignored, permission-restricted, and destroyed during teardown.
+
+Configuration must bind:
+
+- a controlled loopback home domain and expected ports;
+- the Stellar testnet passphrase plus pinned Horizon and RPC origins;
+- enabled SEP endpoints and callback/event destinations;
+- synthetic Stellar assets and matching off-chain asset identifiers;
+- deposit and withdrawal methods, limits, significant decimals, and quote pairs;
+- business-server callback authentication and replay limits;
+- test-only issuer, distribution, receiving, and customer accounts;
+- log redaction, retention, health deadlines, and teardown behavior.
+
+The official SEP-6 [configuration guide](https://developers.stellar.org/docs/platforms/anchor-platform/sep-guide/sep6/configuration) explains that asset and payment-method configuration must align with the business-server callbacks. The released RampSpec fixture must pin the exact upstream version used to interpret those fields.
+
+## Synthetic customers and accounts
+
+Fixture people and organizations use unmistakable test markers and reserved or controlled email, phone, and file destinations. They contain no copied names, documents, addresses, bank details, or identifiers. Every customer has an expected lifecycle and deletion assertion.
+
+Stellar keypairs are generated for one run, funded only on testnet, scoped by account role, and capped by transaction and fee policy. Public keys may appear in evidence; secret keys remain inside the runner or fixture service. The fixture manifest records account purpose, starting balance, trustlines, issuer relationship, expected memo behavior, and cleanup status without storing seeds.
+
+## Start procedure
+
+After a release exists, the tagged README supplies the exact platform-specific commands. The required order is:
+
+1. verify the bundle, configuration, fixture, and image digests;
+2. confirm Docker isolation, available resources, free ports, and testnet egress;
+3. generate ephemeral secrets and fixture keypairs;
+4. render Compose and reject mutable images, privileged containers, host networking, broad mounts, and unexpected exposed ports;
+5. start data services, then Anchor Platform services, then the business server and event components;
+6. seed synthetic assets, customers, accounts, and expected transaction states;
+7. wait for every explicit health check within its deadline;
+8. save a redacted environment manifest before admitting test runs.
+
+Do not use an upstream example command as proof that the RampSpec bundle exists or is healthy.
+
+## Health checks
+
+The released health script must fail unless:
+
+- every required container is running from its locked digest;
+- PostgreSQL migrations match the pinned release and Kafka is ready;
+- SEP and Platform Server health endpoints return their expected schemas;
+- `/.well-known/stellar.toml` is reachable and its digest matches the fixture;
+- the business server authenticates a signed synthetic callback and rejects an invalid one;
+- the event service can deliver a run-scoped test event exactly once under retry;
+- Horizon and RPC report Stellar testnet and an acceptable ledger age;
+- fixture accounts exist with expected trustlines and capped balances;
+- no service reports an unredacted secret or customer fixture;
+- the environment manifest records healthy timestamps and component versions.
+
+A process that is merely listening is not necessarily healthy. A partial health result blocks reference tests.
+
+## Teardown
+
+Stop new runs, wait for active workflows to cancel or finish, revoke callback and API credentials, delete synthetic customers, drain event delivery, and reconcile testnet transactions. Then stop containers and remove the named disposable volumes, networks, generated secrets, browser profiles, and local artifacts.
+
+The teardown script refuses an unscoped project name or volume target and records exactly what it removed. It must never delete external Docker resources or a broad host directory. Remaining fixture accounts are marked non-production and excluded from future runs; testnet history itself cannot be deleted.
+
+## Acceptance record
+
+From a clean supported host, maintainers must verify all bundle hashes, start the environment, seed fixtures, pass every health check, run a synthetic callback and event delivery, and complete teardown. The record includes exact image digests, upstream Anchor Platform tag, backend tag, testnet ledger time, redacted service status, and cleanup evidence.
+
+Until that record and artifact exist, use this page only to review the integration design. Continue with [Target onboarding](/guides/target-onboarding) for authorization boundaries.

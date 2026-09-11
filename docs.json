@@ -130,6 +130,10 @@
             ]
           },
           {
+            "group": "Anchor Platform",
+            "pages": ["guides/anchor-platform/reference-environment"]
+          },
+          {
             "group": "Maintainers",
             "pages": ["guides/maintainers/spec-synchronization"]
           }
