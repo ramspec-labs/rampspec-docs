@@ -1,0 +1,137 @@
+---
+title: "SEP-31 negative paths"
+description: "Run controlled SEP-31 authentication, customer, quote, payment, callback, transition, timeout, retry, payout, and refund failures."
+keywords:
+  ["SEP-31", "negative testing", "callback replay", "quote expiry", "refund"]
+---
+
+SEP-31 failure testing proves that an anchor rejects unsafe requests, preserves funds after post-payment failures, and reports a stable remediable finding. Each case changes exactly one condition from the [corridor journey](./sep-31-corridor).
+
+<Warning>
+  These cases can create transactions, submit testnet value, delay delivery, and
+  trigger refunds. They are **Planned** until a released adapter and controlled
+  payout sandbox exist. Never run them against production or with real customer
+  data.
+</Warning>
+
+## Source and safety boundary
+
+The normative source is [SEP-31 version 3.1.0 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0031.md#specification). Related authentication, customer, and quote assertions use the pinned SEP-10 or SEP-45, SEP-12, and SEP-38 snapshots recorded in the [standards baseline](/reference/standards-baseline).
+
+Negative cases are excluded from default smoke and scheduled suites. A run requires an isolated target profile, explicit destructive-case opt-in, a local runner, organization-owned accounts, capped testnet value, provider sandbox fault controls, unique customer and transaction fixtures, a refund destination, and a cleanup owner.
+
+The runner records the target's declared policy before mutation. Where SEP-31 does not prescribe one exact business response, the assertion is consistent disclosed handling, no duplicate value movement, full accounting, and a reachable terminal or compensating state.
+
+## Case identity and isolation
+
+Every fixture has an immutable ID such as `sep31.auth.missing`, `sep31.quote.expired`, or `sep31.payment.over`. Store the baseline request digest, the single mutation, prerequisites, whether funds may move, maximum value, expected HTTP and state outcomes, terminal deadline, refund expectation, evidence allowlist, and cleanup action.
+
+Use a fresh transaction and memo per case. Never reuse a callback replay token, quote, customer ID, payment hash, provider receipt, or refund record between cases. A fixture aborts as indeterminate if its baseline precondition is not proven; it must not reinterpret environment failure as target nonconformance.
+
+## Authentication and partner cases
+
+| Case ID                    | Mutation                                     | Required result                                                     |
+| -------------------------- | -------------------------------------------- | ------------------------------------------------------------------- |
+| `sep31.auth.missing`       | Omit the bearer token.                       | `403`; no transaction, customer change, or quote is created.        |
+| `sep31.auth.expired`       | Use an expired otherwise-valid JWT.          | `403`; response does not reveal token claims or partner existence.  |
+| `sep31.auth.audience`      | Use a token for another target.              | `403`; no cross-target acceptance.                                  |
+| `sep31.auth.unapproved`    | Authenticate a valid but unapproved account. | `403`; bilateral relationship is enforced.                          |
+| `sep31.auth.source-swap`   | Pay from a different allowed source account. | Matching uses the transaction memo, not the authentication account. |
+| `sep31.auth.cross-partner` | Fetch another partner's transaction ID.      | `404` or locked non-disclosing response; no transaction fields.     |
+
+The source-account case runs only when the profile explicitly permits a distinct source. It is not an authorization-bypass test and cannot introduce an uncontrolled payer.
+
+## Customer and transaction input cases
+
+Exercise sender and receiver independently. Mutations include missing required SEP-12 fields, invalid field formats, rejected customer status, expired customer record, unknown ID, wrong customer type, swapped sender and receiver IDs, ID owned by another partner, malformed amount, zero or negative amount, excess precision, unsupported asset or issuer, unavailable funding method, missing paired refund memo field, and unadvertised transaction data.
+
+Before transaction creation, the expected response is the locked `400` error contract or a role-specific SEP-12 request. It must create no payable transaction. If a complete retry is allowed after correction, reuse the logical case ID but record a new request attempt; prove that exactly one transaction becomes payable.
+
+After funding, customer correction is allowed only through `pending_customer_info_update`. The next SEP-12 response must identify the rejected fields for the correct role. Updating an unrelated field, another customer's record, or a deprecated transaction field must not resume payout.
+
+## Quote failures
+
+Use a fresh [SEP-38](./sep-38) firm quote for each case. Lock its identity, sell and buy assets, sell and buy amounts, fee, delivery method, context, creation time, and expiry.
+
+| Case ID                   | Mutation                                           | Required result                                                       |
+| ------------------------- | -------------------------------------------------- | --------------------------------------------------------------------- |
+| `sep31.quote.unknown`     | Supply an unknown quote ID.                        | `400`; no SEP-31 transaction is created.                              |
+| `sep31.quote.owner`       | Supply another authenticated customer's quote.     | Non-disclosing rejection; no transaction is created.                  |
+| `sep31.quote.asset`       | Change source or destination asset.                | `400`; quote and transaction cannot diverge.                          |
+| `sep31.quote.amount`      | Change the input amount or precision.              | `400`; no partial acceptance or implicit rounding.                    |
+| `sep31.quote.method`      | Change the selected delivery method or context.    | `400`; quote conditions remain binding.                               |
+| `sep31.quote.expired`     | Create the transaction after quote expiry.         | Transaction is rejected or immediately `expired`; no payment allowed. |
+| `sep31.quote.late-ledger` | Submit before expiry but achieve ledger time late. | No silent repricing or payout under the expired firm quote.           |
+
+The late-ledger fixture is permitted only when the receiving anchor has agreed to a reversible lab policy. It records local submission time and Horizon `created_at`; the latter determines whether the firm quote was timely.
+
+## Payment amount and timing cases
+
+Refresh `pending_sender` instructions before each payment mutation. Keep destination, asset, issuer, and memo exact unless that field is the mutation.
+
+| Case ID                     | Mutation                                    | Required result                                                        |
+| --------------------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
+| `sep31.payment.under`       | Send below `amount_in`.                     | No full payout; delta and target policy are visible.                   |
+| `sep31.payment.over`        | Send above `amount_in`.                     | No undisclosed value loss; excess is held, applied, or refunded.       |
+| `sep31.payment.duplicate`   | Submit a second payment with matching memo. | At most one payout; both hashes and disposition of excess are visible. |
+| `sep31.payment.late`        | Send after transaction or quote deadline.   | No silent payout under stale terms; policy and compensation are clear. |
+| `sep31.payment.asset`       | Send the wrong Stellar asset.               | No payout; payment remains independently discoverable for recovery.    |
+| `sep31.payment.memo`        | Use a wrong or missing memo.                | No association with another transaction; controlled recovery path.     |
+| `sep31.payment.destination` | Send to a different controlled account.     | No false receipt; case stops without asking the anchor to recover it.  |
+
+Underpayment, overpayment, duplicate, late, wrong-asset, and wrong-memo tests each use a pre-funded recovery budget and a target-approved expected disposition. The wrong-destination case uses only an organization-owned alternate account and tests evidence matching, not anchor behavior.
+
+## Callback failures
+
+Capture one valid callback as exact bytes, then derive mutations without changing transaction state:
+
+- omit or corrupt `Signature`;
+- change timestamp formatting or move it beyond the freshness window;
+- replay the same timestamp and signature;
+- sign for a different host;
+- use a previous or unrelated SEP-1 signing key;
+- modify whitespace or a field after signing;
+- send an unknown transaction ID or invalid transaction schema;
+- deliver a valid older status after a newer verified status;
+- send to the callback URL replaced by a later registration.
+
+The collector returns its locked `400` response for invalid callbacks, persists only a redacted rejection record, performs no state action, and never treats the body as authoritative. A duplicate valid callback is acknowledged idempotently and does not add a second transition. Polling must recover the current state even if callback delivery stops.
+
+## Invalid state transitions
+
+The oracle evaluates observed history rather than trusting the last value. Seed or induce transitions such as `completed` back to pending, `refunded` to payout, `expired` after funds were accepted without a recovery state, `pending_external` before any matched Stellar payment, a second external payout after completion, and terminal timestamps moving backward.
+
+The runner must emit the same finding code for the same illegal edge regardless of whether it was first seen through polling or callback. It retains both observations, identifies the authoritative authenticated fetch, and does not repair or suppress target history.
+
+## Timeout and retry cases
+
+Inject timeouts at transaction creation, callback registration, customer update, Stellar submission, provider submission, transaction polling, and refund lookup. Classify each result as known failure, known success, or unknown outcome.
+
+For an unknown create result, search by the fixture's idempotency or correlation fields before retrying. For unknown Stellar submission, search by hash and source sequence. For unknown provider submission, query the provider with the stable payout key. Retry only a proven unaccepted operation, preserving the same logical idempotency key. An unavailable dependency yields an indeterminate run, not a target failure.
+
+Bound every wait by a monotonic deadline and maximum attempts. Store attempt number, scheduled delay, response class, reconciliation query, and decision. A timeout must not leave an infinite job, duplicate transaction, duplicate payment, or duplicate payout.
+
+## Payout failure and refund cases
+
+Use provider sandbox controls to reject the destination, delay confirmation, return a terminal failure, or acknowledge then time out. Expected state follows the target profile: internal retry through `pending_receiver`, correction through `pending_customer_info_update`, explicit `error`, or an on-chain refund. It must never be `completed` without a matching successful receipt.
+
+For refunds, verify destination, memo, Stellar asset, transaction hashes, successful operations, amounts, fees, and ledger times. Enforce:
+
+```text
+refunds.amount_refunded = sum(refunds.payments[].amount)
+refunds.amount_fee = sum(refunds.payments[].fee)
+```
+
+When assets differ, normalize through the locked quote price and keep fee placement explicit. Test full, partial, split, delayed, duplicate-listed, wrong-destination, wrong-memo, and non-existent refund transactions. The old `refunded` boolean alone never satisfies a case.
+
+## Finding contract
+
+Each failure maps to a stable code family: `SEP31_AUTH`, `SEP31_CUSTOMER`, `SEP31_INPUT`, `SEP31_QUOTE`, `SEP31_PAYMENT`, `SEP31_CALLBACK`, `SEP31_STATE`, `SEP31_RETRY`, `SEP31_PAYOUT`, or `SEP31_REFUND`. A finding contains rule snapshot, case ID, mutation, expected and observed behavior, funds-at-risk flag, transaction and evidence references, safe reproduction boundary, remediation, and retest criteria.
+
+Severity follows impact, not HTTP status. Cross-partner access, duplicate payout, unreconciled value, callback acceptance that triggers action, false completion, and wrong refund destination are critical blockers. Clean rejection is a passing negative assertion. A lab or dependency fault is indeterminate and cannot be promoted to a target finding.
+
+## Exit criteria
+
+The versioned corpus must contain every listed case, its target policy where discretionary, deterministic fixtures, expected schemas and state histories, stable finding snapshots, compensating action, and cleanup proof. Repeated runs must produce the same classification after volatile IDs and timestamps are normalized.
+
+No executable SEP-31 corpus or fault-controlled payout provider is released. These cases become eligible only after the positive corridor succeeds, destructive opt-in is enforced, each funded case is recoverable, and every example yields stable findings and remediation without exposing credentials or customer data.
