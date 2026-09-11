@@ -161,7 +161,10 @@
           },
           {
             "group": "Runner Operations",
-            "pages": ["operations/runners/public-runner"]
+            "pages": [
+              "operations/runners/public-runner",
+              "operations/runners/local-runner"
+            ]
           },
           {
             "group": "Maintainers",

@@ -1,0 +1,253 @@
+---
+title: "Install a local runner"
+description: "Prepare, register, bind, operate, upgrade, rotate, and revoke an outbound-only runner for private test environments."
+keywords:
+  [
+    "local runner",
+    "installation",
+    "registration token",
+    "mTLS",
+    "heartbeat",
+    "revocation",
+  ]
+---
+
+A local runner executes approved RampSpec jobs inside an organization's network while keeping target credentials, raw traffic, signing operations, and private destinations under that organization's control. It initiates outbound connections to the control plane and requires no inbound public port.
+
+<Warning>
+  No local-runner binary, container image, registration API, configuration
+  schema, or tagged backend release exists. This guide is **Planned**. Command,
+  image, and endpoint placeholders must be replaced only from a verified release
+  manifest.
+</Warning>
+
+## Installation outcome
+
+A complete installation proves that one runner:
+
+- is installed from a signed immutable release;
+- exchanges a one-time registration token for a rotatable workload identity;
+- is bound to one organization and an approved set of projects and targets;
+- advertises capabilities without revealing secret values;
+- connects outbound with mutual TLS and receives only eligible jobs;
+- enforces local destination, action, value, and resource allowlists;
+- reports heartbeat, health, version, lease, and cleanup state;
+- rotates identity and upgrades without losing audit continuity;
+- rejects work immediately after revocation.
+
+Registration alone is not acceptance. The clean-lab run, rotation, revocation, and local capture checks at the end must also pass.
+
+## Choose the host boundary
+
+Use a dedicated virtual machine, node pool, or container host in the private test environment. Do not install the runner on an operator laptop, production anchor host, signing service, database server, or shared continuous-integration worker.
+
+The host needs outbound DNS and HTTPS to the exact control-plane and artifact endpoints named by the future release, plus access to explicitly configured private targets, secret providers, Stellar services, and fixture systems. It needs synchronized time, durable storage for identity metadata and encrypted recovery state, ephemeral job storage, and an operator path for logs and updates.
+
+No inbound route from the internet is required. Target callbacks use a local callback receiver reachable only inside the allowed environment, while the runner carries redacted workflow events outbound. Firewall rules deny peer networks and services not needed by selected actions.
+
+## Host prerequisites
+
+Before installation, record:
+
+- operating system, architecture, kernel or container runtime, and time source;
+- host owner, environment, network zone, and maintenance window;
+- outbound proxy and certificate authority policy when used;
+- control-plane destination set and private target allowlist;
+- CPU, memory, process, disk, job-concurrency, artifact, value, and fee limits;
+- identity-storage path and backup owner;
+- local secret-provider and signing-provider choices;
+- log sink, alert route, upgrade channel, and rollback window;
+- incident owner and revocation procedure.
+
+The released support matrix is authoritative. Unsupported operating systems, architectures, container versions, intercepting proxies, file permissions, or clocks fail preflight rather than entering a degraded mode.
+
+## Resolve a compatible release
+
+Start from a signed RampSpec [release manifest](/reference/release-manifest). Confirm the runner version is compatible with the backend API, runner protocol, scenario schema, action catalog, report schema, and selected rule packs.
+
+For a binary release, verify source repository, immutable tag and commit, artifact filename, size, SHA-256, signature, signing identity, component inventory, and platform tuple. For a container release, additionally verify registry, repository, digest, image signature, provenance, runtime user, and entry point. Never install by a mutable `latest` tag or an unpinned branch artifact.
+
+The release must publish supported install and service-manager commands. Until it does, these placeholders are deliberately non-runnable:
+
+```powershell
+<verify-release-artifact> -Manifest <signed-release-manifest>
+<install-verified-runner> -Version <manifest-runner-version>
+<runner-binary> version --output json
+```
+
+The version output must contain the same version, commit, build identity, runner protocol, catalogs, and artifact digest as the manifest. A mismatch stops installation.
+
+## Create the service account
+
+Run the service as a dedicated unprivileged operating-system account. Grant read access to its immutable executable and trusted certificate authorities; write access only to its identity directory, encrypted recovery directory, and bounded ephemeral workspace root.
+
+Do not grant administrator rights, interactive login, host network administration, container socket access, device access, unrelated filesystem paths, user home directories, or broad environment secrets. Restrict service-manager configuration and identity files to the service account and designated administrators.
+
+Jobs execute in a fresh child sandbox with separate workspace, temporary directory, browser profile, callback namespace, and resource limits. The service itself never executes scenario-selected commands.
+
+## Planned configuration model
+
+The future generated config schema owns exact field names. The intended model separates non-secret policy from provider-local state:
+
+```yaml
+schema: <released-local-runner-config-schema>
+controlPlane:
+  origin: <manifest-control-plane-origin>
+  trustBundle: <approved-ca-reference>
+identity:
+  directory: <restricted-identity-directory>
+bindings:
+  organization: <organization-id>
+  projects: [<project-id>]
+  targets: [<target-id>]
+network:
+  targetAllowlist: [<target-reference>]
+  serviceAllowlist: [<service-reference>]
+execution:
+  capabilities: [https-client]
+  maximumConcurrentJobs: 1
+  workspaceLimit: <bounded-size>
+  jobTimeout: <bounded-duration>
+providers:
+  secrets: <local-provider-reference>
+  signing: <local-provider-reference>
+evidence:
+  profile: <released-redaction-profile>
+  recoveryDirectory: <encrypted-recovery-directory>
+```
+
+Configuration contains identifiers and provider references only. Registration tokens, client private keys, secret values, signing seeds, bearer tokens, raw target credentials, and encryption keys do not belong in this file. Unknown keys and insecure defaults fail validation.
+
+The service validates the config offline, prints a redacted effective-policy summary, and requires operator confirmation before first registration. Config changes are watched only if the released service explicitly supports atomic reload; otherwise restart under the documented maintenance procedure.
+
+## Issue a one-time registration token
+
+An organization owner creates a registration request through an authenticated control-plane UI or API. The request binds:
+
+- organization and requesting actor;
+- permitted projects and targets;
+- runner name and environment label;
+- requested capability ceiling;
+- expected runner release and protocol range;
+- allowed network class and expiration;
+- token use count of exactly one.
+
+The control plane displays the secret token once and stores only a verifier or hash. Deliver it through an approved secret channel directly to the installing operator. Do not place it in tickets, chat, shell history, process arguments, config files, images, logs, or screenshots.
+
+The token expires quickly and becomes invalid after the first successful exchange. Cancellation, actor removal, policy change, or a second attempted use revokes the registration request and creates an audit event.
+
+## Bootstrap mutual TLS identity
+
+Start the verified runner in registration mode using a protected standard-input or file-descriptor secret path defined by the release. The runner generates its private key locally, sends the one-time token, public-key proof, release metadata, host nonce, and requested capabilities over server-authenticated TLS, and validates the control-plane certificate and exact origin.
+
+The control plane verifies token state, binding, version, policy, key proof, and requested capability subset. It returns a runner ID, short-lived client certificate or equivalent workload credential, trust chain, renewal metadata, control-plane signing keys, and approved binding snapshot. The registration token is then destroyed on both sides.
+
+The client private key stays in the restricted identity store or approved hardware-backed provider. It is never uploaded, exported in support bundles, or shared by two runner installations. Cloning a disk image after identity creation is prohibited.
+
+On the first mutual-TLS session, compare runner ID, certificate subject and audience, organization, projects, targets, capability ceiling, policy digest, issue and expiry times, and control-plane key fingerprints with the pending registration request. A mismatch triggers immediate revocation.
+
+## Binding model
+
+A runner belongs to exactly one organization. Project and target bindings are explicit allowlists, not name prefixes or inherited wildcard access. A job lease must match organization, project, target, network, scenario digest, required capabilities, runner mode, and effective policy.
+
+Adding a project, target, network, or capability requires an owner-approved binding revision and another runner acknowledgement. Removing access or tightening policy takes effect before the next lease and may cancel incompatible queued jobs. An in-flight side effect follows cancellation and cleanup policy rather than continuing under stale authority.
+
+Paired SEP-31 runners each retain their own organization, target, secrets, and evidence boundary. A corridor agreement authorizes specific peer identities and protocol exchanges; it never creates shared runner credentials or general cross-organization access.
+
+## Destination allowlists
+
+Local runners may reach approved private addresses, but default egress is still deny. Each target reference resolves to exact schemes, hosts, ports, address or network ranges, redirect policy, certificate policy, and permitted protocol actions. Service references separately cover control plane, DNS, time, Stellar, secret provider, signer, callback, fixture provider, and upload destination.
+
+Canonicalize origins and validate DNS before connection. Revalidate redirects, name changes, and certificate identity. A local profile can permit a named private range only through administrator policy; scenario YAML and target responses cannot widen it. Block host metadata, host control sockets, local administration services, peer runner endpoints, and link-local destinations unless a released provider requires one exact endpoint with a dedicated guard.
+
+Proxy settings are explicit configuration. The runner ignores ambient proxy environment variables unless the service manager and config schema bind them. Credentials are stripped on origin changes, and destination decisions are recorded without query strings or secret components.
+
+## Capability declaration
+
+Capabilities describe available released functions, never underlying secret values. Planned examples include `https-client`, `isolated-browser`, `callback-receiver`, `stellar-observer`, `stellar-signing`, `synthetic-customer`, `provider-sandbox`, `report-verification`, `cleanup-recovery`, and named secret-provider adapters.
+
+At startup the runner intersects compiled support, configured enablement, provider health, binding ceiling, and control-plane policy. It reports only the resulting IDs, versions, limits, network classes, and health. It does not report account balances, secret names, key material, customer fields, raw destinations, or provider configuration.
+
+A capability becomes unavailable immediately when its provider, permission, version, clock, storage, egress, or policy prerequisite fails. Jobs requiring it remain ineligible; the control plane cannot force-enable it.
+
+## Outbound lease channel
+
+The runner opens one authenticated outbound stream or bounded long-poll connection. It sends runner ID, certificate proof, nonce, version, capabilities, health, current leases, and last acknowledged event. The control plane signs each lease and binds it to the runner, organization, project, target, suite lock, expiration, capability set, limits, credentials, and artifact manifest.
+
+The runner verifies signature, freshness, binding, compatibility, local policy, and available capacity before acknowledgement. It rejects duplicate, expired, replayed, broadened, or unknown leases. A disconnect does not authorize offline work: an acknowledged job follows its lease deadline, persists encrypted recovery state, and stops new side effects when authority cannot be refreshed.
+
+Events use monotonic identifiers and idempotent acknowledgement so reconnects do not duplicate work. The durable report, not stream history, remains authoritative.
+
+## Heartbeat and health
+
+Heartbeat records contain runner ID, observed time, version, protocol, config digest, capability health, active and available capacity, lease IDs, cleanup backlog, identity expiry, upgrade status, and an overall state. They exclude secrets and raw target traffic.
+
+The control plane derives:
+
+| State      | Meaning                                                                 |
+| ---------- | ----------------------------------------------------------------------- |
+| `healthy`  | Fresh heartbeat, valid identity, compatible version, providers ready.   |
+| `degraded` | Runner reachable but one optional capability or capacity is impaired.   |
+| `draining` | No new leases; active work is finishing or cleaning up.                 |
+| `offline`  | Heartbeat deadline missed; leases are reconciled before rescheduling.   |
+| `revoked`  | Identity invalid; no work or upload is accepted.                        |
+| `blocked`  | Version, policy, time, config, or security condition forbids execution. |
+
+Health checks cover clock skew, disk and inode headroom, workspace permissions, control-plane trust, identity lifetime, provider reachability, sandbox creation, cleanup queue, and configured destinations. A basic process-alive result is insufficient.
+
+## Run lifecycle
+
+For each accepted lease, create an ephemeral workspace, resolve allowed providers locally, execute only the locked action graph, enforce resource and destination policy, redact before persistence, upload only the artifact manifest, and run cleanup after every terminal path.
+
+The runner never sends private keys, resolved secret values, raw customer fields, unrestricted traffic, private URLs, or full financial destinations to the control plane. It reports structured status, hashes, classifications, redacted evidence, provider fingerprints, and cleanup proof.
+
+Cancellation stops new steps, reconciles unknown side effects, runs compensations, revokes job credentials, expires callbacks, deletes ephemeral state, and retains only encrypted recovery metadata when cleanup cannot complete. Another lease cannot reuse quarantined fixtures.
+
+## Identity rotation
+
+Rotate before the workload certificate enters its renewal window and immediately after suspected exposure, host ownership change, trust-chain change, or policy requirement. The runner authenticates with the current identity, generates a new local key, proves possession, validates the returned binding and chain, atomically activates the new identity, then confirms retirement of the old one.
+
+During a documented overlap, both identities are bound to the same runner and cannot accept the same lease twice. If activation acknowledgement is uncertain, the runner stops new leases and queries identity state. Never delete the last known-working identity until the control plane confirms the new one, and never keep the retired key beyond the recovery window.
+
+Test normal rotation, expired-current-certificate recovery, interrupted exchange, stale old identity, wrong organization binding, and control-plane signing-key rotation in the clean lab.
+
+## Upgrade and rollback
+
+The control plane exposes compatible, minimum, recommended, blocked, and end-of-support versions from signed release metadata. It can request draining but cannot install arbitrary code on the host. The operator verifies the new manifest and artifact, reviews migrations and capability changes, drains the runner, confirms no active or cleanup leases, backs up only documented identity metadata, installs, validates offline, and restarts.
+
+The upgraded runner must retain runner ID and audit continuity while reporting the new artifact digest and config migration. Run a read-only canary before restoring full capability. Roll back only to a still-supported compatible release and after reversing any documented config migration; identity state must not fork.
+
+Security revocation can block a version globally. The kill switch prevents new side effects but preserves report access, revocation, evidence retrieval, and cleanup.
+
+## Revocation and removal
+
+An organization owner or authorized security operator revokes the runner by exact ID. The control plane rejects its client certificate, leases, event writes, and artifact uploads, cancels queued work, signals active work when possible, and records actor, reason, time, bindings, and affected leases.
+
+The runner treats a revocation response as terminal: stop new actions, retain no general offline authority, run locally possible cleanup, encrypt unresolved recovery state, and shut down. For an unreachable or compromised host, the control plane revokes first and operators follow the incident process for target credentials and fixture state.
+
+After control-plane revocation, stop and disable the service, verify no process or job sandbox remains, remove registration tokens and retired certificates, securely delete current private identity and ephemeral workspaces, handle encrypted recovery records according to incident policy, remove firewall rules, and verify the runner stays offline. Keep only required audit records and non-secret release/config digests.
+
+## Clean private-lab acceptance
+
+Use a fresh host and private synthetic target. Capture the following evidence without secrets:
+
+| Check                        | Acceptance evidence                                                      |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| Release installation         | Manifest, artifact digest/signature, version output, unprivileged user.  |
+| One-time registration        | Token request, one successful exchange, replay rejection, token expiry.  |
+| Mutual TLS identity          | Runner/certificate fingerprints, binding, expiry, authenticated stream.  |
+| Target and action allowlists | One allowed job and denials for unbound target, action, and destination. |
+| Capability negotiation       | Healthy supported subset and rejection when a provider is disabled.      |
+| Private discovery run        | Authorized target result, redacted evidence, no inbound public port.     |
+| Cleanup                      | Workspace, callback, credential, upload, and fixture leases terminal.    |
+| Rotation                     | New identity active, old identity rejected, no duplicate lease.          |
+| Upgrade                      | Drain, verified install, compatible reconnect, canary, audit continuity. |
+| Revocation                   | New lease denied, stream closed, upload denied, local shutdown.          |
+
+Capture network traffic during registration, the private run, rotation, and revocation. The only public destinations must be the exact configured control-plane services; private traffic must stay within approved target and provider destinations. Secret values and raw sensitive traffic must not appear in outbound payloads, logs, artifacts, process arguments, or configuration.
+
+## Release gate
+
+Publication of runnable instructions requires a tagged backend and local-runner release, generated config schema, signed artifacts, compatibility manifest, provider interface, service-manager instructions for every supported platform, and an automated lab covering the complete acceptance table.
+
+The current exit check cannot run because those artifacts are absent. Until they exist, do not invent download URLs, installation commands, image tags, API paths, config keys, support claims, or successful registration evidence. Product surfaces must show local execution as Planned rather than falling back to a less isolated runner.
