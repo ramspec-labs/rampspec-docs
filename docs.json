@@ -109,6 +109,10 @@
             ]
           },
           {
+            "group": "Security",
+            "pages": ["security/threat-model"]
+          },
+          {
             "group": "Governance",
             "pages": [
               "governance/repository-ownership",

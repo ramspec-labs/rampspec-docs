@@ -1,0 +1,119 @@
+---
+title: "Threat model"
+description: "RampSpec trust boundaries, protected assets, threats, controls, fail-closed behavior, validation evidence, and accepted limitations."
+keywords: ["threat model", "trust boundary", "SSRF", "tenant isolation"]
+---
+
+RampSpec evaluates systems that process authentication, identity, payment, and ledger flows. Its main security objective is to produce trustworthy, minimally sensitive evidence without becoming an unauthorized scanner, credential broker, signing oracle, tenant escape path, or false certification service.
+
+<Warning>
+  This is the intended architecture threat model. Runtime controls have no
+  tagged release, deployment evidence, penetration test, sandbox review, or
+  contract audit. Entries marked **Planned** are requirements, not verified
+  protections.
+</Warning>
+
+## Scope and assumptions
+
+In scope are the frontend, public API, workflow/control plane, public and local runners, target services/callbacks, Horizon/RPC, secret and object stores, report KMS, Soroban evidence path, GitHub App, outgoing webhooks, build/release pipeline, and four repositories.
+
+Operators and target owners may make mistakes or abuse legitimate access. Target responses, scenario submissions, callbacks, browser content, report uploads, GitHub events, dependency artifacts, network/DNS answers, and external provider data are untrusted. Cloud/KMS/identity providers are trusted only within pinned configuration and monitored contracts.
+
+Out of scope as guarantees are target correctness beyond the tested scope/time, third-party availability, user endpoint security, recovered copies of public evidence, legal/regulatory compliance, and SDF certification. These are limitations, not reasons to omit defensive controls.
+
+## Protected assets
+
+- target authorization and ownership records;
+- organization membership, roles, sessions, service identities, and audit history;
+- target and runner secrets, Stellar seeds, wallet authorization, KMS and contract-admin keys;
+- synthetic identity fixtures and any sensitive redacted evidence;
+- canonical reports, signatures, suite locks, standards snapshots, artifacts, and baselines;
+- workflow state, idempotency keys, leases, callback routes, schedules, and gate decisions;
+- runner, build, release, schema, WASM, binding, image, and deployment provenance;
+- availability, quotas, and the safety boundary that prevents unauthorized or active-pubnet work.
+
+## Actors
+
+Expected actors are Viewer, Auditor, Maintainer, Admin, Owner, CI service account, schedule identity, runner identity, report signer, evidence attestor, contract administrator, and platform operator. Adversaries include an anonymous internet user, compromised member/service account, malicious target, malicious contributor/scenario author, compromised runner/dependency/provider, cross-tenant attacker, webhook sender, and insider with partial privilege.
+
+No single role should authorize target ownership, broaden execution policy, read a secret, execute a stateful run, publish evidence, and administer the contract.
+
+## Trust boundaries
+
+| ID  | Boundary                                   | Data crossing                                               | Required controls and failure behavior                                                                                                      |
+| --- | ------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| B01 | Browser to frontend                        | UI assets, session bootstrap, report views                  | CSP/security headers, dependency integrity, no secret storage, output encoding; deny sensitive rendering on auth uncertainty.               |
+| B02 | Frontend to API                            | Authenticated commands and tenant reads                     | TLS, CSRF/origin checks, scoped auth, object authorization, schema/size/rate limits, audit; deny by default.                                |
+| B03 | API to workflow                            | Immutable run intent, tenant/policy context                 | Signed/versioned command, idempotency, durable handoff, policy digest; ambiguous enqueue is reconciled, not repeated.                       |
+| B04 | Control plane to public runner             | Leased scenario, capabilities, short-lived credentials      | Workload identity, signed image, isolated job, destination/value limits; no eligible runner means blocked/indeterminate.                    |
+| B05 | Control plane to local runner              | Outbound pairing, lease, local secret handles               | Mutual identity, organization binding, allowlists, expiry/revoke; control plane cannot read local secret values.                            |
+| B06 | Runner to target/callback                  | Protocol/browser requests, synthetic data, responses        | Verified ownership, DNS/IP/redirect controls, rate/value/mutation limits, parser limits, local redaction; unsafe destination stops.         |
+| B07 | Runner to Horizon/RPC                      | Network queries, simulations, submissions                   | Pinned network/passphrase/endpoints, bounded responses, transaction reconciliation; outage is infrastructure-indeterminate.                 |
+| B08 | Backend to secret/KMS/storage              | Wrapped credentials, signing operations, redacted artifacts | Workload identity, envelope keys, purpose scopes, access logs, retention/object integrity; no fallback to plaintext/local logs.             |
+| B09 | Evidence worker to Soroban                 | Compact hashes, simulation, signed transaction, events      | Verified manifest/code hash, attestor policy, preview/approval, idempotent reconciliation; mismatch blocks submission/claim.                |
+| B10 | Platform to GitHub                         | Signed events, installation tokens, checks                  | Exact-body signature validation, minimum App permissions, immutable mapping, fork isolation; ambiguous event cannot start privileged work.  |
+| B11 | Platform to webhook/notification recipient | Signed redacted events and expiring links                   | SSRF controls, signing/replay defense, bounded retry, recipient scope; delivery failure cannot change report truth.                         |
+| B12 | Build/release to deployment                | Images, packages, schemas, WASM, manifests                  | Protected review, locked dependencies, provenance/SBOM, signatures, digest pinning, reproducibility; unverifiable artifact is not promoted. |
+
+Encryption authenticates neither the target nor tenant intent by itself. Every boundary also needs authorization, validation, limits, observability, and an explicit non-success state.
+
+## Threat register
+
+| ID  | Threat and abuse case                                                                                | Primary controls                                                                                                                                                            | Fail-closed result                                                               | Planned validation/owner                                      |
+| --- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| T01 | Unauthorized scanning of third-party domains, ports, or pubnet services                              | Ownership challenge, endpoint allowlist, passive default, quotas, abuse kill switch, public-runner egress policy                                                            | Reject admission and preserve safe audit/abuse signal                            | Ownership/negative tests; backend + security                  |
+| T02 | SSRF through target URL, redirect, DNS rebinding, proxy, webhook, or callback                        | Parse canonical URL, resolve/pin all addresses, block private/link-local/metadata ranges, recheck redirects, fixed ports, egress firewall; private targets use local runner | Stop before connection or redirect; no partial bypass                            | DNS/rebinding/redirect matrix; runner + security              |
+| T03 | Secret theft from UI/API/job/log/cache/artifact/support path                                         | Write-only secret provider, envelope encryption, local handles, short-lived scopes, masking plus allowlist logs, rotation and revoke                                        | Deny access, quarantine output, rotate and investigate                           | Secret canaries and lifecycle tests; backend + operators      |
+| T04 | Real PII or financial/identity data enters a synthetic test                                          | Prohibited-data rules, generated fixtures, controlled destinations, preflight/local redaction, quarantine/deletion                                                          | Block run/upload/publication and open privacy incident                           | Seeded prohibited samples; privacy + runner                   |
+| T05 | Malicious target returns oversized, recursive, malformed, active, or deceptive content               | Byte/time/nesting limits, strict parsers/schemas, browser sandbox, content isolation, no host execution, bounded screenshots                                                | Mark rule failure or infrastructure-indeterminate by cause; runner survives      | Parser/fuzz/browser isolation tests; protocol + runner        |
+| T06 | Malicious scenario executes code, expands destinations/capabilities, or hides cleanup                | Declarative schema, no arbitrary code/template evaluation, compiler limits, signed suite lock, policy/capability checks, mandatory cleanup                                  | Compilation/admission rejection; no runner lease                                 | Schema/property/escape cases; backend + protocol              |
+| T07 | Wallet drain, wrong network, wrong destination, duplicate payment, or signing oracle                 | Testnet default, synthetic funded accounts, simulation, decoded transaction preview, amount/destination/time caps, explicit pubnet approval, idempotent reconciliation      | No signature/submission; uncertain result reconciled before retry                | Transaction mutation/replay/network tests; Stellar + security |
+| T08 | Canonical report, artifact, export, baseline, or event tampering                                     | Schema/duplicate-key limits, RFC 8785, SHA-256, Ed25519 trust set, immutable storage, artifact digests, optional Soroban commitment                                         | Not verified; cannot gate, baseline, share, or commit                            | Cross-runtime vectors and tamper suite; backend + SDK         |
+| T09 | Cross-tenant object, cache, job, event, artifact, or integration access                              | Tenant context in rows/keys/jobs, object-level authorization, scoped tokens, row-level defense, cache partitioning, negative tests                                          | Generic denial without existence leak; alert on systematic attempts              | Two-tenant matrix; backend + frontend                         |
+| T10 | Runner compromise escapes job, persists, reaches control plane, or steals another run                | Ephemeral non-root jobs, read-only root, no host socket/privilege, namespace/system-call limits, signed images, egress allowlist, per-job identity/storage                  | Terminate/quarantine runner and evidence; revoke identity; indeterminate reports | Sandbox/escape and residue tests; platform + security         |
+| T11 | Supply-chain compromise in dependency, action, image, package, schema, docs import, binding, or WASM | Lock files, full-commit pinning, trusted registries, review, provenance/SBOM/signatures, malware/vulnerability policy, reproducible WASM, manifest digests                  | Build/release/import blocked; deployed digest mismatch quarantined               | Clean rebuild and substitution cases; all repo owners         |
+| T12 | KMS/report-signing misuse signs forged or unverified content                                         | Purpose-scoped key, workload attestation, canonical digest input, finalized-report policy, rate/anomaly limits, dual control for policy change, rotation history            | Signing denied; affected signatures reviewed/revoked per policy                  | Wrong-purpose/state/tenant/digest tests; backend + security   |
+| T13 | Soroban admin/attestor compromise or contract substitution                                           | Separate roles, verified manifest/code hash, two-step admin, pause/revoke, simulated exact action, hardware/KMS signer, audited upgrade                                     | Stop writes/pause; retain reads/revocation; mark lookup unverified on mismatch   | Auth/code-hash/upgrade tests + audit; contracts + security    |
+| T14 | GitHub privileged workflow executes untrusted fork code or accepts forged webhook                    | Minimal App permissions, selected repos, signature/replay validation, immutable mapping, protected environment, no secrets to forks, pinned actions                         | No protected token/stateful run; non-success check                               | Fork/trigger/tamper/replay fixtures; integrations             |
+| T15 | Callback/webhook replay, forgery, loss, or duplicate causes duplicate state/payment                  | Exact-byte signature, timestamp, nonce/event reservation, per-run route, durable idempotent handoff, state reconciliation, bounded retry                                    | Reject invalid/replay; indeterminate until authoritative state reconciles        | Valid/tamper/replay/gap/reorder tests; backend                |
+| T16 | DoS through API bodies, SSE fan-out, schedules, queues, artifacts, browser work, or delivery retries | Layered size/time/count/rate/concurrency limits, quotas, bounded queues/retention, circuit breakers, fair scheduling, kill switch                                           | Reject/throttle/coalesce; never report pass for unexecuted work                  | Load/soak/limit tests; platform                               |
+| T17 | Audit/log/telemetry injection or sensitive leakage                                                   | Structured schemas, allowlisted fields, escaping, trace IDs, local redaction, cardinality/value limits, immutable audit digest, restricted access                           | Drop/quarantine unsafe fields while preserving safe event                        | Injection/canary/cardinality tests; observability + privacy   |
+| T18 | False certification, stale evidence, or misleading score/export                                      | Required disclaimer, precise classification, scope/time/network/snapshot display, exact counts/coverage, verified digest, expiry/supersede/revoke state                     | Publication/release blocked when wording or provenance is absent                 | Content/render/schema tests; docs + product                   |
+
+## Authorization and confused-deputy rules
+
+Every action evaluates authenticated subject, organization, object, operation, target ownership, network, mode, suite/policy version, runner capabilities, credential purpose, value/destination limits, and approval state. Resource IDs from URLs, events, scenarios, reports, or GitHub payloads are never sufficient authority.
+
+Background jobs carry signed immutable tenant/action context and reauthorize at irreversible boundaries. A service that can read a queue cannot broaden a destination or retrieve a secret. A local runner cannot claim another organization. A report signer cannot choose report content. An evidence publisher cannot use contract administration to bypass attestor policy.
+
+## Data-flow rules
+
+Collect the minimum synthetic/request metadata at the runner. Redact before crossing the runner boundary, classify artifacts before upload, encrypt in transit/at rest, scope every object to tenant/run, and expire it by policy. Secrets never enter scenario files, canonical reports, URLs, events, telemetry, support bundles, or on-chain state.
+
+Prohibited data triggers stop, quarantine, access restriction, owner/privacy notification, deletion or hold decision, and validation that downstream caches/exports/notifications were handled. Hashes of sensitive low-entropy values can still leak and are not automatically safe.
+
+## Availability and integrity behavior
+
+Dependency or infrastructure failure is distinct from target nonconformance. Unknown side effects are reconciled before retry. Missing required evidence, cleanup failure, signature failure, stream gap, or unavailable runner/dependency yields blocked or indeterminate, never pass. Kill switches stop new risky submissions while preserving report access, cleanup, revocation, and incident evidence where safe.
+
+## Security validation matrix
+
+| Evidence                  | Required scope                                                                                     | Current status                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Unit/property/fuzz tests  | Parsers, policy, auth, IDs, canonicalization, contract transitions                                 | Planned in owning repositories            |
+| Cross-tenant integration  | Every API/repository/cache/job/object/event mutation and read                                      | Planned backend gate                      |
+| Network/sandbox tests     | SSRF/rebinding/redirects, egress, job escape/residue, credential isolation                         | Planned runner gate                       |
+| End-to-end abuse journeys | Unauthorized target, fork trigger, malicious target/scenario, duplicate side effect, pubnet denial | Planned release fixtures                  |
+| Cryptographic vectors     | Report/webhook signatures, rotation/revocation, artifact and contract hashes                       | Planned SDK/backend/contracts gate        |
+| Independent review        | Architecture threat model, web/API penetration test, runner sandbox, Soroban audit                 | Required before production; not completed |
+| Operational exercises     | Secret/PII incident, key compromise, abuse stop, backup/region restore, dependency/GitHub outage   | Required before production; not completed |
+
+An independent reviewer must map each `T` entry to a test ID, control owner, deployed configuration evidence, residual risk decision, and dated verification. A missing mapping is a tracked release gap, not an implicit acceptance.
+
+## Residual risks and review triggers
+
+Even with controls, authorized tests can affect target rate limits/state, synthetic transactions can have cost, compromised operators/providers can abuse access, public commitments leak activity timing, and externally downloaded evidence cannot be recalled. Owners accept bounded residual risk per target/network/run; platform-wide exceptions require security review and expiry.
+
+Review this model for a new trust boundary, protocol/mode/network, secret/signing path, data class, runner model, integration, contract/schema major, cloud/provider/region, incident, material dependency, or control failure, and at least annually after production. Changes update threat IDs, tests, runbooks, and compatibility/release notes together.
+
+Use the private process in [Security Policy](/SECURITY) for vulnerabilities. Do not test suspected weaknesses against systems or data you do not own.
