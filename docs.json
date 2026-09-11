@@ -199,7 +199,8 @@
             "group": "Platform Operations",
             "pages": [
               "operations/deployment-and-configuration",
-              "operations/self-hosting"
+              "operations/self-hosting",
+              "operations/observability-and-capacity"
             ]
           },
           {

@@ -1,0 +1,177 @@
+---
+title: "Observability and capacity"
+description: "Measure RampSpec platform, target, Stellar, and integration health with privacy-filtered telemetry, explicit objectives, bounded ingestion, and tested capacity."
+keywords: ["observability", "capacity", "OpenTelemetry", "SLO"]
+---
+
+Observability must explain which boundary failed without copying sensitive protocol data into logs or metrics. Capacity controls must reject or delay work visibly rather than permit resource exhaustion, duplicate side effects, or false passing reports.
+
+<Warning>
+  No production telemetry, load-test result, dashboard, or alert exercise
+  exists. Every objective on this page is **Initial**, not measured and not a
+  service promise.
+</Warning>
+
+## Health dimensions
+
+Track four separate dimensions:
+
+| Dimension                      | Examples                                                                      | Result boundary                                                    |
+| ------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| RampSpec platform              | API, queue, workflow, worker, runner provisioning, report/signing/storage     | Platform error; required evidence becomes blocked/indeterminate    |
+| Target                         | Authorized anchor endpoint behavior, response time, callbacks, journey states | Conformance/availability observation only when a rule actually ran |
+| Stellar network/provider       | Horizon/RPC reachability, ledger age, simulation/submission/ingestion         | External infrastructure result, not target failure                 |
+| Integration recipient/provider | GitHub API, webhooks, notifications, identity/secret/cloud provider           | Delivery/dependency result; canonical report truth does not change |
+
+Dashboards and reports never combine these into one “success rate” that attributes provider/platform failure to the target.
+
+## Correlation identifiers
+
+Every request/event/span/log carries only applicable safe identifiers:
+
+- request and trace/span IDs;
+- opaque organization, project, target, run, workflow, step/attempt, runner/job, schedule/occurrence, report, artifact, integration/delivery, and evidence-operation IDs;
+- release manifest/product/component versions, configuration digest, schema versions, standards snapshot and suite-lock digests;
+- environment, region/zone, service/pool/task queue, runner class/image digest, network class, data classification, and redaction-policy version.
+
+Generate trace context at trusted ingress, validate format/length, and create a new internal root when external context is invalid or unsampled by policy. Never use organization/target names, URLs, customer identifiers, tokens, transaction preimages, or report contents as metric labels.
+
+## Privacy filter
+
+Apply an allowlist processor before telemetry leaves each process/runner and a second policy at the collector. Remove or transform authorization/cookie headers, query/body/multipart content, URL credentials/unique paths, customer/fixture fields, private domains/IPs, secrets/keys/signatures/XDR, stack locals, browser storage, screenshot content, and provider response bodies.
+
+Use opaque IDs or bounded class/code values. Hashing low-entropy sensitive values is not safe identity masking. Cap attribute length/count, event/span count, stack depth, log line/record size, and metric cardinality. Reject unknown attributes in production; do not forward them "for debugging."
+
+Test exact/transformed canaries through API, workflow, runner, browser, Stellar, reports, webhooks, errors, and support bundles. A filter failure disables unsafe export, emits a value-free local health signal, and opens a privacy incident; it never falls back to unfiltered telemetry.
+
+## Metrics
+
+Metrics use bounded label sets and document type, unit, owner, source, aggregation, interval, retention, and objective relationship. Required families include:
+
+- edge/API requests, latency, status/problem class, auth/policy/rate-limit decision;
+- SSE connections, fan-out, event lag, reconnect/replay/gap/expiry;
+- schedules due/started/missed/paused/late and start delay;
+- workflow/task/activity started/completed/retried/failed/timed out and replay/build compatibility;
+- queue arrival/completion, depth, oldest age, retry/dead letter, saturation;
+- worker/runner desired/pending/starting/running/terminal, provisioning delay, capacity/rejection, CPU/memory/disk/network;
+- target/Horizon/RPC calls by safe operation/result class and latency/ledger age;
+- artifact/report bytes/counts, generation/verification/signing time, integrity/redaction failure;
+- webhook/GitHub/notification attempts, latency, retry/dead letter/rate limits;
+- database pool/query class/replication/storage, Redis, Temporal, object storage, KMS, backup/restore, and contract evidence operations.
+
+Finding/rule/protocol IDs may be high-cardinality or disclose activity; aggregate them in tenant-authorized analytics rather than infrastructure metrics unless a bounded reviewed catalog is used.
+
+## Logs
+
+Use structured JSON with timestamp, severity, stable event code, service/release/environment, trace/request/resource IDs, safe state transition, duration/result class, retry decision, and message template. Parameters are allowlisted and typed; newline/control/markup is escaped.
+
+Do not log request/response bodies, headers, cookies, JWT/API keys, customer/fixture values, seed/private/public signing payloads, private URLs, signed download links, raw XDR, webhook bodies/signatures, SQL values, or exception locals. Security audit events are a separate append-only schema/store/access policy, not ordinary debug logs.
+
+Dynamic debug level is time-bound, scoped to service/tenant/resource without payload capture, approved/audited, and automatically reverts. Sampling never drops security, privacy, integrity, cleanup, evidence-submission, or audit decisions.
+
+## Traces
+
+Trace API request through durable workflow/activity, runner lease/job/step, target/provider call class, redaction/artifact, report/signature, integration/evidence operation. Create links rather than false parentage across retries, schedules, callbacks, and asynchronous queues. Record attempt/resource version and idempotency key fingerprint, not the key.
+
+Sample head/tail by released policy, retain errors/slow/integrity/security classes within privacy limits, and record sampling decision/version. A missing span does not imply a step did not happen; durable run/audit/report records remain authoritative.
+
+## Dashboards
+
+| Dashboard        | Required panels                                                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Edge/API         | Availability/latency/traffic/errors/saturation, auth/policy/rate limits, dependency split, release/config                   |
+| Runs/workflows   | Admission, queue/start/end-to-end delay, states/terminal reasons, retries/timeouts/cancellation/cleanup, task compatibility |
+| SSE/schedules    | Connections/event lag/replay/gaps; due/start delay/missed/overlap/pause/backfill                                            |
+| Workers/runners  | Queue depth/age, capacity, provisioning, job outcome, resource pressure, image/release, quarantine                          |
+| Evidence/reports | Redaction/integrity/sign/generation/verification, artifacts, Soroban simulation/submission/reconciliation/code hash         |
+| Integrations     | GitHub/webhook/notification delivery, signature/replay, latency/retry/dead letter/rate-limit/circuit                        |
+| Data/providers   | PostgreSQL/Temporal/Redis/object/KMS, Horizon/RPC ledger age, backups/restores, certificate/key expiry                      |
+| Security/privacy | Unauthorized/policy/SSRF/prohibited-data/tenant/secret-canary signals with restricted detail                                |
+
+Default views show aggregate platform status. Tenant-specific views require tenant authorization. Public status reports only confirmed service impact and no tenant/target/resource identifiers.
+
+## Alerts
+
+Alert on user impact, objective burn, safety/integrity control failure, and resource exhaustion, not every transient event. Every alert names severity, condition/window, minimum volume, environment, owning service/team, dashboard query, runbook, escalation, and safe labels.
+
+Use fast/slow burn alerts for availability/latency objectives, plus direct alerts for redaction/canary leak, tenant authorization anomaly, pubnet kill-switch change/attempt, signing/code-hash/integrity failure, cleanup failure, queue oldest-age/backlog, no eligible runner, database/storage/KMS/Temporal risk, schedule lateness, webhook dead letters, backup/restore failure, and certificate/key/ownership expiry.
+
+Deduplicate/coalesce related alerts, suppress only under audited maintenance, and send recovery after the condition is verified clear. Exercise each route in staging and record detection, acknowledgement, escalation, and resolution times.
+
+## Objective status and method
+
+{/* example: examples/operations/service-objectives.planned.json */}
+
+The stored [objective register](/examples/operations/service-objectives.planned.json) labels every target `initial` and points to the methods below. Publish measured status only after a representative production window includes source query/dashboard, release/config, event counts, exclusions, uncertainty, and review.
+
+### Method M01: Control API availability
+
+Monthly good authorized, syntactically valid control requests returning the documented success or expected client-policy result divided by eligible requests. Exclude only documented operator maintenance and clearly measured upstream client cancellations; include platform 5xx/timeouts. Initial objective: 99.9% after stabilization.
+
+### Method M02: Report retrieval availability
+
+Monthly authorized report metadata/canonical retrieval requests for existing retained reports that return correct digest bytes within timeout divided by eligible requests. Include API/object/KMS/platform failures; separate expired/unauthorized/not-found client decisions. Initial objective: 99.95%.
+
+### Method M03: API read latency
+
+Server-received to final response byte for eligible public API reads, excluding artifact downloads; report p50/p95/p99 by endpoint class and region with minimum count. Include successful and platform-error latency separately. Initial p95: under 300 ms.
+
+### Method M04: Run creation latency
+
+Authenticated request accepted to durable run/workflow enqueue acknowledgement, excluding subsequent queue wait. Include authorization/config lock and durable handoff. Initial p95: under 500 ms.
+
+### Method M05: SSE live delivery
+
+Durable event creation time to final byte delivered to an already connected healthy client, clock-correlated; measure replay separately. Initial p95: under 2 seconds. Expired history/gaps are explicit failures for required live delivery, while the report remains authoritative.
+
+### Method M06: Schedule punctuality
+
+Eligible enabled occurrence intended UTC time to durable run start, with DST/missed/overlap policy decisions excluded only when correctly recorded as non-executions. Initial: 99% within two minutes monthly.
+
+### Method M07: Callback ingestion
+
+Valid signed in-policy callback received at edge to durable idempotent workflow signal acknowledgement. Include platform/auth-storage outages, separate invalid/replay/oversized requests. Initial availability: 99.9% monthly with durable retry behavior.
+
+### Method M08: Public runner provisioning
+
+Eligible admitted public-runner lease to ready job within released timeout, excluding target/dependency outcome but including cluster/image/capacity/platform causes. Initial successful provisioning: 99% monthly; report no-capacity separately.
+
+### Method M09: Discovery completion
+
+Run admitted to verified terminal report for the pinned discovery suite/reference profile, excluding queued capacity in a separate measure. Initial median: under 60 seconds; always publish p95 and failure classes.
+
+### Method M10: Report verification
+
+Wall time for the released offline verifier against the normal versioned fixture size/hardware, including schema, canonicalization, signature, consistency, and required artifact digests. Initial p95 target: under two seconds; the source says “normal report” and the release must define that profile.
+
+### Method M11: Evidence read availability
+
+Eligible verified-manifest commitment lookups that return decoded present/absent state within timeout divided by requests, excluding separately measured external Stellar outage only when code hash/network verification cannot proceed. Initial platform availability: 99.95%.
+
+### Method M12: Bounded ingestion
+
+For every API/body/log/report/artifact/screenshot/trace/event field, automated boundary tests prove exact maximum bytes/count/depth/duration and deterministic reject/truncate policy without secret leakage or memory/disk amplification. Objective is 100% of ingestion paths with a released bound; this is a safety invariant, not an availability percentage.
+
+## Queue and worker sizing
+
+For each task queue, measure arrival rate and burst, service-time distribution, retry/failure/timeout rate, concurrency and per-unit CPU/memory/network/storage, external rate/value limits, and target start/finish objective. Use Little's Law only with stable measured assumptions and validate by load test. Size minimum healthy capacity plus failure/headroom; cap maximum by database/provider/target safety.
+
+Workers lease idempotent units with heartbeats, deadlines, concurrency, per-tenant fairness, and bounded retry. Scale from queue depth plus oldest age and service time, not CPU alone. Browser jobs and evidence submissions have separate caps. Backpressure rejects/delays admission before dependencies collapse; reports show delayed/indeterminate rather than pass.
+
+Record capacity envelope per release/environment/hardware: sustained and burst arrival, concurrent runs/steps/browser jobs/SSE clients, artifact throughput/size, report/signature/export rate, delivery attempts, and dependency connection/storage limits. Do not present staging figures as production measurements.
+
+## Load, soak, and resilience tests
+
+Run baseline, expected sustained, peak burst, tenant-noisy-neighbor, schedule boundary, SSE fan-out/reconnect, long-wait workflow, browser, large-but-valid artifact/report, webhook retry, KMS/object/database latency, worker/node/region loss, backlog drain, autoscale, and recovery profiles. Use synthetic targets/data and disabled pubnet/evidence writes unless separately controlled.
+
+For each, pin release/config/images/infrastructure/dataset, traffic model, duration/warmup, success criteria, objective queries, resource/cost, data-volume/cardinality, faults, and cleanup. Verify no duplicate side effects, cross-tenant starvation, unbounded growth, false pass, secret/PII telemetry, or data loss. Publish raw aggregate evidence and limitations.
+
+## Bounded ingestion registry
+
+Maintain one generated registry across API/OpenAPI, scenario/rule/report schemas, callbacks/webhooks/SSE, protocol/browser responses, artifacts/uploads/exports, logs/traces/metrics, database fields, and contract inputs/events. Each entry defines byte/count/depth/time limit, enforcement point, rejection/status, truncation/hash/redaction, retention, and test.
+
+Limits apply before decompression/parsing where possible and after expansion, with archive/compression ratio and nested-item caps. No endpoint or telemetry pipeline accepts unbounded bodies, strings, arrays, labels, screenshots, traces, logs, report findings, or artifact counts.
+
+## Release gate
+
+Before measured objectives are published, deploy the exact metric/log/trace schemas and privacy filters, validate every dashboard/alert/runbook link, run canary/privacy/cardinality tests, execute load/soak/resilience profiles, prove bounded-ingestion coverage, and observe a representative production window. The current docs build validates only this register and page; all objectives remain Initial.

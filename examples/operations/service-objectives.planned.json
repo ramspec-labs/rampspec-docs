@@ -1,0 +1,78 @@
+{
+  "schema": "https://schemas.rampspec.dev/service-objectives/v1.planned.json",
+  "statusDefinition": "All entries are initial until production measurement evidence is attached.",
+  "objectives": [
+    {
+      "id": "control-api-availability",
+      "status": "initial",
+      "target": "99.9 percent monthly",
+      "method": "M01"
+    },
+    {
+      "id": "report-retrieval-availability",
+      "status": "initial",
+      "target": "99.95 percent monthly",
+      "method": "M02"
+    },
+    {
+      "id": "api-read-latency",
+      "status": "initial",
+      "target": "p95 under 300 milliseconds",
+      "method": "M03"
+    },
+    {
+      "id": "run-creation-latency",
+      "status": "initial",
+      "target": "p95 under 500 milliseconds",
+      "method": "M04"
+    },
+    {
+      "id": "sse-live-delivery",
+      "status": "initial",
+      "target": "p95 under 2 seconds",
+      "method": "M05"
+    },
+    {
+      "id": "schedule-punctuality",
+      "status": "initial",
+      "target": "99 percent within 2 minutes monthly",
+      "method": "M06"
+    },
+    {
+      "id": "callback-ingestion",
+      "status": "initial",
+      "target": "99.9 percent monthly",
+      "method": "M07"
+    },
+    {
+      "id": "public-runner-provisioning",
+      "status": "initial",
+      "target": "99 percent monthly",
+      "method": "M08"
+    },
+    {
+      "id": "discovery-completion",
+      "status": "initial",
+      "target": "median under 60 seconds",
+      "method": "M09"
+    },
+    {
+      "id": "report-verification",
+      "status": "initial",
+      "target": "p95 under 2 seconds for released normal profile",
+      "method": "M10"
+    },
+    {
+      "id": "evidence-read-availability",
+      "status": "initial",
+      "target": "99.95 percent monthly excluding separately measured Stellar outages",
+      "method": "M11"
+    },
+    {
+      "id": "bounded-ingestion",
+      "status": "initial",
+      "target": "100 percent of ingestion paths have tested bounds",
+      "method": "M12"
+    }
+  ]
+}
