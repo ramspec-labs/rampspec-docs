@@ -1,0 +1,101 @@
+---
+title: "Contribute a rule"
+description: "Acceptance workflow for stable, sourced, classified, fixture-backed, and reviewable RampSpec conformance rules."
+keywords: ["rules", "classification", "fixtures", "severity", "review"]
+---
+
+A RampSpec rule converts one testable requirement or separately identified control into a deterministic result. The rule belongs in `rampspec-backend`; this page defines the contribution evidence required before it can enter a released rule pack.
+
+<Warning>
+  No backend rule schema, compiler, rule pack, or fixture catalog has been
+  released. The sample packet is **Planned** and cannot pass schema, compiler,
+  branch, report, or suite-lock checks yet.
+</Warning>
+
+## 1. Establish identity and authority
+
+Choose an uppercase ASCII identifier whose components communicate protocol, authority, and behavior, such as `SEP10-MUST-CHALLENGE-SEQUENCE-ZERO`. An ID is permanent after release: corrections increment the rule version or replace and deprecate the rule, while old reports retain the old ID and version. Never reuse an ID for a different assertion.
+
+Record one classification from `MUST`, `SHOULD`, `SECURITY`, `INTEROP`, `POLICY`, or `EXPERIMENTAL` according to the [classification policy](/governance/rule-classification). Classification is source authority, not impact.
+
+For a normative rule, pin all of:
+
+- SEP number and upstream status/version from the standards snapshot;
+- full 40-character `stellar/stellar-protocol` commit and file SHA-256;
+- repository-relative file path plus exact heading or stable anchor;
+- a short paraphrase of the tested requirement;
+- the range of target versions, modes, capabilities, and prerequisites where it applies.
+
+Do not turn a recommendation, ecosystem convention, or RampSpec safety choice into a SEP violation. Non-normative rules cite the threat model, compatibility evidence, or named policy that grants their authority.
+
+## 2. Define behavior and severity
+
+State the observable input, exact assertion, accepted result, rejected result, exclusions, and handling for missing prerequisites or unreliable infrastructure. Keep transport failure `indeterminate`, inapplicable target capability `not-applicable`, and policy denial `blocked` unless the released result schema says otherwise.
+
+Assign severity only after documenting affected actor, preconditions, reproducibility, confidentiality/integrity/availability or funds impact, workaround, and why each lower severity is insufficient. Define the default gate effect separately. Draft and experimental rules are opt-in and cannot block the default production gate.
+
+Every failure includes a concise remediation that tells the target operator what to change and how to retest without revealing secrets, exploit detail, personal data, or a private target.
+
+## 3. Build the fixture corpus
+
+Store fixtures beside the backend rule source under the layout chosen by the released workspace. Each fixture manifest records rule ID/version, input digest, expected result, evidence fields, redaction profile, network mode, credential class, cleanup disposition, and reason.
+
+At minimum provide:
+
+| Fixture class | Required proof                                                                     |
+| ------------- | ---------------------------------------------------------------------------------- |
+| Valid         | The exact accepted boundary passes without unrelated warnings.                     |
+| Invalid       | Every rejection branch fails with the expected rule, evidence, and remediation.    |
+| Boundary      | Length, amount, time, count, encoding, and optional-value edges behave exactly.    |
+| Skipped       | A declared missing prerequisite produces the documented non-result.                |
+| Indeterminate | Timeout, DNS, provider, ledger, or parser uncertainty is not blamed on the target. |
+| Regression    | Every corrected bug stays fixed under its original minimized input.                |
+
+Use deterministic synthetic data. Never commit a credential, secret key, bearer token, real KYC record, unrestricted destination, or mutable live response. Store sensitive fixture inputs through approved generators and secret handles; retain only safe hashes and expected metadata.
+
+## 4. Cover every branch
+
+Map each applicability, parser, assertion, exception, retry, redaction, evidence, and remediation branch to at least one focused test. Mutation or coverage output is supporting evidence, not a substitute for explicit branch cases. The rule-pack build must produce the same canonical bytes and digest twice from a clean checkout.
+
+The pull request includes the expected canonical report diff: finding counts, status, classification, severity, gate, evidence shape, and affected suite locks. A semantic change needs migration notes and an advisory when released reports could be misinterpreted.
+
+## 5. Declare network and credentials
+
+Use one declaration with:
+
+- network activity: none, local, testnet, pubnet observation, or pubnet submission;
+- contacted endpoint classes and whether ownership is verified;
+- mutation/value/fee maximums and cleanup/reconciliation behavior;
+- credential type, owner, scope, storage provider, lifetime, and allowed action;
+- runner locality and required capabilities;
+- redaction, retention, and incident path.
+
+Default to no network. Testnet is the default for mutation. Pubnet submission requires the separate activation policy and cannot be enabled by a rule contribution.
+
+## 6. Review, locks, and release
+
+1. The author opens one backend pull request with source pin, rule input, fixtures, tests, remediation, network/credential declaration, and expected report/lock diff.
+2. The protocol maintainer approves normative interpretation and applicability.
+3. A security reviewer approves `SECURITY` rules and sensitive evidence, credential, signing, egress, or value-moving behavior.
+4. The backend owner approves deterministic compilation, branch coverage, schema compatibility, and report behavior.
+5. The docs owner approves public wording and migration guidance; the author cannot be the only approver of a disputed interpretation.
+6. CI validates schemas and fixtures, compiles twice to one digest, runs all branch cases, and records every changed suite lock.
+7. The backend publishes an immutable rule-pack tag and compatibility metadata; consumer repositories update in separate pull requests.
+
+A changed rule pack never rewrites an existing suite lock or signed report. New locks pin the new rule-pack digest; unchanged suites must remain byte-identical. The release manifest names compatible rule, scenario, schema, report, runner, and product versions.
+
+## Planned sample packet
+
+The rule sample demonstrates the required fields without claiming a released backend format:
+
+{/* example: examples/contributing/sample-rule.planned.json */}
+
+`examples/contributing/sample-rule.planned.json`
+
+The shared review record links it to the scenario sample and lists each unavailable runtime gate:
+
+{/* example: examples/contributing/sample-review.planned.json */}
+
+`examples/contributing/sample-review.planned.json`
+
+Prettier and documentation reference checks validate the stored JSON. Acceptance remains blocked until a tagged backend schema validates the rule, the released compiler produces a reproducible pack and suite lock, all fixture branches pass, and the required reviewers approve the backend change.

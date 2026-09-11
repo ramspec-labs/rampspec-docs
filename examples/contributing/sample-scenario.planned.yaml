@@ -1,0 +1,44 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: sep10-sequence-zero-review
+  title: SEP-10 sequence-zero rule review
+  labels:
+    availability: planned
+    protocol: sep10
+spec:
+  networks: [testnet]
+  requires:
+    seps: [1, 10]
+    capabilities: [stellar-signing]
+  parameters:
+    target: { type: target-ref, required: true }
+    signer: { type: secret-ref, required: true }
+  steps:
+    - id: discover
+      uses: sep1.discover
+      with:
+        target: "${{ parameters.target }}"
+    - id: challenge
+      uses: sep10.get-challenge
+      needs: [discover]
+    - id: validate
+      uses: sep10.validate-challenge
+      needs: [challenge]
+      with:
+        challenge: "${{ steps.challenge.transaction }}"
+    - id: authenticate
+      uses: sep10.sign-and-exchange
+      needs: [validate]
+      with:
+        challenge: "${{ steps.challenge.transaction }}"
+        signer: "${{ parameters.signer }}"
+  cleanup:
+    - id: revoke-session
+      uses: auth.revoke-fixture-session
+      needs: [authenticate]
+      always: true
+  policy:
+    failOn: [critical, high]
+    maximumDuration: 3m
+    allowedTargetRefs: ["${{ parameters.target }}"]

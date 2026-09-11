@@ -1,0 +1,43 @@
+{
+  "status": "planned",
+  "rule": "examples/contributing/sample-rule.planned.json",
+  "scenario": "examples/contributing/sample-scenario.planned.yaml",
+  "documentationChecks": {
+    "jsonParsedAndFormatted": "checked",
+    "yamlParsedAndFormatted": "checked",
+    "referencesPresent": "checked",
+    "contentAndSpelling": "checked"
+  },
+  "runtimeChecks": {
+    "ruleSchema": "unavailable",
+    "scenarioSchema": "unavailable",
+    "catalogResolution": "unavailable",
+    "fixtureOutcomes": "unavailable",
+    "branchCoverage": "unavailable",
+    "deterministicRulePack": "unavailable",
+    "deterministicSuiteLock": "unavailable",
+    "controlledRunAndCleanup": "unavailable",
+    "reportDiff": "unavailable"
+  },
+  "networkDeclaration": {
+    "mode": "testnet",
+    "pubnetSubmission": false
+  },
+  "credentialDeclaration": {
+    "scenarioRequiresSecretHandle": true,
+    "embeddedValuesAllowed": false
+  },
+  "approvals": {
+    "protocolMaintainer": null,
+    "backendOwner": null,
+    "securityReviewer": null,
+    "docsMaintainer": null
+  },
+  "release": {
+    "backendTag": null,
+    "rulePackDigest": null,
+    "suiteLockDigest": null,
+    "compatibilityManifest": null
+  },
+  "blockingReason": "The backend schemas, catalogs, compiler, rule pack, runner, and required approvals do not exist."
+}

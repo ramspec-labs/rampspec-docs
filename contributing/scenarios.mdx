@@ -1,0 +1,67 @@
+---
+title: "Contribute a scenario"
+description: "Schema, safety, fixture, branch, suite-lock, and review workflow for declarative RampSpec scenarios."
+keywords: ["scenarios", "YAML", "suite lock", "fixtures", "review"]
+---
+
+A RampSpec scenario assembles released actions, fixtures, rules, and policy into one bounded declarative journey. It belongs in `rampspec-backend` and contains no JavaScript, shell command, raw network destination, embedded credential, or dynamic package.
+
+<Warning>
+  The v1 scenario schema, compiler, action and fixture catalogs, and suite-lock
+  schema are not released. The sample is **Planned**, illustrative, and not
+  runnable through a CLI, API, UI, runner, or CI gate.
+</Warning>
+
+## 1. Start from released contracts
+
+Select one tagged compatibility manifest and pin its scenario schema, action catalog, fixture catalog, rule packs, policy schema, compiler, runner protocol, and report schema. Do not author against `main`, a mutable URL, or a locally invented action.
+
+Use `apiVersion: rampspec.dev/v1`, `kind: Scenario`, and a permanent lowercase `metadata.id` containing ASCII letters, digits, and single hyphens. The ID starts and ends with an alphanumeric character and is never repurposed. Change the scenario version and canonical digest for execution-relevant edits; replace and deprecate it when its purpose changes.
+
+## 2. Declare scope before steps
+
+Define one plain-language purpose and list:
+
+- allowed catalog network IDs and required SEPs, runner capabilities, adapters, and target capabilities;
+- typed parameters with bounds and no arbitrary destination or action selection;
+- released fixture IDs, synthetic profile, lease/value limits, sensitivity, and cleanup action;
+- selected rule IDs or packs and expected outcomes;
+- fail policy, draft behavior, retention, duration, value, fee, target, and evidence limits.
+
+Raw passphrases, endpoint URLs, account seeds, tokens, KYC payloads, filesystem paths, environment names, YAML aliases/tags, and unrestricted interpolation are rejected.
+
+## 3. Build a deterministic graph
+
+Every step and cleanup action has a unique stable ID and exact released `uses` value. Add `needs` for every consumed output, keep the graph acyclic, and use typed references only where the producer and consumer schemas agree. Conditions use the closed non-secret expression grammar; matrices are finite, typed, and capped.
+
+Declare bounded timeout and retry only within catalog maxima. Retried side effects reuse an idempotency key and reconcile an unknown outcome before another attempt. Every created customer, session, browser context, callback, account lease, transfer, and artifact has `always` cleanup or an approved retention disposition.
+
+## 4. Prove outcomes and safety
+
+Scenario tests cover success, each expected rule failure, skipped prerequisite, not-applicable capability, blocked policy, infrastructure indeterminate, cancellation at every side-effect boundary, retry/replay, cleanup failure, and deterministic recompile. Keep independent failures separate so one fixture does not obscure another branch.
+
+Declare network and credentials at both document and review-record level. Testnet is the default for signing and submission. Pubnet observation and submission are distinct; submission requires target ownership, allowlist, bounded value/fees, protected signer, preview, explicit approval, monitoring, and incident readiness. A scenario cannot weaken organization, target, runner, action, or fixture policy.
+
+Secrets are opaque references resolved only by an authorized runner. They cannot enter conditions, labels, matrices, logs, reports, artifacts, destinations, or exported locks. Evidence profiles allowlist fields and apply redaction before persistence.
+
+## 5. Compile and review
+
+1. Validate safe YAML parsing, document size/depth, duplicate keys, and forbidden constructs.
+2. Validate against the exact scenario JSON Schema and resolve every ID from pinned catalogs.
+3. Type-check references, graph, conditions, matrix cases, policy, credentials, side effects, cleanup, and evidence flow.
+4. Compile twice from a clean checkout; normalized scenario bytes, expanded case IDs, and suite-lock digest must match.
+5. Run valid and invalid fixtures in the declared safe mode and verify terminal reports plus cleanup.
+6. Record the lock diff: scenario/rule/catalog/schema/runner/policy versions, target snapshot, parameters, fixtures, cases, network, and digest.
+7. Obtain backend owner, protocol maintainer, and security review when applicable; obtain docs review for public examples and migration notes.
+
+An additive metadata-only edit may preserve compatibility but still changes the source digest when the released canonicalization includes it. An execution change always creates a new lock. Never edit an existing lock, report, or signature to adopt the new scenario.
+
+## Planned sample
+
+The sample uses catalog-style references, a testnet target, one secret handle, explicit dependencies, bounded policy, and unconditional session cleanup:
+
+{/* example: examples/contributing/sample-scenario.planned.yaml */}
+
+`examples/contributing/sample-scenario.planned.yaml`
+
+Its paired rule and review status are documented in [Contribute a rule](./rules). Documentation CI parses and formats the YAML and verifies the reference exists, but this does not satisfy schema, catalog, compiler, runner, cleanup, or golden-lock gates. Remove `.planned` only after all those checks pass against an immutable backend release.

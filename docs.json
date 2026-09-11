@@ -130,7 +130,9 @@
               "contributing/frontend",
               "contributing/backend",
               "contributing/contracts",
-              "contributing/docs"
+              "contributing/docs",
+              "contributing/rules",
+              "contributing/scenarios"
             ]
           }
         ]

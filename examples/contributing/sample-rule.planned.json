@@ -1,0 +1,62 @@
+{
+  "status": "planned",
+  "id": "SEP10-MUST-CHALLENGE-SEQUENCE-ZERO",
+  "version": "0.0.0",
+  "classification": "MUST",
+  "source": {
+    "repository": "stellar/stellar-protocol",
+    "commit": "0dc4592cb44dda1943341016f076e9326874daed",
+    "path": "ecosystem/sep-0010.md",
+    "sha256": "1040df1bcbaeeac5adab9b7bf9ae4d0cdf1eba77ae396179baf0de9caadc6b7a",
+    "heading": "Authentication Endpoint",
+    "sepVersion": "3.4.1"
+  },
+  "assertion": "The decoded challenge transaction sequence number is exactly zero.",
+  "applicability": {
+    "requires": ["sep10-challenge-response", "supported-network-passphrase"],
+    "excludes": ["transport-failure", "transaction-parsing-failure"]
+  },
+  "severity": {
+    "level": "critical",
+    "rationale": "A nonzero sequence can make a signed challenge executable; signing remains blocked before this assertion passes."
+  },
+  "defaultGate": "blocking",
+  "fixtures": {
+    "valid": ["challenge-sequence-zero"],
+    "invalid": ["challenge-sequence-one", "challenge-sequence-maximum"],
+    "skipped": ["sep10-not-advertised"],
+    "indeterminate": ["challenge-transport-timeout"]
+  },
+  "branchCoverage": [
+    "applicable-pass",
+    "applicable-fail",
+    "prerequisite-skip",
+    "transport-indeterminate",
+    "evidence-redaction"
+  ],
+  "network": {
+    "activity": "testnet",
+    "mutation": false,
+    "pubnetSubmission": false
+  },
+  "credentials": {
+    "requiredForRule": false,
+    "embeddedValuesAllowed": false
+  },
+  "evidence": {
+    "allowed": [
+      "network",
+      "transaction-hash",
+      "decoded-sequence",
+      "parser-version"
+    ],
+    "forbidden": ["transaction-envelope", "signature", "secret-key", "token"]
+  },
+  "remediation": "Construct challenges with sequence zero and block signing until local structural validation succeeds.",
+  "review": {
+    "protocol": "required",
+    "backend": "required",
+    "security": "required",
+    "documentation": "required"
+  }
+}
