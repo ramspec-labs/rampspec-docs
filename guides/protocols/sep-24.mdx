@@ -1,0 +1,166 @@
+---
+title: "SEP-24 interactive journeys"
+description: "Configure and diagnose isolated hosted deposit and withdrawal journeys across browser, API, callbacks, and Stellar settlement."
+keywords:
+  [
+    "SEP-24",
+    "interactive deposit",
+    "interactive withdrawal",
+    "Playwright",
+    "postMessage",
+  ]
+---
+
+SEP-24 moves customer interaction into an anchor-hosted web application while preserving API-visible transaction state. RampSpec tests the browser experience and independently correlates it with API, callback, external-rail, and Stellar evidence.
+
+<Warning>
+  SEP-24 is Active upstream at version 3.8.0, but RampSpec has no released
+  browser worker, SEP-24 adapter, or controlled deposit/withdrawal target. This
+  guide is **Planned** and does not claim an executable journey.
+</Warning>
+
+## Pinned source and boundary
+
+The normative source is [SEP-24 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0024.md#api-endpoints). The [standards baseline](/reference/standards-baseline) records its digest.
+
+SEP-24 requires `POST /transactions/deposit/interactive`, `POST /transactions/withdraw/interactive`, `GET /info`, `GET /transaction`, and `GET /transactions`. It requires SEP-10 or SEP-45 authentication for endpoints that expose user data; `/info` remains unauthenticated.
+
+This guide does not automate production KYC, real bank/card/cash details, CAPTCHA bypass, biometric checks, sanctions decisions, or pubnet transfers. A blocked sensitive step is an expected controlled handoff, not permission to weaken the anchor.
+
+## Lock the journey
+
+Before a browser starts, lock:
+
+- target, network, SEP-1 and `/info` digests, `TRANSFER_SERVER_SEP0024`, and allowed origins;
+- deposit or withdrawal kind, asset/issuer, optional SEP-38 quote, amount bounds, and funding method;
+- authenticated synthetic identity and reviewed source/destination account difference;
+- viewport, browser engine, locale, timezone, color scheme, and reduced-motion setting;
+- callback mode, controlled receiver, expected popup/embed policy, and extension fields;
+- external-rail fixture, Stellar test account, value cap, timeout, cancellation, and cleanup policy;
+- browser-worker image digest, Playwright version, scenario version, and release manifest.
+
+Any redirect, popup, frame, resource, or callback destination outside the allowlist blocks execution.
+
+## Discovery and initiation
+
+Fetch `/info` and validate enabled deposit/withdrawal assets, authentication, minimum/maximum, simple fees, and feature flags. Treat `/fee` as deprecated; use SEP-38 for quote-driven exchange and complex pricing.
+
+Authenticate with [SEP-10](./sep-10) or [SEP-45](./sep-45). POST form data to the selected interactive endpoint with the exact asset and destination/source account. Optional values include amount, source/destination asset, quote ID, locale, memo, claimable-balance support, refund memo, and controlled callbacks as applicable.
+
+When a quote ID is present, any supplied asset or amount fields must match the quote. A mismatch must return `400` without a usable browser URL or transaction.
+
+Expect a response with:
+
+- `type: interactive_customer_info_needed`;
+- an HTTPS `url` hosted by the approved anchor origin;
+- an anchor transaction `id` retrievable from both transaction endpoints.
+
+The new record remains `incomplete` until the hosted flow has enough information to proceed. Never treat receipt of the URL as a successful transfer.
+
+## Token handoff
+
+The interactive page cannot rely on the wallet's authorization header. SEP-24 allows a short-lived JWT in the returned URL so the anchor can exchange it for its own browser session. Because URLs leak through history, logs, screenshots, referrers, and analytics, RampSpec requires the URL token to be one-time use, narrowly scoped, and immediately invalidated after session creation.
+
+The browser worker redacts the query before logging, tracing, screenshots, videos, errors, and artifact upload. It blocks third-party requests until token exchange completes, then verifies the address bar and subsequent navigation no longer expose the token. Reopening or replaying the original URL must fail without revealing customer state.
+
+## Isolated browser profile
+
+Each case receives a new non-root browser process, empty profile, temporary download directory, isolated network namespace, and no host credentials. Disable extensions, password managers, autofill, clipboard access, geolocation, camera, microphone, contacts, payments, notifications, and persistent storage unless the exact synthetic case explicitly grants one capability.
+
+Allow only the target origins, controlled callback receiver, required static asset origins, and selected RampSpec control endpoint. Deny metadata/private ranges, DNS rebinding, downloads with active content, new protocols, local files, WebRTC address disclosure, and service-worker persistence outside the case.
+
+Teardown closes all pages/contexts, clears cookies and storage, removes downloads and profiles, revokes session/token/callback state, deletes synthetic records according to policy, and records cleanup evidence even after timeout or cancellation.
+
+## Window and frame modes
+
+Run each supported journey in the target's declared presentation modes:
+
+| Mode            | Required checks                                                                                    |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Popup/new tab   | Opener policy, exact origin, focus return, blocked-popup fallback, close signal, and stale URL.    |
+| Embedded frame  | Frame policy/CSP, sandbox attributes, resizing, focus order, escape path, and third-party cookies. |
+| Mobile browser  | Responsive layout, virtual keyboard, safe areas, rotation, deep navigation, and memory pressure.   |
+| Desktop browser | Keyboard-only completion, zoom, popup placement, multiple monitors, and resized windows.           |
+
+If `noopener` is used, `postMessage` through `window.opener` is unavailable; use polling or a signed URL callback. When `postMessage` is enabled, retain the required opener relationship only for the controlled origin and validate both `event.origin` and message schema before acting.
+
+Do not relax `frame-ancestors`, popup, or cookie security merely to make an unsupported embedding mode pass. Report the supported mode accurately.
+
+## Callback contract
+
+`callback` may be invoked at most once when the interactive flow finishes. `on_change_callback` may be invoked whenever `status` or `kyc_verified` changes. Both carry the full transaction object.
+
+For `postMessage`, compare the exact expected origin, validate the complete message schema and transaction ID, reject opaque/wildcard origins, and make processing idempotent. For URL callbacks, require `Signature` or deprecated `X-Stellar-Signature`, verify `<timestamp>.<wallet-host>.<raw-body>` with the SEP-1 signing key, enforce freshness, and reject replay.
+
+Callback completion never replaces `GET /transaction`. Query the API afterward and require semantic equality for status, amounts, instructions, and identifiers.
+
+## Return navigation
+
+SEP-24 does not define a standard `return_url` initiation parameter. An anchor may declare a target-specific return-navigation extension, but RampSpec sends it only when the locked capability manifest names its field, allowed origins, encoding, and semantics.
+
+Test exact return, cancellation return, expired session, malicious open redirect, nested return parameter, fragment/query preservation, mobile deep-link rejection, and cross-origin substitution. A standard case uses popup closure plus callback or polling and does not append an undocumented return field.
+
+## Deposit journey
+
+1. Initiate and open the exact returned URL in the selected presentation mode.
+2. Confirm the page visibly identifies the anchor, transaction intent, assets, amount/quote status, fees, and test environment.
+3. Complete only synthetic fields and controlled verification steps.
+4. Capture the redacted state before each user decision, not during secret entry.
+5. Wait until instructions are available and the API reaches `pending_user_transfer_start`.
+6. Execute the capped external sandbox transfer once using the current instructions.
+7. Observe external, anchor, Stellar, trust-line/claimable-balance, and completion states.
+8. Independently verify the Stellar operation, destination, asset/issuer, amount, memo, and finality.
+
+The anchor must not close the popup before off-chain instructions have been displayed. Completion requires API and ledger evidence, not a success screen alone.
+
+## Withdrawal journey
+
+1. Initiate and complete the hosted synthetic customer and destination flow.
+2. Wait for popup completion and `pending_user_transfer_start` through callback or polling.
+3. Fetch current `withdraw_anchor_account`, memo/type, `amount_in`, quote expiry, and action deadline from the transaction API.
+4. Display a final controlled-payment confirmation outside the untrusted anchor page.
+5. Build, inspect, sign, and submit the capped testnet Stellar payment once.
+6. Reconcile the hash before retrying any unknown submission result.
+7. Observe anchor processing, external payout or pickup-ready state, and completion/refund.
+8. Correlate the external receipt and Stellar payment with exactly one anchor transaction.
+
+Never accept payment instructions only from DOM text or `postMessage`; the authenticated transaction endpoint is authoritative for the wallet action.
+
+## Locale and accessibility
+
+Run the declared default plus supported locale variants, including language-region forms such as `en-US`. Verify user-facing descriptions and errors follow the request locale, unsupported locales fall back predictably, and numbers/dates are displayed without changing wire values.
+
+At desktop and mobile viewports verify no clipping or overlap, text reflow at 200 percent zoom, keyboard focus order, visible focus, semantic labels, error association, contrast, reduced motion, screen-reader status announcements, and accessible popup closure. The virtual keyboard must not hide the active input or primary action.
+
+## Cancellation and timeout
+
+Exercise cancellation before data entry, during field collection, after instructions, and after value movement as separate cases. Before value movement, cancellation closes the session and produces no usable instructions. After value movement, cancellation cannot erase the transaction; it enters a traceable reconciliation or refund path.
+
+Apply independent limits for page navigation, idle interaction, whole browser journey, callback delivery, user action, quote expiry, API polling, and settlement. A timeout closes the browser but preserves the minimum redacted transaction evidence required for operator recovery.
+
+## Diagnostic artifacts
+
+Capture console/network events, DOM checkpoints, screenshots, video when explicitly allowed, Playwright trace, callback envelope, API snapshots, external receipt, and Stellar lookup. Redact before persistence and store content hashes plus tool versions.
+
+Never capture raw identity values, bearer/session tokens, cookies, authorization headers, file uploads, verification codes, payment instructions, full financial destinations, seed phrases, private keys, or unrestricted HAR bodies. Sensitive-input screenshots use a fixture-safe replacement view or are omitted with a recorded reason.
+
+## Failures and remediation
+
+| Failure                                               | Finding                   | Remediation                                                         |
+| ----------------------------------------------------- | ------------------------- | ------------------------------------------------------------------- |
+| Interactive URL leaves the approved origin.           | Unsafe navigation         | Enforce redirect/resource allowlists and bind URL to target.        |
+| URL token persists, leaks, or can be replayed.        | Session credential leak   | Exchange once, strip it, shorten scope/lifetime, and revoke replay. |
+| Wildcard `postMessage` changes wallet state.          | Callback origin failure   | Pin origin and validate schema, transaction, and state.             |
+| UI closes before instructions or recovery data exist. | Premature completion      | Keep flow open and expose authenticated transaction state.          |
+| Mobile/keyboard journey cannot finish.                | Interactive accessibility | Repair responsive layout, focus, labels, and error handling.        |
+| Success UI disagrees with API or ledger.              | False completion          | Gate completion on correlated API, external, and Stellar evidence.  |
+| Cancel/timeout loses moved-funds recovery.            | Orphaned transaction      | Persist redacted recovery state and enter refund/reconciliation.    |
+| Trace or screenshot contains sensitive values.        | Artifact disclosure       | Redact before capture/upload, purge artifacts, and rotate secrets.  |
+
+Unsafe navigation, credential/artifact disclosure, origin bypass, orphaned value, and false completion block release.
+
+## Validation and release gate
+
+The released corpus must cover deposit and withdrawal; popup, frame, and supported mobile modes; locales; quote and no-quote paths; callback and polling; successful, rejected, cancelled, timed-out, stale, replayed, and mismatched sessions; sensitive fields; external and ledger correlation; refunds; and teardown. Seeded browser defects must prove each blocker.
+
+The backend browser worker and controlled target do not exist, so Playwright execution is unavailable. Publication becomes eligible only when the released worker runs both journeys from stored fixtures at desktop and mobile viewports and produces fully redacted, correlated evidence.
