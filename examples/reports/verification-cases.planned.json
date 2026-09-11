@@ -1,0 +1,43 @@
+{
+  "schema": "https://schemas.rampspec.dev/report-verification-cases/v1.planned.json",
+  "warning": "Placeholder metadata only; these are not cryptographic vectors.",
+  "cases": [
+    {
+      "id": "valid-current-key",
+      "report": "rep_valid_example",
+      "reportDigest": "sha256:<valid-report-digest>",
+      "keyId": "report-key-current",
+      "expected": "verified"
+    },
+    {
+      "id": "tampered-finding",
+      "report": "rep_tampered_example",
+      "reportDigest": "sha256:<tampered-report-digest>",
+      "keyId": "report-key-current",
+      "expected": "invalid"
+    },
+    {
+      "id": "unknown-key",
+      "report": "rep_unknown_key_example",
+      "reportDigest": "sha256:<unknown-key-report-digest>",
+      "keyId": "report-key-unknown",
+      "expected": "untrusted-key"
+    },
+    {
+      "id": "rotated-key-valid-at-signing-time",
+      "report": "rep_rotated_key_example",
+      "reportDigest": "sha256:<rotated-key-report-digest>",
+      "keyId": "report-key-retired",
+      "signedAt": "2026-08-01T12:00:00Z",
+      "expected": "verified"
+    },
+    {
+      "id": "private-report-authorized",
+      "report": "rep_private_example",
+      "reportDigest": "sha256:<private-report-digest>",
+      "keyId": "report-key-current",
+      "access": "authorized-private-fixture",
+      "expected": "verified"
+    }
+  ]
+}

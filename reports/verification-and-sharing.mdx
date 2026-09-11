@@ -1,0 +1,111 @@
+---
+title: "Verify and share a report"
+description: "Independently verify canonical report integrity and share public, partner, or private evidence without weakening access and privacy controls."
+keywords: ["RFC 8785", "SHA-256", "Ed25519", "sharing", "tamper"]
+---
+
+Verification answers whether exact report bytes represent a schema-valid, internally consistent report whose canonical payload was signed by a trusted RampSpec report key. It does not rerun the target, prove that every artifact is available forever, or convert a conformance result into certification.
+
+<Warning>
+  No canonical report schema, trusted key set, signed vector, verifier binary,
+  or sharing service has been released. Commands, cases, and resources on this
+  page are **Planned** and cannot establish report authenticity today.
+</Warning>
+
+## Collect trust inputs
+
+Obtain these independently of the unverified report:
+
+- exact canonical JSON bytes under the released size/count limits;
+- matching report JSON Schema by verified schema ID and digest;
+- suite lock and standards snapshot by their verified digests;
+- compatible release manifest from a signed/tagged documentation release;
+- trusted report-signing key set with issuer, purpose, scope, validity, and status;
+- required artifact bytes or an authorized digest inventory.
+
+Do not trust a key, schema, manifest, suite, artifact URL, or verifier download solely because the report links it. Pin the verifier artifact and its SHA-256 from the release manifest. Offline verification performs no discovery or network access.
+
+## Canonical payload and digest
+
+Parse JSON while rejecting duplicate keys, out-of-range numbers, invalid Unicode, excessive nesting/counts, and unsupported schema versions. Validate first. Remove only the signature field or fields identified by that schema; do not remove key ID, signing time, issuer, report identity, or arbitrary unknown fields.
+
+Apply RFC 8785 JSON Canonicalization Scheme to the remaining value, then compute SHA-256 over the canonical UTF-8 bytes. Compare that digest with the report's canonical digest using exact lowercase encoding required by the schema. Never normalize, round, sort, repair, or serialize input again before this process except as RFC 8785 requires.
+
+The release manifest defines whether Ed25519 verifies canonical bytes, their SHA-256 digest, or a domain-separated envelope. Implementations must follow that exact released input. Guessing between forms or trying several until one verifies is invalid.
+
+## Verify the Ed25519 signature
+
+Select a public key from locally trusted configuration using key ID, issuer, signing purpose, organization/scope, algorithm, and the report's signing time. The key must be active for that time and supported by the manifest.
+
+Then verify the Ed25519 signature over the specified signing input. A bad signature is `invalid`; a well-formed signature with no trusted matching key is `untrusted-key`; an unsupported schema/algorithm/manifest is `incompatible`. Keep those decisions distinct.
+
+After cryptographic verification, recompute report identity links, counts, score, finding fingerprints, coverage, exceptions, cleanup, policy gate, artifact inventory, and derived-export digests. Cryptographic validity does not make inconsistent report contents acceptable.
+
+## Rotation and revocation
+
+Key sets are append-only histories for the report support window. Each entry has key ID, Ed25519 public key, issuer, purpose/scope, activation, retirement, revocation time/reason, and provenance signature or digest. Refresh is an explicit authenticated action; record the key-set digest used.
+
+A normal rotation accepts an old key only for reports signed inside its valid interval and policy. Retirement stops new signing but may preserve old verification. Revocation policy states whether compromise invalidates all signatures, only signatures after a cutoff, or requires a transparency review. Never silently reinterpret a revoked key as merely retired.
+
+## Planned CLI procedure
+
+```powershell
+rampspec report verify .\report.json `
+  --manifest .\release-manifest.json `
+  --suite-lock .\suite-lock.json `
+  --trusted-keys .\report-keys.json `
+  --artifacts .\artifacts `
+  --offline `
+  --output json
+```
+
+The future command exits zero only for `verified`. Machine output includes decision, report ID, canonical digest, key ID and trust interval, manifest/suite/key-set digests, artifact summary, gate, and safe diagnostics. It never prints report bodies, artifact content, secrets, private URLs, or keys beyond public verification material.
+
+{/* example: examples/reports/verification-cases.planned.json */}
+
+The stored [planned cases](/examples/reports/verification-cases.planned.json) define expected decisions for valid, tampered, unknown-key, rotated-key, and authorized private-report inputs. Placeholder digests and signatures deliberately prevent them from being mistaken for cryptographic vectors.
+
+## Tamper decisions
+
+Any changed finding, target, network, suite lock, standards snapshot, count, score, exception, artifact digest, cleanup state, signing metadata, or signature fails verification. So do a missing required artifact, derived export that points at another report digest, duplicate JSON key, unsupported number, truncated input, or manifest/key mismatch.
+
+Do not show unverified report contents as trusted findings. Quarantine uploaded bytes, return a safe diagnostic code and pointer, preserve a content digest for investigation, and never publish, baseline, gate, or commit the report. A corrected source produces a new report and signature; it does not mutate the failed object.
+
+## Sharing modes
+
+| Mode    | Audience and access                                                      | Evidence boundary                                                                       |
+| ------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Public  | Anyone with the immutable public URL; no bearer query secret             | Only explicitly approved, public-redacted canonical report/exports and public artifacts |
+| Partner | Named organization/identity under authenticated authorization and expiry | Approved fields/artifacts for a documented purpose; access and downloads audited        |
+| Private | Owning organization roles and explicit internal grants                   | Full allowed report view; raw evidence still follows least privilege and field policy   |
+
+Changing mode creates a reviewed publication/grant record with report digest, redaction profile/version, included artifacts, audience, purpose, approver, start/expiry, and withdrawal procedure. It never changes the canonical report. A public or partner view is a deterministic redacted derivative linked to the private canonical digest.
+
+Public publication requires verified ownership, a verified report, completed cleanup, approved network/policy, prohibited-data scan, explicit owner consent, immutable destination, and a preview of every visible field/artifact. Active-pubnet evidence needs its separate safety approval. The UI repeats that evidence is not certification.
+
+Partner sharing requires an authenticated recipient, minimum role, purpose, expiry, optional download restriction, and revocation owner. Do not rely on an email-shareable bearer URL as identity. Private sharing never bypasses artifact-level authorization.
+
+## Derived exports
+
+HTML, PDF-ready HTML/PDF, JUnit, SARIF, redacted HAR, XDR summaries, screenshots, and traces derive only from a verified canonical report through a pinned exporter and redaction policy. Each export records canonical report ID/digest, exporter/version, schema, generated time, included/omitted classes, content SHA-256, and access/retention class.
+
+Verify the canonical report first, then recompute or compare the export digest. An export signature can authenticate that export but cannot replace the canonical report signature. Regeneration is deterministic where the format permits; otherwise it must preserve semantic content and record nondeterministic presentation metadata.
+
+## Access expiry and withdrawal
+
+At expiry, deny new page, API, and artifact access; revoke sessions and signed download URLs; purge caches/CDN variants; stop notifications; and record completion. Existing downloaded copies and public ledger commitments cannot be recalled, which must be disclosed before sharing.
+
+Withdrawal disables future access and public indexing while retaining minimum audit and integrity metadata under policy. Legal hold prevents deletion but does not grant broader access. On-chain evidence is superseded or revoked rather than erased, with the original privacy/timing leakage still acknowledged.
+
+Every share, view, download, grant, renewal, revocation, publication, redaction, and failed access attempt produces a tenant-scoped audit event without embedding report content or access tokens.
+
+## Recipient checklist
+
+1. obtain the canonical JSON and trust bundle through independent authenticated channels;
+2. verify tool digest and run offline verification;
+3. compare displayed report ID/digest, target/network/time, suite/specs, runner, coverage, gate, cleanup, and artifact result;
+4. inspect sharing mode, redaction, audience, expiry, and omitted evidence;
+5. retain the verification output and trust-input digests with your decision;
+6. treat any unknown key, incompatibility, missing artifact, or tamper result as not verified.
+
+The release exit check requires cross-runtime RFC 8785 vectors, Ed25519 positive/negative vectors, rotation/revocation history, all stored case outcomes, private authorization/expiry tests, derived-export checks, and secret/prohibited-data scanning. Those checks remain unavailable until compatible backend, verifier, schema, frontend, and key-set releases exist.

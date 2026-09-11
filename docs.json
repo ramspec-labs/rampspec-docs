@@ -81,7 +81,10 @@
           },
           {
             "group": "Reports",
-            "pages": ["reports/interpretation"]
+            "pages": [
+              "reports/interpretation",
+              "reports/verification-and-sharing"
+            ]
           },
           {
             "group": "Reference",
