@@ -1,0 +1,131 @@
+---
+title: "SEP-9 synthetic data"
+description: "Generate schema-valid SEP-9 people, organizations, financial fields, and binary files without using real identity data."
+keywords:
+  ["SEP-9", "synthetic data", "KYC fields", "redaction", "test fixtures"]
+---
+
+SEP-9 standardizes field names and encodings used by Stellar ecosystem protocols. It is a vocabulary, not a rule that every integration must request every field. RampSpec generates only the synthetic subset selected by a locked scenario and target policy.
+
+<Warning>
+  SEP-9 is Active upstream at version 1.17.0, but RampSpec has no released field
+  schema, generator, prohibited-data scanner, or fixture bundle. This guide is
+  **Planned** and contains no real or executable identity fixture.
+</Warning>
+
+## Pinned source and boundary
+
+The normative source is [SEP-9 at commit `0dc4592cb44dda1943341016f076e9326874daed`](https://github.com/stellar/stellar-protocol/blob/0dc4592cb44dda1943341016f076e9326874daed/ecosystem/sep-0009.md#encodings). The [standards baseline](/reference/standards-baseline) records its digest.
+
+SEP-9 defines possible field names, types, and encodings. The target's SEP-12 response or selected journey determines which fields are required. RampSpec must not turn an optional vocabulary entry into a universal KYC requirement or make a legal sufficiency decision.
+
+## Encoding rules
+
+| Value kind     | Generated form                                                                         | Validation                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Language       | Two-letter ISO 639-1 code.                                                             | Exact case policy from the released schema; reject names and unsupported lengths.             |
+| Country        | Three-letter ISO 3166-1 alpha-3 code unless a field explicitly names another encoding. | Validate against the pinned code list, not only a three-letter pattern.                       |
+| Date           | ISO 8601 date-only value with ten characters.                                          | Parse as a calendar date and reject impossible dates or timestamps.                           |
+| Phone number   | E.164 by default.                                                                      | Include country code, enforce the released length rules, and route only to a controlled sink. |
+| Binary         | File bytes associated with the requested SEP-9 field.                                  | Enforce media type, signature bytes, dimensions/pages, byte limit, and fixture digest.        |
+| Number/boolean | JSON or form representation required by the consuming released schema.                 | Reject locale separators, overflow, strings masquerading as numbers, and ambiguous booleans.  |
+
+Dot notation such as `organization.name` is a flat field name, not instructions to construct nested JSON. Preserve exact casing; for example, the pinned vocabulary includes names whose case is significant.
+
+Fields with narrower conventions retain those rules. Examples include classic and contract addresses, country-specific financial identifiers, IP addresses, ID dates, card expiration format, asset or crypto addresses, and external-transfer memos. The generator validates format without claiming the value belongs to a real person or account.
+
+## Generator contract
+
+Generation is deterministic from a non-secret fixture seed, scenario identifier, field-schema version, locale profile, and case index. The same locked inputs produce the same canonical fields and file digests across supported runtimes. A different case receives a different namespace so identity and idempotency tests do not collide.
+
+Every generated record contains an internal fixture manifest with:
+
+- `testOnly: true` and a visible `RAMPSPEC TEST` marker;
+- generator and SEP-9 schema versions;
+- scenario, case, person/organization type, and deterministic seed digest;
+- target, network, permitted protocols, destination sinks, and expiry;
+- generated field names, encodings, redaction classes, and file hashes;
+- creation, upload, deletion, and cleanup status.
+
+The seed value itself never enters a report when it could regenerate sensitive test credentials. Runtime account seeds, API credentials, and encryption keys are separate secrets, not fixture fields.
+
+## Synthetic natural persons
+
+Generate obviously fictional names and profiles that do not imitate a known person. Maintain logical relationships without borrowing real identity data:
+
+- birth and ID dates form a valid configured test chronology;
+- country, state/region, city, postal code, and multiline address follow the selected synthetic locale profile;
+- phone and email point only to registered test sinks or non-delivery namespaces;
+- tax, ID, bank, mobile-money, and crypto identifiers use provider-approved sandbox ranges or fixture-specific invalid-for-production namespaces;
+- IP addresses use documentation ranges and are never treated as a caller's observed address;
+- employment, source-of-funds, and income values carry visible test markers;
+- requested fields remain flat SEP-9 names.
+
+Do not produce a plausible value for a regulated identifier unless the controlled target documents an accepted sandbox format. Prefer an explicit fixture rejection case over risking collision with a real identifier.
+
+## Synthetic organizations
+
+Organization fixtures use generated legal/display names with `RAMPSPEC TEST`, controlled contact destinations, sandbox registration and tax identifiers, generated addresses, and non-public test websites. Shareholder and director records refer only to other synthetic fixture IDs.
+
+Generate `organization.*` financial fields when the consuming protocol requests organization-owned accounts. The prefix does not change the underlying field's encoding. Never copy corporate registrations, directors, addresses, websites, bank details, or documents from a real company.
+
+## Controlled destinations
+
+- Email uses an organization-owned capture service or a reserved non-delivery domain. A scenario expecting delivery requires the capture service and asserts no external relay occurred.
+- Phone and mobile money use a provider's documented sandbox range or an owned test receiver. Never send SMS, voice, or money to pattern-generated numbers.
+- Web and callback URLs resolve only inside the controlled environment or an approved documentation address that receives no request.
+- Bank/card/payment values come from the target provider's sandbox documentation and cannot authorize a production transaction.
+- Stellar addresses are ephemeral testnet fixtures with capped balances; other crypto addresses use local/sandbox networks or explicit non-sendable values.
+
+The runner denies egress to any destination not declared in the fixture manifest, even when a generated field accidentally parses as routable.
+
+## Binary fixture files
+
+Generate files from code for each selected binary field: photo-ID front/back, address proof, income proof, incorporation document, notary approval, and liveness image/video where supported. Every visual page or frame displays `RAMPSPEC TEST - SYNTHETIC - NOT A REAL PERSON` and a fixture ID.
+
+Files contain generated shapes/text only, no stock portrait, scanned document, biometric likeness, signature, barcode, government seal, or copied template. Strip EXIF and author metadata. Lock media type, magic bytes, dimensions, page/frame count, duration, and maximum size; generate boundary and malformed variants separately.
+
+Do not embed active content, macros, external references, scripts, archive recursion, or hidden attachments. Store the generator input digest and output SHA-256, not a base64 copy in logs.
+
+## Redaction classes
+
+| Class                | Examples                                                                    | Evidence behavior                                                                             |
+| -------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Public metadata      | SEP field name, schema version, test marker, media type.                    | May appear in reports.                                                                        |
+| Synthetic identifier | Fixture ID, generated name, case index, testnet public address.             | Show only when needed; label synthetic.                                                       |
+| Synthetic sensitive  | Tax/ID/bank/card fields, full address, birth date, files.                   | Redact value; retain field name, digest, length, format outcome, and fixture reference.       |
+| Secret               | API token, account seed, callback secret, encryption key.                   | Never enter request evidence beyond approved in-run transport; never store value.             |
+| Prohibited           | Real or suspected PII, production credential/account, copied identity file. | Block generation/import/upload, quarantine metadata only, alert, and require deletion review. |
+
+Redaction happens inside the runner before upload. Log serializers use a field allowlist and structured types; pattern masking is only defense in depth. Error messages, multipart filenames, URLs, browser traces, and third-party responses receive the same classification.
+
+## Prohibited-data gate
+
+Reject a fixture before use when it contains or appears derived from:
+
+- a real person's name paired with contact, address, birth, tax, financial, or ID data;
+- an actual government ID, selfie, biometric, signature, bill, bank statement, or incorporation record;
+- a production bank/card/mobile-money/crypto credential or reachable uncontrolled destination;
+- copied customer payloads, support tickets, logs, screenshots, database rows, or analytics exports;
+- secrets, bearer tokens, private keys, recovery phrases, callback credentials, or session cookies;
+- a file lacking the synthetic watermark/manifest or whose digest is not in the released corpus.
+
+CI scans source fixtures and generated outputs using deterministic detectors plus file metadata rules. Tests include seeded prohibited examples that must be rejected without echoing their value in logs. A detector failure blocks publication; it does not make the fixture safe.
+
+## Retention and teardown
+
+Default to per-run generation and deletion immediately after the scenario's cleanup window. The target, runner, object store, callback capture service, email/phone sink, and browser profile must each report deletion or expiration. Keep only schema versions, fixture IDs, redacted field presence, hashes, outcomes, and deletion evidence.
+
+Failed and cancelled runs execute the same teardown. A deletion failure changes the run result and prevents fixture reuse. Retention exceptions name an owner, purpose, encrypted location, access scope, deadline, and audit event.
+
+## Custom fixture review
+
+Organization-supplied fixtures are disabled by default. Enabling one requires a Maintainer and privacy/security reviewer to document provenance, prove test-only ownership, run the prohibited-data scanner, classify every field/file/destination, set retention, and approve the exact digest for one target and scenario.
+
+Customization cannot weaken visual test markers, redaction, destination controls, file limits, secret separation, or cleanup. Changing one byte creates a new fixture requiring review.
+
+## Validation and release gate
+
+The released corpus must contain valid person and organization examples for every supported encoding plus invalid cases for dates, countries, phones, addresses, identifiers, dot notation, numbers, binaries, destinations, and prohibited data. CI validates valid fixtures against the generated SEP-9 schema and requires every prohibited fixture to fail before transport.
+
+Until the backend publishes that schema, generator, fixtures, and CI record, stable example links and commands remain unavailable. Use [SEP-12](/reference/standards-baseline) only as a standards-status reference until its lifecycle guide and runtime adapter exist.
