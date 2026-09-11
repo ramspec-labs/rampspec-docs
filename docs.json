@@ -77,7 +77,11 @@
           },
           {
             "group": "Contracts",
-            "pages": ["contracts/overview", "reference/contract-storage"]
+            "pages": [
+              "contracts/overview",
+              "contracts/evidence-guide",
+              "reference/contract-storage"
+            ]
           },
           {
             "group": "Reports",

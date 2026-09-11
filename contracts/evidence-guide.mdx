@@ -1,0 +1,145 @@
+---
+title: "Soroban evidence operations"
+description: "Publish, verify, look up, supersede, and revoke compact RampSpec report commitments without placing report data on-chain."
+keywords: ["Soroban", "evidence", "attestor", "supersede", "revoke"]
+---
+
+The planned evidence registry stores a compact commitment to a finalized RampSpec report. It does not store the report or certify its subject. A verified lookup proves only that a reviewed contract at a known code hash returned the recorded commitment at a stated ledger.
+
+<Warning>
+  No evidence-registry WASM, generated specification, binding, deployment
+  manifest, attestor, local deployment, or testnet deployment exists. All method
+  names and transaction procedures here are **Planned**; do not submit the
+  fixture to a network.
+</Warning>
+
+## Decide whether to publish
+
+Publication is optional. Before any simulation or signature, an authorized owner reviews:
+
+- independently verified canonical report and required artifacts;
+- target/network/suite/standards/runner identity and completed cleanup;
+- publication mode and exact target commitment construction;
+- selected Stellar network, contract deployment, attestor, fees, and signer;
+- public fields, timing/activity leakage, permanence, and revocation limits;
+- prohibited-data scan and explicit consent record;
+- support owner and supersede/revoke procedure.
+
+Private staging results should normally remain off-chain. Hashes can still reveal timing, activity frequency, repeated inputs, or relationships to known data. Revocation cannot erase ledger history, transaction envelopes, events, or third-party copies.
+
+## Verify the report first
+
+Follow [Verify and share a report](/reports/verification-and-sharing) with an offline trusted manifest, key set, suite lock, standards snapshot, and artifact inventory. Record report ID, canonical SHA-256 digest, verification-key ID, signing time, verifier release/digest, and verification result.
+
+Only a finalized `verified` report is eligible. A failed conformance gate may still be published as an accurately labeled result if policy allows; blocked, indeterminate, cancelled, tampered, unknown-key, incompatible, incomplete-cleanup, or prohibited-data results are ineligible.
+
+## Build compact commitments
+
+The conceptual `EvidenceRecord` contains:
+
+| Field             | Construction and meaning                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `report_hash`     | SHA-256 of the canonical signed report representation defined by its released schema; integrity root.                         |
+| `target_hash`     | Public canonical home-domain hash, partner target plus disclosed nonce, or private random commitment under the approved mode. |
+| `suite_hash`      | Digest of immutable suite lock and interpretation version.                                                                    |
+| `specs_hash`      | Digest of the pinned standards snapshot.                                                                                      |
+| `artifact_root`   | Released deterministic commitment over the report's required artifact inventory, not raw artifacts.                           |
+| `network`         | Report target execution network classification, distinct from the Soroban publication network.                                |
+| `protocol_bitmap` | Versioned bitmap of tested protocol families; interpreted only with schema/suite/spec digests.                                |
+| counts/score      | Informational summary recomputed from the report; never replaces individual findings.                                         |
+| `publisher`       | Enabled attestor address authorizing publication.                                                                             |
+| `supersedes`      | Optional prior evidence ID under the contract's acyclic replacement rules.                                                    |
+
+No report body, URL/token, home domain string, customer field, credential, evidence object, finding text, XDR, or nonce for a partner commitment is stored on-chain.
+
+{/* example: examples/contracts/evidence-publication.planned.json */}
+
+The stored [planned publication fixture](/examples/contracts/evidence-publication.planned.json) contains placeholders, a disabled submission flag, and no signer material. The future generated input schema is authoritative.
+
+## Evidence identifier
+
+The design derives an ID deterministically from a domain separator, publisher address XDR, report hash, and network discriminant:
+
+```text
+SHA-256(
+  "rampspec-evidence-v1" ||
+  publisher_address_xdr ||
+  report_hash ||
+  network_discriminant
+)
+```
+
+Use the exact byte encoding in the generated spec and test vectors. Never infer it from this display form. Duplicate publication for the same publisher/report/network returns the documented duplicate error and cannot create parallel active records.
+
+## Trust the deployment
+
+Before a read or write:
+
+1. obtain the contracts tag, full commit, generated spec/binding, optimized WASM, and deployment manifest from the compatible product release;
+2. verify every artifact digest and network passphrase;
+3. connect only to the reviewed RPC origin for that deployment;
+4. query live executable code and compare its hash with the manifest's WASM SHA-256;
+5. verify contract ID, deployment transaction, interface/storage major, initialization schema, and test-only/public status;
+6. confirm pause state and attestor record at a recent finalized ledger;
+7. record RPC identity, ledger sequence/close time, code hash, and verification time.
+
+Code-hash, interface, network, manifest, XDR, or RPC uncertainty stops interpretation and signing. An unavailable RPC is infrastructure-indeterminate, not absence of evidence.
+
+## Simulate publication
+
+Construct the generated input from verified local values, then invoke the released binding's simulation path without a secret key. Check authorization entries, footprint, read/write keys, resource fees, refundable fee, ledger bounds, sequence/time bounds, return shape, and emitted-event preview.
+
+Recompute hashes, ID, counts, score range, bitmap, attestor status, pause state, and absence/eligible supersession immediately before simulation. Reject unexpected authorization, storage, contract calls, Soroban data, excessive resources, or changed ledger state.
+
+Simulation is not submission and proves no ledger mutation. Persist a redacted simulation digest and ledger context, never signer seed or full sensitive preimage.
+
+## Sign and submit
+
+Use a policy-controlled attestor signer from an approved wallet, hardware device, or KMS integration. Show network passphrase, RPC host, contract ID/code hash, method, evidence ID, report/target/suite/spec/artifact hashes, counts, score, fees, ledger/time bounds, and any replacement ID before approval.
+
+The backend cannot use an admin signer as a substitute for an attestor. Enforce enabled-attestor authorization, signer scope, per-network/value/rate limits, separation from report signing keys, and dual approval where policy requires it. Seeds and raw signing payloads never enter reports, logs, browser storage, support bundles, or docs.
+
+Submit the exact simulated/approved envelope once with an idempotent operation record. On timeout or unknown response, query transaction hash and evidence ID before rebuilding. Never blindly resubmit a mutating invocation.
+
+## Confirm publication
+
+Success requires all of:
+
+- transaction status `SUCCESS` on the intended network and finalized ledger policy;
+- returned evidence ID equals the local deterministic calculation;
+- `evidence_published` event topics/data match report, target, suite, and publisher commitments;
+- `get_evidence` returns the expected active record from the verified deployment/code hash;
+- attestor was enabled and report commitment has no conflicting active record;
+- report records publication network, contract ID, code hash, transaction hash, ledger, event index, evidence ID, manifest digest, and confirmation time.
+
+Explorer links are convenience views only. Build them from configured network and validated hashes/IDs, never from untrusted report text. RPC lookup and canonical report verification remain authoritative.
+
+## Look up and compare
+
+Read at a stated ledger and verify deployment first. Compare on-chain `report_hash`, target commitment under the disclosed mode/preimage policy, suite/spec/artifact hashes, network, bitmap, counts, score, publisher/attestor, status, and supersession link with the independently verified report.
+
+Return `verified`, `absent`, `unverified`, or `infrastructure` as described by [Contract lookups](/sdk/contract-lookups). `absent` applies only to the exact verified network/deployment/ledger; it does not prove global absence.
+
+## Supersede
+
+A corrected or newer finalized report creates a new commitment. Verify it independently, confirm old evidence is active and replacement is eligible, preview the relationship, then authorize `supersede_evidence` through the publishing attestor or explicitly documented admin policy.
+
+Confirm one `evidence_superseded` event, old status `Superseded`, new active record, no cycle, and report-to-report correction/version relationship. The old record remains readable and must not be presented as current.
+
+## Revoke
+
+Revocation addresses compromised keys, prohibited publication, withdrawn evidence, or policy-invalid state; it does not delete history. Hash a controlled reason record rather than storing sensitive reason text. The publishing attestor or documented admin authorizes `revoke_evidence`, including while publishing is paused.
+
+Confirm transaction/event, status `Revoked`, reason hash, ledger, actor, incident/audit reference, and that the record cannot become active again. Disable public/partner off-chain access separately and communicate the irreversible ledger footprint.
+
+## Failure handling
+
+Reject unknown/disabled attestor, paused writes, invalid hash/count/score/bitmap, duplicate evidence, absent/inactive replacement, supersession cycle, wrong network/passphrase, changed code hash, incompatible spec/storage, simulation drift, authorization mismatch, fee/resource excess, signature denial, expired envelope, failed transaction, malformed event, or post-submit state mismatch.
+
+Separate contract validation errors from RPC/Horizon/network failures and signer/KMS failures. Preserve a secret-free diagnostic bundle and transaction hash when one exists. Do not claim publication until event and state verification complete.
+
+## Meaning and acceptance boundary
+
+Evidence publication is not SDF endorsement, legal/regulatory approval, audit certification, uptime guarantee, or proof beyond the underlying report scope. Counts and score are summaries interpreted under suite/spec hashes. The report digest is the integrity root, and recipients must verify the off-chain report themselves.
+
+The release gate requires deterministic local tests and a testnet rehearsal for publish, duplicate, lookup, supersede, revoke, pause, disabled attestor, bad code hash, failed/unknown transaction, and privacy modes. Each successful case must compare the ledger record to the original canonical report. These checks remain unavailable until audited contracts, tagged bindings/backend publisher, verified manifests, and funded testnet identities exist.

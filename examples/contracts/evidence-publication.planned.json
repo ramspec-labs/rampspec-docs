@@ -1,0 +1,34 @@
+{
+  "schema": "https://schemas.rampspec.dev/evidence-publication/v1.planned.json",
+  "submissionEnabled": false,
+  "report": {
+    "id": "rep_verified_example",
+    "canonicalDigest": "sha256:<canonical-report-digest>",
+    "verification": "verified"
+  },
+  "deployment": {
+    "network": "testnet",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "contractId": "<verified-contract-id>",
+    "wasmSha256": "<released-wasm-sha256>",
+    "manifestSha256": "<deployment-manifest-sha256>"
+  },
+  "input": {
+    "publisher": "<enabled-attestor-address>",
+    "reportHash": "<32-byte-report-hash>",
+    "targetHash": "<32-byte-private-target-commitment>",
+    "suiteHash": "<32-byte-suite-lock-hash>",
+    "specsHash": "<32-byte-standards-snapshot-hash>",
+    "artifactRoot": "<32-byte-artifact-root>",
+    "reportNetwork": "testnet",
+    "protocolBitmap": "<versioned-bitmap>",
+    "scoreBps": 10000,
+    "passed": 20,
+    "failed": 0,
+    "warnings": 0,
+    "skipped": 0,
+    "supersedes": null
+  },
+  "signer": "<external-policy-controlled-signer>",
+  "expectedStatus": "active"
+}
