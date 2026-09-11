@@ -1,0 +1,17 @@
+{
+  "schema": "https://schemas.rampspec.dev/notification-route/v1.planned.json",
+  "name": "release-gate-alerts",
+  "channel": "verified-webhook",
+  "destinationReference": "sec_ref_notification_destination",
+  "eventTypes": ["report.finalized", "run.cleanup_failed"],
+  "minimumSeverity": "high",
+  "quietHours": {
+    "timeZone": "Africa/Lagos",
+    "start": "22:00",
+    "end": "07:00",
+    "criticalBypass": true
+  },
+  "redactionProfile": "external-restricted",
+  "enabled": false,
+  "ownerId": "usr_notification_owner"
+}

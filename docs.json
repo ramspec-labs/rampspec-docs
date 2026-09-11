@@ -178,7 +178,10 @@
           },
           {
             "group": "Integrations",
-            "pages": ["guides/integrations/github-ci"]
+            "pages": [
+              "guides/integrations/github-ci",
+              "guides/integrations/continuous-monitoring"
+            ]
           },
           {
             "group": "Maintainers",

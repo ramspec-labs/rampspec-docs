@@ -1,0 +1,19 @@
+{
+  "schema": "https://schemas.rampspec.dev/schedule/v1.planned.json",
+  "organizationId": "org_example",
+  "projectId": "prj_example",
+  "targetId": "tgt_testnet_example",
+  "suiteLockDigest": "sha256:<suite-lock-digest>",
+  "runnerPolicyId": "runner_policy_read_only_example",
+  "mode": "monitor",
+  "network": "testnet",
+  "recurrence": "0 9 * * 1-5",
+  "timeZone": "Africa/Lagos",
+  "startsAt": "2026-10-01T08:00:00Z",
+  "ambiguousTimePolicy": "earlier-offset-once",
+  "nonexistentTimePolicy": "skip",
+  "overlapPolicy": "forbid",
+  "missedRunPolicy": "latest-one",
+  "enabled": false,
+  "ownerId": "usr_schedule_owner"
+}

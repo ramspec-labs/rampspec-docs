@@ -1,0 +1,16 @@
+{
+  "schema": "https://schemas.rampspec.dev/webhook-event/v1.planned.json",
+  "id": "evt_example_01",
+  "type": "report.finalized",
+  "organizationId": "org_example",
+  "resourceVersion": 7,
+  "occurredAt": "2026-09-11T12:00:00Z",
+  "createdAt": "2026-09-11T12:00:01Z",
+  "correlationId": "cor_example_01",
+  "data": {
+    "runId": "run_example_01",
+    "reportId": "rep_example_01",
+    "result": "failed",
+    "canonicalDigest": "sha256:<canonical-report-digest>"
+  }
+}

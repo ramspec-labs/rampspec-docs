@@ -1,0 +1,117 @@
+---
+title: "Webhooks, schedules, and notifications"
+description: "Operate continuous monitoring with deterministic schedules, signed webhook delivery, bounded retries, redacted notifications, and owned incident paths."
+keywords: ["schedules", "webhooks", "notifications", "dead letter", "DST"]
+---
+
+Continuous monitoring connects a fixed target, immutable suite, runner policy, and recipient set. A schedule creates ordinary RampSpec runs; it does not weaken ownership, network, credential, cleanup, evidence, or approval controls.
+
+<Warning>
+  Schedule, webhook, notification, and delivery APIs have not been released. The
+  resources and examples on this page are **Planned** and cannot be used as
+  backend requests or signature test vectors.
+</Warning>
+
+## Resource boundary
+
+Keep these resources independent:
+
+| Resource           | Owns                                                                               | Does not own                                            |
+| ------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Schedule           | Recurrence, time zone, overlap/missed policy, target, suite, runner, enabled state | Secrets, mutable scenario source, recipient credentials |
+| Run                | One resolved execution and its immutable effective configuration                   | Future recurrence                                       |
+| Webhook endpoint   | Destination, event allowlist, signing-key versions, delivery policy                | Run authority or target credentials                     |
+| Notification route | Event/severity filters, channel, quiet hours, escalation                           | Canonical evidence or report truth                      |
+| Delivery           | One event/recipient attempt history and terminal disposition                       | Business action idempotency at the recipient            |
+
+Maintainers may configure schedules and integrations. Owners approve stateful, destructive, or active-pubnet policies. Service identities can trigger only their bound resources and cannot change their own scope.
+
+## Create a schedule
+
+{/* example: examples/integrations/schedule.planned.json */}
+
+The stored [planned schedule](/examples/integrations/schedule.planned.json) binds immutable identifiers and explicit time behavior. The released schema and API are authoritative.
+
+Required fields include organization/project, target, immutable suite lock, runner policy, IANA time-zone name, recurrence, start boundary, overlap policy, missed-run policy, network/mode, enabled state, and owner. Store both the recurrence definition and the next intended local and UTC instants so operators can explain every decision.
+
+### Time zones and daylight saving
+
+Use an IANA zone such as `Africa/Lagos`, never a display abbreviation or fixed offset for a civil-time schedule. For a nonexistent local time during a spring-forward transition, the default is skip and record `nonexistent_local_time`; do not silently move it. For an ambiguous fall-back time, the default is execute once at the earlier offset and record the chosen offset. A policy may explicitly select the later offset or both instants.
+
+Recalculate future instants with the pinned time-zone database after a rule update, but never rewrite executed history. Display local time, zone, resolved UTC time, offset, and database version in schedule history.
+
+### Overlap and missed runs
+
+The default overlap policy is `forbid`: if the prior run remains active, record a skipped occurrence instead of starting a second journey. `queue-one` preserves at most the latest pending occurrence. Parallel execution is allowed only for read-only, capacity-reviewed suites.
+
+A scheduler outage must not create an unbounded catch-up storm. `skip` records each missed decision up to a bounded audit summary; `latest-one` starts only the most recent eligible occurrence; bounded backfill requires owner-approved start/end limits and capacity. Every started run receives an idempotency key derived from schedule ID, schedule version, and intended UTC instant.
+
+## Pause, resume, and manual trigger
+
+Pausing blocks new occurrences immediately but does not abandon an active run or its cleanup. Record actor, reason, time, effective schedule version, active-run decision, and next eligible instant. Resuming recomputes the next future occurrence; it does not replay missed work unless an authorized backfill is explicit.
+
+A manual trigger creates an ordinary run linked to the schedule and actor, with a distinct idempotency key. It uses the saved target, suite, policy, runner, and network; request input cannot override them. A disabled, expired, ownership-invalid, incompatible, or policy-blocked schedule cannot be manually triggered.
+
+Deletion disables new work, resolves queued items, preserves immutable run/report history, revokes schedule-only credentials, and retains the minimum audit record. It never erases a published ledger commitment.
+
+## Events and ordering
+
+Emit events only after the corresponding state is durable. Each event has an opaque ID, type, schema version, occurred/created timestamps, organization/resource IDs, resource version, correlation and trace IDs, and a redacted data object. Delivery order is best effort; recipients reconcile from resource version and API state after gaps.
+
+Useful event families include schedule occurrence decisions, run state changes, verified report finalization, gate results, cleanup failure, integration health, and evidence commitment state. Do not emit secrets, credentials, raw exchanges, customer fields, private target URLs, signed XDR, report access tokens, or unrestricted artifact URLs.
+
+## Configure a webhook
+
+The endpoint must use HTTPS, an allowlisted public destination, a bounded event allowlist, one organization, verified ownership, a current signing-secret version, request/response limits, and an incident owner. Resolve and pin DNS safely for each connection to prevent loopback, link-local, private-range, metadata-service, rebinding, redirect, and alternate-port access.
+
+Secret values are shown once through a protected write-only path and stored in an approved secret provider. Configuration views expose only key ID, fingerprint, created/activated/retired times, and health. Testing an endpoint sends a synthetic event with no report or target data.
+
+## Signed delivery
+
+{/* example: examples/integrations/webhook-delivery.planned.json */}
+
+The stored [planned event body](/examples/integrations/webhook-delivery.planned.json) is safe fixture data, not a signed vector. The release will define exact headers and signed bytes.
+
+Recipients must retain the exact bounded request bytes, verify the released timestamp and signature before parsing, reject stale/future timestamps, resolve the configured key version, validate the event schema, and atomically reserve recipient plus event ID before acting. See [Webhook verification](/sdk/webhook-verification).
+
+Return success only after durable idempotent handoff. A duplicate valid delivery returns the prior acknowledgement without repeating its business action. Authentication, schema, policy, or permanent recipient errors are not retried as transient failures.
+
+## Rotation
+
+Generate a new secret without exposing the old one, deliver and verify a synthetic test with the new version, activate it, allow a short documented overlap, observe old/new delivery counts, then retire and destroy the old value. Compromise skips normal overlap: disable delivery, revoke the exposed version, rotate, review deliveries and recipient actions, and follow the secret incident runbook.
+
+## Retry and dead-letter behavior
+
+Retry only transport timeout, connection failure, and released transient HTTP classes. Use exponential backoff with jitter, a maximum attempt count, maximum elapsed horizon, per-endpoint concurrency, and global circuit breaker. Honor a valid bounded `Retry-After`; never retry indefinitely.
+
+Every attempt records event and endpoint IDs, attempt number, scheduled/started/completed times, response class/code, safe body digest, latency, resolved destination fingerprint, key ID, and next decision. Response bodies are size-limited and redacted before storage.
+
+After the retry horizon, mark the delivery dead-lettered, notify its owner, and link an incident-safe delivery view. Redelivery requires authorized intent, uses the same event ID and body/schema version, creates a new delivery series linked to the old one, and remains idempotent. Bulk replay is bounded by recipient health and rate limits.
+
+## Notifications
+
+{/* example: examples/integrations/notification-route.planned.json */}
+
+The stored [planned route](/examples/integrations/notification-route.planned.json) filters events without changing gate or report status. Supported future channels must document identity, verification, rate limits, retry policy, quiet hours, escalation, and deletion.
+
+Notifications include environment, safe target label, suite, result class, severity/count summary, occurrence/run/report ID, observed time, and an authenticated incident or report link. They do not include evidence bodies or credentials. Public-channel routes use the most restrictive redaction profile and cannot link private artifacts.
+
+Deduplicate by resource version plus route and event family. Coalesce bursts into a bounded summary, preserve the highest severity, and send recovery only after the condition is verified clear. Quiet hours delay non-urgent messages but never suppress critical security, pubnet-safety, cleanup, or integrity alerts. Track suppressed/coalesced counts visibly.
+
+## Rate limits and backpressure
+
+Apply limits per organization, schedule, destination, event type, and global provider. Schedule admission happens before a run is queued; delivery admission happens before network access. Queue depth, oldest age, drop/coalesce count, retry count, dead-letter count, and circuit state are observable without tenant data.
+
+When capacity is exhausted, preserve durable state and mark monitoring delayed or indeterminate. Never claim a target passed because its run or notification could not execute. Low-priority notifications may coalesce; canonical events, reports, and audit decisions do not disappear.
+
+## Incident links and operator actions
+
+Every failed schedule occurrence or delivery links to a stable internal resource view containing correlation ID, safe timeline, configuration version, attempts, current owner, and the matching runbook. Links require authorization and expire when embedded in external channels; IDs alone grant no access.
+
+Operators can acknowledge, pause, test, rotate, redeliver one event, bounded-replay a range, or disable a destination. Each action records actor, reason, bounds, before/after state, and result. Notification recipients cannot invoke those actions through an unsigned message button.
+
+## Required validation
+
+The release gate must cover recurrence parsing, IANA zones, both daylight-saving transitions, leap boundaries, pause/resume, manual trigger, overlap, each missed policy, scheduler restart, duplicate enqueue, capacity rejection, endpoint SSRF controls, valid/tampered/stale/replayed signatures, rotation overlap/retirement, transient/permanent responses, timeouts, bounded backoff, dead letter and authorized replay, notification filtering/coalescing/quiet hours/escalation, redaction, tenant isolation, deletion, and audit records.
+
+This docs repository can validate the stored JSON and internal links. Signed delivery verification and schedule execution remain blocked until the backend publishes schemas, vectors, tagged services, and a release manifest.
