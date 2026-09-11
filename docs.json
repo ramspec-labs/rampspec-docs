@@ -179,6 +179,10 @@
             ]
           },
           {
+            "group": "Pilots",
+            "pages": ["guides/pilots/onboarding", "guides/pilots/case-studies"]
+          },
+          {
             "group": "Anchor Platform",
             "pages": [
               "guides/anchor-platform/reference-environment",

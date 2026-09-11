@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "pilot-register",
+  "status": "planned",
+  "slots": [
+    {
+      "slot": "pilot-a",
+      "participant": null,
+      "participantAlias": null,
+      "status": "unfilled",
+      "charterUrl": null,
+      "productManifestUrl": null,
+      "environment": null,
+      "journeys": [],
+      "supportOwner": null,
+      "securityOwner": null,
+      "productOwner": null,
+      "entryGateComplete": false,
+      "sessions": [],
+      "feedback": [],
+      "defectMetrics": null,
+      "timeSavedMetrics": null,
+      "permissions": {
+        "participation": null,
+        "organizationIdentity": null,
+        "individualIdentity": null,
+        "quotation": null,
+        "logo": null,
+        "technicalEvidence": null,
+        "metrics": null,
+        "relationshipWording": null
+      },
+      "caseStudyUrl": null,
+      "publicationStatus": "not-authorized"
+    },
+    {
+      "slot": "pilot-b",
+      "participant": null,
+      "participantAlias": null,
+      "status": "unfilled",
+      "charterUrl": null,
+      "productManifestUrl": null,
+      "environment": null,
+      "journeys": [],
+      "supportOwner": null,
+      "securityOwner": null,
+      "productOwner": null,
+      "entryGateComplete": false,
+      "sessions": [],
+      "feedback": [],
+      "defectMetrics": null,
+      "timeSavedMetrics": null,
+      "permissions": {
+        "participation": null,
+        "organizationIdentity": null,
+        "individualIdentity": null,
+        "quotation": null,
+        "logo": null,
+        "technicalEvidence": null,
+        "metrics": null,
+        "relationshipWording": null
+      },
+      "caseStudyUrl": null,
+      "publicationStatus": "not-authorized"
+    }
+  ],
+  "enrolledCount": 0,
+  "completedCount": 0,
+  "authorizedCaseStudyCount": 0,
+  "notice": "Empty capacity record only. No participant, partner, customer, adoption, result, or publication permission is claimed."
+}

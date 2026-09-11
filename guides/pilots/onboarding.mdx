@@ -1,0 +1,86 @@
+---
+title: "Pilot onboarding"
+description: "How RampSpec scopes pilot work, protects participants, provides support, and measures reproducible outcomes."
+keywords: ["pilot", "onboarding", "support", "feedback", "measurement"]
+---
+
+A RampSpec pilot is a time-bounded evaluation with an authorized team, explicit environments, support owners, synthetic or approved data, and agreed measurements. Participation is not adoption, endorsement, production approval, or a promise that results may be published.
+
+<Warning>
+  No pilot team is enrolled. The two entries in the planned pilot record are
+  empty capacity slots, not organizations, partners, users, or adoption
+  evidence.
+</Warning>
+
+## Entry gate
+
+The pilot owner completes every item before access or testing begins:
+
+- [ ] participant identity and authorized contacts are recorded privately;
+- [ ] participation scope, dates, goals, success measures, and stop conditions are signed;
+- [ ] the exact product manifest, docs version, target, environment, network, asset, client, and SEP journeys are fixed;
+- [ ] permitted data classes, synthetic fixtures, retention, deletion, redaction, and incident handling are agreed;
+- [ ] local, testnet, pubnet observation, and pubnet submission boundaries are explicit;
+- [ ] primary and backup support, security escalation, and product decision owners accept their targets;
+- [ ] baseline workflow and measurement method are captured before RampSpec is introduced;
+- [ ] feedback, defect validation, dispute, anonymization, quotation, logo, and publication permissions are separate choices;
+- [ ] known limitations and the [methodology](/reports/methodology-and-limitations) are acknowledged;
+- [ ] exit, access removal, fixture cleanup, data deletion, and evidence return procedures are scheduled.
+
+An unchecked item blocks the pilot. A confidentiality agreement does not grant network, signing, data-processing, case-study, or logo permission.
+
+## Pilot charter
+
+The charter identifies one narrow operational question, such as whether a pinned testnet journey detects a known interoperability defect. It includes in-scope and out-of-scope systems, baseline, product version, scenarios, expected sessions, participants, dependencies, risks, acceptance criteria, and the intended decision after the pilot.
+
+Do not promise full SEP coverage, production readiness, security assurance, compliance, defect-free operation, partner compatibility, or a specific time saving. The charter says which results would be inconclusive and who can stop the work.
+
+## Environment and access
+
+Use the least capable environment that can answer the pilot question. Prefer local or testnet with synthetic identities and assets. Participant secrets remain in their approved secret store and never enter tickets, reports, screenshots, fixtures, telemetry, or documentation.
+
+Pubnet observation requires a documented read-only scope. Pubnet submission requires a separate signed activation decision with accounts, assets, contracts, values, limits, monitoring, rollback, and expiry. Pilot enrollment alone never authorizes live transactions.
+
+Provide access by named role, require multi-factor authentication where supported, log privileged activity, and set an automatic expiry. Test revocation before onboarding. Remove access and temporary resources at exit.
+
+## Support and escalation
+
+| Need                                                          | Primary route                                           | Target                                             | Escalation                            |
+| ------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------- | ------------------------------------- |
+| Setup or documentation                                        | Private pilot support queue                             | One business day                                   | Product owner                         |
+| Reproducible product defect                                   | Owning repository issue or private queue when sensitive | Initial triage in one business day                 | Repository maintainer                 |
+| Security, privacy, credential, or unauthorized network action | Private security channel                                | Immediate acknowledgment target defined in charter | Security owner and incident commander |
+| Service interruption                                          | Operations incident route                               | According to the pilot service objective           | Operations owner                      |
+| Scope, metric, or publication dispute                         | Pilot decision record                                   | Two business days                                  | Independent product reviewer          |
+
+Targets are proposals until named owners accept them in the charter. Never publish a service-level claim from this table alone.
+
+## Structured feedback
+
+Capture feedback as an observation rather than a conclusion. Each entry records participant alias, role, timestamp, task, product/docs version, environment, expected and observed behavior, severity proposed by the reporter, reproduction steps, evidence reference, privacy class, and resolution state.
+
+Separate usability friction, documentation defects, product defects, protocol interpretation disputes, feature requests, and external dependency failures. Maintainers validate and deduplicate defects; disagreement remains visible. Do not pressure participants to provide favorable quotes or public reviews.
+
+## Defect measurement
+
+Count a defect only when it has a stable ID, reproducible steps, affected version, expected basis, observed result, and maintainer disposition. Report:
+
+- unique submitted findings;
+- confirmed, disputed, duplicate, external, not reproducible, and unresolved counts;
+- severity distribution with rationale;
+- detection source and journey;
+- remediation release and regression evidence where completed.
+
+Do not count repeated observations as new defects or describe all findings as protocol violations. The pilot sample, scope, and exclusions accompany every total.
+
+## Time-saved measurement
+
+Define the task and baseline before testing. Record start and stop rules, active work versus waiting, participant role, prior experience, tool and documentation versions, retries, exclusions, and whether the task succeeded. Compare equivalent tasks and environments.
+
+Report individual observations and summary statistics appropriate to the sample. With two teams or a small number of sessions, avoid ecosystem-wide generalization and causal language. A shorter task may reflect familiarity, target differences, support intervention, or learning effects rather than RampSpec alone.
+
+## Exit
+
+At exit, stop scheduled work, revoke access, remove credentials and synthetic resources, execute agreed deletion, export allowed evidence, document unresolved risks, and obtain participant confirmation. Product and support owners decide whether to proceed, revise, repeat, or stop. Publication is handled separately through the [case study policy](./case-studies).
+
+The [planned pilot record](/examples/pilots/pilot-record.planned.json) contains two empty slots and the required control fields. The onboarding workflow is implemented; its outcome remains blocked until two real teams complete signed entry gates and reproducible sessions.
