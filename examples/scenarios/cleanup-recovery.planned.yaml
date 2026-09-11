@@ -1,0 +1,39 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: cleanup-recovery
+  title: Resume cleanup from retained recovery state
+  labels:
+    availability: planned
+    purpose: cleanup
+spec:
+  networks: [testnet]
+  requires:
+    capabilities: [cleanup-recovery]
+  parameters:
+    recovery: { type: fixture-ref, required: true }
+  steps:
+    - id: inspect
+      uses: cleanup.inspect-recovery-state
+      with:
+        recovery: "${{ parameters.recovery }}"
+    - id: authorize
+      uses: cleanup.verify-ownership-and-policy
+      needs: [inspect]
+  cleanup:
+    - id: compensate
+      uses: cleanup.execute-approved-compensation
+      needs: [authorize]
+      always: true
+      retry:
+        maxAttempts: 3
+        initialDelay: 5s
+        maximumDelay: 20s
+        backoff: exponential
+    - id: verify-terminal
+      uses: cleanup.verify-terminal-leases
+      needs: [compensate]
+      always: true
+  policy:
+    failOn: [critical, high]
+    maximumDuration: 10m

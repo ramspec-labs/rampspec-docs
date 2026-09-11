@@ -1,0 +1,71 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: sep31-firm-quote-corridor
+  title: SEP-31 corridor with SEP-38 firm quote
+  labels:
+    availability: planned
+    protocol: sep31
+spec:
+  networks: [testnet]
+  requires:
+    seps: [1, 10, 12, 31, 38]
+    capabilities: [stellar-signing, callback-receiver, provider-sandbox]
+  parameters:
+    target: { type: target-ref, required: true }
+    partnerCredential: { type: secret-ref, required: true }
+    signer: { type: secret-ref, required: true }
+    amount: { type: stellar-amount, maximum: "5.0000000" }
+  fixtures:
+    sender:
+      uses: synthetic-natural-person
+    receiver:
+      uses: synthetic-natural-person
+  steps:
+    - id: authenticate
+      uses: sep10.authenticate-partner
+      with:
+        target: "${{ parameters.target }}"
+        credential: "${{ parameters.partnerCredential }}"
+    - id: register-customers
+      uses: sep12.register-customer-pair
+      needs: [authenticate]
+      with:
+        sender: "${{ fixtures.sender.id }}"
+        receiver: "${{ fixtures.receiver.id }}"
+    - id: quote
+      uses: sep38.create-firm-quote
+      needs: [authenticate]
+      with:
+        amount: "${{ parameters.amount }}"
+    - id: create-payment
+      uses: sep31.create-transaction
+      needs: [register-customers, quote]
+      with:
+        quote: "${{ steps.quote.id }}"
+    - id: settle
+      uses: stellar.send-test-payment
+      needs: [create-payment]
+      with:
+        signer: "${{ parameters.signer }}"
+    - id: verify-payout
+      uses: sep31.verify-controlled-payout
+      needs: [settle]
+      timeout: 10m
+  cleanup:
+    - id: recover-value
+      uses: transfer.recover-fixture-value
+      needs: [create-payment]
+      always: true
+    - id: delete-customers
+      uses: sep12.delete-customer-pair
+      needs: [register-customers]
+      always: true
+  policy:
+    failOn: [critical, high]
+    draftRules: blocking
+    maximumValue: "5.0000000"
+    maximumFee: "0.1000000"
+    maximumDuration: 20m
+    retainTraffic: 1d
+    allowedTargetRefs: ["${{ parameters.target }}"]

@@ -1,0 +1,31 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: policy-gate
+  title: Evaluate a verified report policy
+  labels:
+    availability: planned
+    purpose: policy
+spec:
+  networks: [testnet]
+  requires:
+    capabilities: [report-verification]
+  parameters:
+    report: { type: fixture-ref, required: true }
+  steps:
+    - id: verify
+      uses: report.verify
+      with:
+        report: "${{ parameters.report }}"
+    - id: evaluate
+      uses: policy.evaluate-report
+      needs: [verify]
+      with:
+        report: "${{ steps.verify.report }}"
+        requireCleanup: true
+        requireEvidence: true
+        rejectIndeterminate: true
+  policy:
+    failOn: [critical, high]
+    draftRules: advisory
+    maximumDuration: 1m

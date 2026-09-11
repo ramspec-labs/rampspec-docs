@@ -1,0 +1,57 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: sep6-transfer-matrix
+  title: SEP-6 deposit and withdrawal
+  labels:
+    availability: planned
+    protocol: sep6
+spec:
+  networks: [testnet]
+  requires:
+    seps: [1, 6, 10, 12]
+    capabilities: [stellar-signing, provider-sandbox]
+  parameters:
+    target: { type: target-ref, required: true }
+    signer: { type: secret-ref, required: true }
+    amount: { type: stellar-amount, maximum: "5.0000000" }
+  matrix:
+    transfer: [deposit, withdrawal]
+  fixtures:
+    customer:
+      uses: synthetic-natural-person
+    account:
+      uses: stellar-funded-account
+      with:
+        maximumBalance: "10.0000000"
+  steps:
+    - id: discover
+      uses: sep6.discover
+      with:
+        target: "${{ parameters.target }}"
+    - id: initiate
+      uses: sep6.initiate-transfer
+      needs: [discover]
+      with:
+        transfer: "${{ matrix.transfer }}"
+        amount: "${{ parameters.amount }}"
+    - id: settle
+      uses: sep6.settle-controlled-transfer
+      needs: [initiate]
+      with:
+        signer: "${{ parameters.signer }}"
+    - id: verify
+      uses: sep6.verify-terminal-state
+      needs: [settle]
+      timeout: 10m
+  cleanup:
+    - id: recover-value
+      uses: transfer.recover-fixture-value
+      needs: [initiate]
+      always: true
+  policy:
+    failOn: [critical, high]
+    maximumValue: "5.0000000"
+    maximumFee: "0.1000000"
+    maximumDuration: 15m
+    allowedTargetRefs: ["${{ parameters.target }}"]

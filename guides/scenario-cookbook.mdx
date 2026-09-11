@@ -1,0 +1,150 @@
+---
+title: "Scenario cookbook"
+description: "Stored scenario patterns for protocol discovery, authentication, customer flows, transfers, corridor settlement, regression, monitoring, evidence, cleanup, and policy."
+keywords:
+  [
+    "scenario examples",
+    "YAML",
+    "SEP tests",
+    "monitoring",
+    "evidence",
+    "cleanup",
+  ]
+---
+
+This cookbook turns the [scenario language](/reference/scenario-language) into small, reviewable patterns. Each stored document has one purpose, explicit requirements, catalog references instead of destinations, bounded behavior, and cleanup where it can create state.
+
+<Warning>
+  Every file is **Planned**. The backend has not released the scenario schema,
+  compiler, action catalog, fixture catalog, or lock format, so these files are
+  not executable and have no golden lock digest. Their `.planned.yaml` suffix
+  prevents automation from treating them as released scenarios.
+</Warning>
+
+## Using the cookbook
+
+Choose the smallest pattern that exercises the intended contract. Replace only declared parameters with organization-approved references. Do not paste target URLs, secrets, customer data, signing seeds, or arbitrary actions into a document.
+
+Before a planned example can lose its suffix, maintainers must import a tagged backend schema bundle, resolve every `uses` identifier from the matching action and fixture catalogs, validate the file, compile it twice to the same suite-lock digest, run it in a controlled target, verify its report and cleanup, and publish compatibility in the release manifest.
+
+Each example is referenced from this page so documentation CI rejects a missing file.
+
+## Protocol patterns
+
+### SEP-1 discovery
+
+Use this read-only baseline before every protocol journey. It resolves an approved target reference, fetches the well-known document, validates origin and redirects, and records a capability snapshot without following undiscovered services.
+
+{/* example: examples/scenarios/sep1-discovery.planned.yaml */}
+
+`examples/scenarios/sep1-discovery.planned.yaml`
+
+### SEP-10 authentication
+
+This pattern obtains a challenge, validates it locally, signs through a secret handle, exchanges it once, and revokes the fixture session during cleanup. The token is never an output available to report actions.
+
+{/* example: examples/scenarios/sep10-authentication.planned.yaml */}
+
+`examples/scenarios/sep10-authentication.planned.yaml`
+
+### SEP-45 authentication
+
+This pattern exercises the draft web-auth variant only when draft policy explicitly enables it. It uses the same bounded signer and cleanup controls but selects the pinned SEP-45 rule pack.
+
+{/* example: examples/scenarios/sep45-authentication.planned.yaml */}
+
+`examples/scenarios/sep45-authentication.planned.yaml`
+
+### SEP-12 customer lifecycle
+
+The customer example leases a synthetic person, discovers requested fields, submits only approved fixture outputs, waits for a terminal customer status, deletes the record, and verifies removal.
+
+{/* example: examples/scenarios/sep12-customer.planned.yaml */}
+
+`examples/scenarios/sep12-customer.planned.yaml`
+
+### SEP-6 transfer matrix
+
+The transfer pattern expands deposit and withdrawal into separate cases, locks a low value cap, validates initiation and status, correlates the controlled ledger or provider side, and always runs recovery-aware cleanup.
+
+{/* example: examples/scenarios/sep6-transfer.planned.yaml */}
+
+`examples/scenarios/sep6-transfer.planned.yaml`
+
+### SEP-24 interactive journey
+
+The interactive pattern requires an isolated browser and approved callback receiver. It blocks unrestricted navigation, uses a synthetic customer fixture, correlates browser completion with the API record, then destroys browser and transaction state.
+
+{/* example: examples/scenarios/sep24-interactive.planned.yaml */}
+
+`examples/scenarios/sep24-interactive.planned.yaml`
+
+### SEP-31 and SEP-38 corridor
+
+The corridor example keeps sender and receiver fixtures distinct, binds a firm quote to transaction creation, sends one capped testnet payment, waits for controlled payout, verifies both sides, and releases every lease.
+
+{/* example: examples/scenarios/sep31-sep38-corridor.planned.yaml */}
+
+`examples/scenarios/sep31-sep38-corridor.planned.yaml`
+
+## Operational patterns
+
+### Regression comparison
+
+This read-only report pattern compares a selected report with an approved baseline under a stable severity gate. It does not accept a baseline through a raw URL or mutate the baseline.
+
+{/* example: examples/scenarios/regression-comparison.planned.yaml */}
+
+`examples/scenarios/regression-comparison.planned.yaml`
+
+### Scheduled monitor
+
+The monitoring example performs low-impact discovery and availability assertions. The schedule belongs to the control-plane resource, not scenario YAML; one execution remains bounded and cleanup-free.
+
+{/* example: examples/scenarios/scheduled-monitor.planned.yaml */}
+
+`examples/scenarios/scheduled-monitor.planned.yaml`
+
+### Evidence verification
+
+This offline pattern canonicalizes a report, verifies its digest and signature against an approved key reference, checks artifact digests, and emits a verification decision without running a target action.
+
+{/* example: examples/scenarios/evidence-verification.planned.yaml */}
+
+`examples/scenarios/evidence-verification.planned.yaml`
+
+### Cleanup recovery
+
+This pattern resumes cleanup from a retained recovery reference after cancellation or failure. It verifies ownership and status first, runs only approved compensating actions, and confirms that every lease is terminal.
+
+{/* example: examples/scenarios/cleanup-recovery.planned.yaml */}
+
+`examples/scenarios/cleanup-recovery.planned.yaml`
+
+### Policy gate
+
+The policy example evaluates an existing verified report against severity, draft-rule, indeterminate, cleanup, and evidence requirements. It has no network or secret capability.
+
+{/* example: examples/scenarios/policy-gate.planned.yaml */}
+
+`examples/scenarios/policy-gate.planned.yaml`
+
+## Review checklist
+
+A cookbook contribution must prove:
+
+- one stable scenario purpose and metadata ID;
+- only released schema fields, action IDs, fixture IDs, and typed references;
+- explicit network and capabilities, with no raw destination;
+- bounded amount, fee, duration, retries, matrix size, and retention;
+- secret handles instead of values and no sensitive output flow;
+- dependency edges for every consumed output;
+- target and provider side effects covered by `always` cleanup;
+- deterministic pass, fail, skipped, indeterminate, cancellation, and cleanup behavior;
+- a compatible release manifest and reproducible suite-lock digest.
+
+## Validation status
+
+Prettier parses and normalizes every stored YAML file during this repository's quality build. The snippet reference check proves the files exist, content checks prove this page is navigable, spelling and external-link checks cover the complete set, and the static export renders the cookbook.
+
+Those checks do not replace JSON Schema validation or compilation. The executable exit check remains blocked by the missing backend schema and catalogs. Until those artifacts arrive, the examples demonstrate the complete intended patterns while remaining unavailable to the CLI, API, UI, runners, schedules, and release gates.

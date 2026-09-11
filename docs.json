@@ -156,6 +156,10 @@
             ]
           },
           {
+            "group": "Scenarios",
+            "pages": ["guides/scenario-cookbook"]
+          },
+          {
             "group": "Maintainers",
             "pages": ["guides/maintainers/spec-synchronization"]
           }

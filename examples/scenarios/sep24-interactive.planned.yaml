@@ -1,0 +1,52 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: sep24-interactive-deposit
+  title: SEP-24 isolated interactive deposit
+  labels:
+    availability: planned
+    protocol: sep24
+spec:
+  networks: [testnet]
+  requires:
+    seps: [1, 10, 12, 24]
+    capabilities: [isolated-browser, callback-receiver, provider-sandbox]
+  parameters:
+    target: { type: target-ref, required: true }
+    credential: { type: secret-ref, required: true }
+  fixtures:
+    customer:
+      uses: synthetic-natural-person
+  steps:
+    - id: authenticate
+      uses: sep10.authenticate
+      with:
+        target: "${{ parameters.target }}"
+        credential: "${{ parameters.credential }}"
+    - id: initiate
+      uses: sep24.initiate-deposit
+      needs: [authenticate]
+    - id: interact
+      uses: sep24.complete-browser-flow
+      needs: [initiate]
+      with:
+        customer: "${{ fixtures.customer.id }}"
+      timeout: 8m
+    - id: correlate
+      uses: sep24.correlate-transaction
+      needs: [interact]
+  cleanup:
+    - id: destroy-browser
+      uses: browser.destroy-context
+      needs: [initiate]
+      always: true
+    - id: clean-transaction
+      uses: transfer.clean-fixture-transaction
+      needs: [initiate]
+      always: true
+  policy:
+    failOn: [critical, high]
+    maximumValue: "5.0000000"
+    maximumDuration: 12m
+    retainTraffic: 1d
+    allowedTargetRefs: ["${{ parameters.target }}"]

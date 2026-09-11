@@ -1,0 +1,34 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: scheduled-read-only-monitor
+  title: Read-only availability monitor
+  labels:
+    availability: planned
+    purpose: monitoring
+spec:
+  networks: [testnet]
+  requires:
+    seps: [1]
+    capabilities: [https-client]
+  parameters:
+    target: { type: target-ref, required: true }
+  steps:
+    - id: discover
+      uses: sep1.discover
+      with:
+        target: "${{ parameters.target }}"
+      retry:
+        maxAttempts: 2
+        initialDelay: 2s
+        maximumDelay: 5s
+        backoff: fixed
+    - id: assert-availability
+      uses: monitor.assert-capability-availability
+      needs: [discover]
+  policy:
+    failOn: [critical, high]
+    draftRules: omit
+    maximumDuration: 1m
+    retainTraffic: 1d
+    allowedTargetRefs: ["${{ parameters.target }}"]

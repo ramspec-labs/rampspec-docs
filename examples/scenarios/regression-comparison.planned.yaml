@@ -1,0 +1,33 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: regression-comparison
+  title: Compare report with an approved baseline
+  labels:
+    availability: planned
+    purpose: regression
+spec:
+  networks: [testnet]
+  requires:
+    capabilities: [report-verification]
+  parameters:
+    report: { type: fixture-ref, required: true }
+    baseline: { type: fixture-ref, required: true }
+  steps:
+    - id: verify-report
+      uses: report.verify
+      with:
+        report: "${{ parameters.report }}"
+    - id: verify-baseline
+      uses: report.verify
+      with:
+        report: "${{ parameters.baseline }}"
+    - id: compare
+      uses: report.compare-baseline
+      needs: [verify-report, verify-baseline]
+      with:
+        current: "${{ steps.verify-report.report }}"
+        baseline: "${{ steps.verify-baseline.report }}"
+  policy:
+    failOn: [critical, high]
+    maximumDuration: 2m

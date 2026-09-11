@@ -1,0 +1,32 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: evidence-verification
+  title: Verify a signed evidence bundle
+  labels:
+    availability: planned
+    purpose: evidence
+spec:
+  networks: [testnet]
+  requires:
+    capabilities: [report-verification]
+  parameters:
+    report: { type: fixture-ref, required: true }
+    verificationKey: { type: fixture-ref, required: true }
+  steps:
+    - id: canonicalize
+      uses: report.canonicalize
+      with:
+        report: "${{ parameters.report }}"
+    - id: verify-signature
+      uses: report.verify-signature
+      needs: [canonicalize]
+      with:
+        report: "${{ steps.canonicalize.report }}"
+        key: "${{ parameters.verificationKey }}"
+    - id: verify-artifacts
+      uses: evidence.verify-artifact-digests
+      needs: [verify-signature]
+  policy:
+    failOn: [critical, high, medium]
+    maximumDuration: 2m

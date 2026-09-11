@@ -1,0 +1,31 @@
+apiVersion: rampspec.dev/v1
+kind: Scenario
+metadata:
+  id: sep1-discovery
+  title: SEP-1 discovery baseline
+  labels:
+    availability: planned
+    protocol: sep1
+spec:
+  networks: [testnet]
+  requires:
+    seps: [1]
+    capabilities: [https-client]
+  parameters:
+    target:
+      type: target-ref
+      required: true
+  steps:
+    - id: discover
+      uses: sep1.discover
+      with:
+        target: "${{ parameters.target }}"
+    - id: validate
+      uses: sep1.validate-capabilities
+      needs: [discover]
+      with:
+        snapshot: "${{ steps.discover.snapshot }}"
+  policy:
+    failOn: [critical, high]
+    maximumDuration: 2m
+    allowedTargetRefs: ["${{ parameters.target }}"]
