@@ -1,0 +1,117 @@
+---
+title: "First SEP-1 run"
+description: "Prepare, execute, download, and independently verify a locked SEP-1 discovery report."
+keywords: ["SEP-1", "first run", "suite lock", "report verification"]
+---
+
+This workflow is the minimum evidence path for discovery: a verified testnet target, a pinned SEP-1 rule pack, an immutable suite lock, a terminal run, and a report whose content and signature are checked outside the execution service.
+
+<Warning>
+  The RampSpec CLI, SEP-1 rule pack, report schema, signing keys, and runtime
+  are not released. The workflow is complete as a documentation contract but is
+  not executable today. Do not substitute guessed flags, identifiers,
+  screenshots, or an unsigned example for the required clean-environment record.
+</Warning>
+
+## 1. Confirm compatible releases
+
+Start from a compatibility manifest that marks the backend, CLI distribution, schema bundle, SEP-1 rule pack, and runner available. Verify every artifact digest before installation. The manifest must bind the rule pack to the same Stellar protocol commit recorded by the suite lock.
+
+Stop if the manifest is planned, a component is unavailable, a digest differs, or migration notes do not cover the installed version. The current [release manifest](/reference/release-manifest) intentionally fails this prerequisite.
+
+## 2. Prepare a clean environment
+
+Use a new operating-system user, container, or ephemeral CI worker with no production credentials. Install only the pinned CLI and offline verifier, then record:
+
+- operating system and architecture;
+- runtime and CLI versions;
+- CLI package and verifier digests;
+- backend origin and tenant identifiers;
+- trusted report-signing key identifier and public key digest;
+- wall-clock synchronization source.
+
+Authenticate with a short-lived Maintainer credential scoped to one project. A discovery run needs no Stellar secret key, customer fixture, or asset balance.
+
+## 3. Select the target
+
+Use a target whose normalized home domain, Stellar testnet selection, ownership verification, and discovery-only policy are current. Recheck that the public runner may reach only the approved origin and safe redirect destinations. Follow [Target onboarding and ownership](/guides/target-onboarding) if any value is missing or expired.
+
+## 4. Discover SEP-1
+
+Invoke the released CLI discovery operation exactly as shown by the tagged CLI help. Capture the target identifier, discovery snapshot identifier, retrieval time, final TOML URL, body digest, redirect chain, and any infrastructure error.
+
+Discovery must make no authenticated business request and submit no Stellar transaction. A network, TLS, DNS, size, or parser failure is indeterminate rather than a conformance pass or failure.
+
+## 5. Create and inspect the suite lock
+
+Create a lock from the released minimal SEP-1 suite. Before execution, inspect and retain:
+
+| Locked input | Required value                                                                      |
+| ------------ | ----------------------------------------------------------------------------------- |
+| Target       | Stable target identifier, normalized home domain, network, and ownership timestamp. |
+| Standard     | SEP-1 version, upstream full commit, and source digest.                             |
+| Rules        | Rule-pack identifier, version, digest, and classifications.                         |
+| Scenario     | Scenario identifier, version, digest, and parameters.                               |
+| Runtime      | Backend, workflow, runner, and schema versions.                                     |
+| Discovery    | Snapshot identifier and content digest.                                             |
+| Policy       | Discovery-only mode, destination allowlist, timeouts, limits, and retention.        |
+
+Recreate the lock and require an identical canonical digest before proceeding. A floating tag, mutable suite, omitted rule, or changed discovery snapshot invalidates the lock.
+
+## 6. Start and wait for the run
+
+Use a unique idempotency key and the released CLI start operation. Record the returned run identifier and effective-configuration hash. Waiting may reconnect, but must not create another run.
+
+Accept only a documented terminal state: completed, failed, indeterminate, policy blocked, cancelled, or cleanup failed. A lost stream is not terminal; query the run by identifier. Cancel only through the released operation and wait for cleanup evidence.
+
+## 7. Download immutable evidence
+
+Download the canonical JSON report and its detached verification material to a new directory. Also retain the suite lock, release manifest, schema identifier, public key or trusted-key reference, and download response digest. HTML, PDF, JUnit, and SARIF files are derived views and are not verification inputs.
+
+The report must name the run, target, network, ownership timestamp, suite lock hash, spec commit, rule outcomes, skipped reasons, artifact hashes, creation time, signature algorithm, and key identifier. It must contain no bearer token, private key, customer data, or unredacted response.
+
+## 8. Verify independently
+
+Run the released offline verifier with network access disabled. It must:
+
+1. validate the report against the pinned report schema;
+2. reject duplicate keys, invalid encodings, unsupported algorithms, and unknown critical fields;
+3. remove only the schema-defined signature field from the signed payload;
+4. canonicalize that payload with RFC 8785 and hash it with SHA-256;
+5. compare every referenced artifact and suite-lock digest;
+6. resolve the trusted Ed25519 public key by exact key identifier and validity window;
+7. verify the signature over the specified canonical payload;
+8. confirm the report and lock reference compatible release and standards manifests.
+
+For a downloaded file, `Get-FileHash -Algorithm SHA256 .\report.json` records the transport file digest, but that command alone does not canonicalize the payload or verify its signature. Preserve the verifier's version, exit status, and machine-readable result.
+
+## 9. Interpret the result
+
+- **Passed** means every required selected rule passed under the recorded scope; it is not certification.
+- **Failed** means at least one selected rule produced a conformance finding; inspect its source, classification, evidence, and remediation.
+- **Indeterminate** means infrastructure or missing evidence prevented a decision; never treat it as passed.
+- **Policy blocked** means execution was denied before or during work; it is not a target protocol failure.
+- **Skipped** rules require explicit reasons and count against coverage when policy marks them required.
+- A valid signature proves integrity and signer possession, not correctness of observations or legal approval.
+
+## 10. Teardown
+
+Revoke the short-lived credential, confirm the runner workspace was destroyed, and remove local downloads according to retention policy. Preserve only approved redacted evidence, hashes, manifests, audit events, and the independently verified result. A teardown failure changes the run outcome and requires review.
+
+## Troubleshooting
+
+| Symptom                              | Check                                                                | Required response                                             |
+| ------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Target cannot be resolved or reached | DNS answers, address classification, TLS, allowlist, redirect chain. | Keep the result indeterminate; do not weaken egress controls. |
+| Suite lock changes between commands  | Versions, discovery digest, parameters, generated lock bytes.        | Stop and regenerate from pinned inputs.                       |
+| Wait command disconnects             | Query the recorded run identifier and event cursor.                  | Resume observation; do not start a duplicate run.             |
+| Report digest differs                | Source file, transfer, canonicalization version, artifact digests.   | Quarantine the artifact and download again.                   |
+| Signature is unknown or invalid      | Key identifier, validity interval, trust source, payload exclusions. | Reject the report; never bypass verification.                 |
+| Rules are skipped                    | Capabilities, fixture requirements, policy, and runner version.      | Resolve or document each reason before accepting coverage.    |
+| Cleanup is incomplete                | Runner status, credential revocation, retained artifacts.            | Block acceptance until cleanup is proven.                     |
+
+## Publication gate
+
+This page becomes an executable quickstart only when a fresh-environment CI job installs the tagged artifacts, runs the exact published commands against a controlled SEP-1 target, verifies the signed report offline, and tears down successfully. Link that record and replace release-gated prose with versioned command output; until then, label the workflow **Planned**.
+
+Use [Terminology and boundaries](/reference/terminology) when describing the result and [Standards baseline](/reference/standards-baseline) for the currently pinned SEP-1 source.

@@ -122,7 +122,11 @@
           },
           {
             "group": "Onboarding",
-            "pages": ["guides/organization-setup", "guides/target-onboarding"]
+            "pages": [
+              "guides/organization-setup",
+              "guides/target-onboarding",
+              "guides/first-sep1-run"
+            ]
           },
           {
             "group": "Maintainers",
