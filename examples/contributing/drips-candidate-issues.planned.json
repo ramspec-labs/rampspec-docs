@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "drips-wave-candidate-register",
+  "checkedAt": "2026-09-11",
+  "sourceUrls": [
+    "https://docs.drips.network/wave/maintainers/participating-in-a-wave/",
+    "https://docs.drips.network/wave/points-and-rewards/",
+    "https://docs.drips.network/wave/maintainers/points-budgets/"
+  ],
+  "program": null,
+  "repositoryBudget": null,
+  "organizationBudget": null,
+  "activePreMultiplierPoints": null,
+  "candidates": [
+    {
+      "repository": "rampspec-frontend",
+      "currentPaths": ["implementation.md"],
+      "outcome": "Implement one independently testable unit selected from the approved plan.",
+      "scope": [
+        "One frontend-owned behavior",
+        "Focused tests for that behavior"
+      ],
+      "outOfScope": [
+        "Backend behavior",
+        "Contract behavior",
+        "Documentation release"
+      ],
+      "acceptance": [
+        "Pinned toolchain and clean setup exist",
+        "Focused and full checks pass"
+      ],
+      "dependencies": [
+        "Foundational frontend implementation",
+        "Public repository",
+        "Drips program approval"
+      ],
+      "testnetFixture": null,
+      "assignmentOwner": "@Hallab7",
+      "primaryReviewer": null,
+      "backupReviewer": null,
+      "complexity": null,
+      "candidatePoints": null,
+      "budgetCheck": "blocked-unavailable",
+      "eligibility": "blocked",
+      "nominationStatus": "not-nominated",
+      "issueUrl": null,
+      "pullRequestClosure": "Closes #<issue-number>"
+    },
+    {
+      "repository": "rampspec-backend",
+      "currentPaths": ["implementation.md"],
+      "outcome": "Implement one independently testable unit selected from the approved plan.",
+      "scope": [
+        "One backend-owned behavior",
+        "Focused tests for that behavior"
+      ],
+      "outOfScope": [
+        "Frontend behavior",
+        "Contract behavior",
+        "Documentation release"
+      ],
+      "acceptance": [
+        "Pinned toolchain and clean setup exist",
+        "Focused and full checks pass"
+      ],
+      "dependencies": [
+        "Foundational backend implementation",
+        "Public repository",
+        "Drips program approval"
+      ],
+      "testnetFixture": null,
+      "assignmentOwner": "@Hallab7",
+      "primaryReviewer": null,
+      "backupReviewer": null,
+      "complexity": null,
+      "candidatePoints": null,
+      "budgetCheck": "blocked-unavailable",
+      "eligibility": "blocked",
+      "nominationStatus": "not-nominated",
+      "issueUrl": null,
+      "pullRequestClosure": "Closes #<issue-number>"
+    },
+    {
+      "repository": "rampspec-contracts",
+      "currentPaths": ["implementation.md"],
+      "outcome": "Implement one independently testable unit selected from the approved plan.",
+      "scope": [
+        "One contracts-owned behavior",
+        "Focused tests for that behavior"
+      ],
+      "outOfScope": [
+        "Frontend behavior",
+        "Backend behavior",
+        "Documentation release"
+      ],
+      "acceptance": [
+        "Pinned toolchain and clean setup exist",
+        "Focused and full checks pass"
+      ],
+      "dependencies": [
+        "Foundational contracts implementation",
+        "Public repository",
+        "Drips program approval"
+      ],
+      "testnetFixture": null,
+      "assignmentOwner": "@Hallab7",
+      "primaryReviewer": null,
+      "backupReviewer": null,
+      "complexity": null,
+      "candidatePoints": null,
+      "budgetCheck": "blocked-unavailable",
+      "eligibility": "blocked",
+      "nominationStatus": "not-nominated",
+      "issueUrl": null,
+      "pullRequestClosure": "Closes #<issue-number>"
+    },
+    {
+      "repository": "rampspec-docs",
+      "currentPaths": [
+        "implementation.md",
+        "guides/maintainers/drips-wave.mdx",
+        "examples/contributing/drips-candidate-issues.planned.json"
+      ],
+      "outcome": "Maintain the Wave readiness guide and validated candidate register.",
+      "scope": ["Drips maintainer guidance", "Candidate metadata validation"],
+      "outOfScope": [
+        "Drips application submission",
+        "Runtime implementation",
+        "Reward claims"
+      ],
+      "acceptance": [
+        "Content, snippets, links, spelling, tests, and Mintlify export pass"
+      ],
+      "dependencies": [
+        "Public repository",
+        "Drips program approval",
+        "Current dashboard budget"
+      ],
+      "testnetFixture": "not-applicable",
+      "assignmentOwner": "@Hallab7",
+      "primaryReviewer": "@Hallab7",
+      "backupReviewer": null,
+      "complexity": null,
+      "candidatePoints": null,
+      "budgetCheck": "blocked-unavailable",
+      "eligibility": "blocked",
+      "nominationStatus": "not-nominated",
+      "issueUrl": null,
+      "pullRequestClosure": "Closes #<issue-number>"
+    }
+  ],
+  "nominatedCount": 0,
+  "notice": "Planning evidence only. No repository, issue, points, reward, assignment, or program acceptance is claimed."
+}

@@ -251,7 +251,10 @@
           },
           {
             "group": "Maintainers",
-            "pages": ["guides/maintainers/spec-synchronization"]
+            "pages": [
+              "guides/maintainers/spec-synchronization",
+              "guides/maintainers/drips-wave"
+            ]
           }
         ]
       },

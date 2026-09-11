@@ -1,0 +1,84 @@
+---
+title: "Drips Wave maintainer workflow"
+description: "How RampSpec maintainers prepare bounded issues, check repository readiness and budgets, assign contributors, and review work."
+keywords: ["Drips Wave", "maintainers", "issues", "complexity", "points"]
+---
+
+RampSpec maintainers may nominate work to Drips Wave only after the repository and issue pass the checks below. A roadmap item or planned candidate is not a Wave issue, and documentation must not imply repository acceptance, contributor assignment, points, or rewards.
+
+<Warning>
+  All four RampSpec repositories are private and none has a recorded Drips Wave
+  approval. The frontend, backend, and contracts repositories contain plans
+  only. No current candidate is eligible for nomination.
+</Warning>
+
+## Current upstream baseline
+
+This guide was checked against the official [maintainer workflow](https://docs.drips.network/wave/maintainers/participating-in-a-wave/), [points and rewards](https://docs.drips.network/wave/points-and-rewards/), and [points budgets](https://docs.drips.network/wave/maintainers/points-budgets/) pages on **2026-09-11**. Drips rules, program availability, complexity, budgets, and deadlines can change; recheck all three pages and the active program in the Drips app immediately before applying a repository or adding an issue.
+
+At the recorded check, repositories had to be public, synced, applied to a relevant program, and approved before issues could be added. The listed complexity values were `Trivial` 100 points, `Medium` 150 points, and `High` 200 points. Per-repository and per-organization budgets used pre-multiplier points, counted active unresolved issues, and reset by Wave subject to rollover rules. These values are a dated observation, not a promise of points or payment.
+
+## Repository readiness gate
+
+A maintainer records all of the following before drafting nominations:
+
+| Check                     | Required evidence                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| Public, active repository | Public GitHub URL, default branch, license, recent substantive activity                   |
+| Program eligibility       | Relevant active Wave Program and current rules checked at a recorded timestamp            |
+| Program approval          | Drips dashboard record that the repository application is approved                        |
+| Contributor setup         | Reproducible clean setup, lock files, supported tools, and no private bootstrap knowledge |
+| Verification              | Focused tests, full tests, CI, and fixture commands that a contributor can run            |
+| Review capacity           | Named assignment owner, technical reviewer, backup reviewer, and response targets         |
+| Safety                    | Security policy, synthetic fixtures, secret handling, and controlled network boundaries   |
+| Budget                    | Current repository and organization usage plus proposed pre-multiplier points             |
+
+One failed or unknown check blocks nomination. Private access granted to a contributor does not satisfy a public-repository requirement.
+
+## One-outcome issue contract
+
+Each issue delivers one independently verifiable outcome. It contains:
+
+1. a concise problem and user-visible or maintainer-visible outcome;
+2. current repository paths and symbols confirmed against the default branch;
+3. explicit in-scope and out-of-scope lists;
+4. acceptance criteria mapped to exact focused and full test commands;
+5. security, privacy, signing, network, and synthetic-fixture constraints;
+6. documentation or generated-artifact requirements;
+7. all upstream issues, releases, fixtures, services, and cross-repository dependencies;
+8. an assignment owner, primary reviewer, backup reviewer, and expected response windows;
+9. a fair complexity rationale based on the work described, not the desired reward;
+10. a pull request requirement to include `Closes #<issue-number>`.
+
+Do not combine an API change, UI implementation, contract deployment, and documentation release into one issue. Split dependent outcomes, keep blocked work outside the program, and nominate only the first dependency-free unit.
+
+## Acceptance and test detail
+
+Acceptance criteria must be observable. Name files without dictating an unnecessary implementation, specify positive and negative behavior, and separate local, mocked, testnet, and pubnet evidence. Network work uses synthetic accounts and controlled targets. Testnet credentials and fixtures must already exist through the repository's documented provisioning path; contributors must not be asked to obtain undisclosed secrets.
+
+Required checks include the repository's focused tests, full CI-equivalent checks, `git diff --check`, secret scanning where configured, and relevant docs or generated-artifact validation. A skipped or unavailable check is a blocker unless the issue explicitly creates that check as its sole outcome.
+
+## Complexity and budget review
+
+Estimate complexity from code surface, prerequisite knowledge, test burden, review burden, and uncertainty. Use the current Drips definitions; do not inflate complexity to increase a possible payout. The maintainer records the current app value and its check time rather than relying on this guide's dated values.
+
+Before adding an issue, calculate:
+
+```text
+proposed repository usage = active repository pre-multiplier points + candidate points
+proposed organization usage = active organization pre-multiplier points + candidate points
+```
+
+Both values must be within the current dashboard budgets. Include unresolved rollover issues. A GitHub label does not bypass the checks and may default an issue to the lowest complexity; confirm the value in the Drips app.
+
+## Assignment and review service targets
+
+The issue names service targets before nomination. The default proposal is application triage within one business day, a substantive pull request review within two business days, and blocker responses within one business day. A maintainer may tighten these values for a short Wave but must not publish targets the team cannot meet.
+
+Assign only through the supported Drips or GitHub workflow. Keep scope changes in the issue, reassess complexity and budget before expanding work, and do not make contributors responsible for an undisclosed dependency. At completion, verify acceptance criteria and merge policy normally. Record the actual resolution state; do not mark incomplete work resolved solely to manufacture evidence.
+
+## Candidate register and nomination
+
+The [planned candidate register](/examples/contributing/drips-candidate-issues.planned.json) records the current four-repository assessment and example one-outcome work. Before nomination, replace every unknown with linked evidence, recheck paths on the default branch, allocate a real issue number, and rerun the readiness and budget gates.
+
+Only a record with `eligibility: eligible`, `nominationStatus: approved`, no blockers, current budget evidence, and a public issue URL may be added to the Wave. The current register intentionally nominates none.
