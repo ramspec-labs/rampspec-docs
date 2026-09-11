@@ -1,0 +1,92 @@
+---
+title: "Anchor Platform integration"
+description: "Connect an existing Anchor Platform deployment to RampSpec with pinned compatibility, private callbacks, scoped credentials, and a first locked suite."
+keywords:
+  ["Anchor Platform", "integration", "callbacks", "local runner", "suite lock"]
+---
+
+Integrate a non-production Anchor Platform environment only after the [reference environment](./reference-environment) and the same RampSpec compatibility line have passed. Start with read-only discovery and widen scope one capability at a time.
+
+<Warning>
+  The required RampSpec backend, runner, and reference artifacts are not
+  released, so this integration has not been validated against a pinned
+  deployment. Keep the status **Planned** and do not apply example identifiers
+  or guessed endpoints to a real anchor.
+</Warning>
+
+## Supported release policy
+
+Create an integration record that pins:
+
+- Anchor Platform release, source commit, configuration schema, and image digests;
+- RampSpec backend, runner, rule-pack, scenario, and schema releases;
+- Stellar network passphrase and allowed Horizon or RPC origins;
+- enabled SEP versions and any upstream draft or deprecation status;
+- business-server and event interface versions;
+- database migration level and browser image when interactive coverage is selected.
+
+The RampSpec [compatibility manifest](/reference/release-manifest) must list compatible component majors and migration notes. An unlisted Anchor Platform version, mutable container tag, unknown schema, or incompatible rule pack blocks onboarding rather than falling back to best effort.
+
+## 1. Define the deployment boundary
+
+Record the owner, environment, home domain, network, externally reachable SEP server, private Platform Server, business server, event service, payment observer, data stores, proxy, and egress points. Mark every component as managed by the anchor, its provider, Anchor Platform, or RampSpec.
+
+The Platform Server remains private. RampSpec never requires inbound control-plane access to an internal service. Private endpoints are reached only by an anchor-operated outbound local runner with an immutable destination allowlist.
+
+## 2. Configure callbacks and events
+
+Inventory each synchronous business-server callback and asynchronous event destination used by the enabled SEPs. For every interface, record method, path from the released upstream schema, authentication type, signing or verification key reference, timeout, retry policy, idempotency key, maximum body size, and redaction class.
+
+Use separate short-lived credentials for RampSpec fixtures. Verify signatures or JWTs before parsing business content, reject unexpected issuers and audiences, enforce expiry, and deduplicate retries without dropping distinct events. Callback URLs must be run-scoped or explicitly allowlisted; do not expose an unrestricted relay.
+
+The official [Anchor Platform architecture](https://developers.stellar.org/docs/platforms/anchor-platform/admin-guide/architecture) describes the business server, event service, payment observer, and private Platform Server roles. The pinned integration release remains authoritative for exact request schemas.
+
+## 3. Register the target and assets
+
+Create one target for one normalized home domain and network. Complete [ownership verification](/guides/target-onboarding) before any authenticated or stateful work. Compare the registered SEP list with the deployed `stellar.toml` and require an owner decision for every difference.
+
+For each asset, record the Stellar identifier, issuer or native designation, significant decimals, distribution and receiving account roles, enabled SEP operations, min/max amounts, fees, payment methods, countries, and linked off-chain identifiers. Define each corridor explicitly. Never infer a wildcard asset, method, or country from `/info`.
+
+## 4. Add secret references
+
+Register metadata that points to the anchor's secret provider; never copy values into RampSpec. Each reference identifies its project, target, runner, protocol purpose, allowed endpoint, version, expiration, rotation owner, and last validation time.
+
+Separate SEP-10 signing fixtures, API tokens, callback authentication, test account seeds, and report signing. The runner resolves values just in time and cannot return them to the control plane. A reference that is expired, too broad, unreadable, or backed by a production credential blocks the run.
+
+## 5. Connect the local runner
+
+Install the exact signed runner image or package from the release manifest on an isolated host. Register it with a one-time token, verify its identity and capabilities, and bind it to this organization and approved target set.
+
+The runner needs outbound access only to the RampSpec control endpoint, target SEP origin, explicitly named private callbacks when selected, approved secret provider, and pinned Stellar testnet data services. Deny arbitrary DNS, redirects outside policy, cloud metadata, local administration, Docker socket access, and unrelated private networks.
+
+Health evidence includes version, image digest, clock skew, egress policy digest, supported protocols, browser capability, available resources, and last heartbeat. Never lease a suite to a runner that cannot satisfy every locked capability.
+
+## 6. Discover and reconcile
+
+Run the passive discovery profile and retain the TOML digest, headers, redirects, resolved addresses, declared endpoints, accounts, assets, and SEP capabilities. Compare these observations with the integration record and the known-good reference deployment.
+
+Treat DNS, TLS, proxy, parser, timeout, and access failures as indeterminate. Treat mismatches as review items until the released rule pack classifies them. Discovery must not invoke business callbacks, create customers, authenticate, or move assets.
+
+## 7. Lock the first suite
+
+Begin with the minimal SEP-1 discovery suite. The suite lock records the target and ownership timestamp, network, discovery snapshot, spec commit, rule pack, scenario, runner, backend, schemas, limits, and redaction policy. Regenerate it twice and require an identical canonical digest.
+
+Review the mutation summary and require it to say none. Execute only after the owner accepts every discovered endpoint and asset. Independently verify the resulting report as described in [First SEP-1 run](/guides/first-sep1-run).
+
+Add SEP-10, SEP-12, transfer, quote, or interactive suites only in later reviewed locks with synthetic fixtures, explicit amounts, callback scope, and teardown assertions.
+
+## Integration acceptance
+
+Validation against the pinned reference deployment must prove:
+
+- supported versions are accepted and an unsupported version fails closed;
+- the private Platform Server is unreachable from the public runner;
+- valid callbacks and events authenticate, retry, and deduplicate as configured;
+- invalid, expired, replayed, oversized, and unexpected callback messages fail;
+- assets, corridors, and advertised SEPs match the target record;
+- secret values stay inside the local runner and are absent from evidence;
+- runner egress cannot reach an unapproved host;
+- discovery creates a deterministic lock and independently verified report;
+- cancellation, credential revocation, fixture deletion, and runner teardown are recorded.
+
+Until those checks pass against a tagged bundle, this page is a design contract rather than operational proof. Use [Test modes and network safety](/guides/test-modes) before expanding beyond discovery.

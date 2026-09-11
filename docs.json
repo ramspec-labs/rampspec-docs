@@ -131,7 +131,10 @@
           },
           {
             "group": "Anchor Platform",
-            "pages": ["guides/anchor-platform/reference-environment"]
+            "pages": [
+              "guides/anchor-platform/reference-environment",
+              "guides/anchor-platform/integration"
+            ]
           },
           {
             "group": "Maintainers",
