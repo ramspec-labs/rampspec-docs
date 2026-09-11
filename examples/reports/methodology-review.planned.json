@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "methodology-review",
+  "document": "/reports/methodology-and-limitations",
+  "documentCommit": null,
+  "status": "blocked",
+  "reviews": [
+    {
+      "area": "pilot",
+      "reviewer": null,
+      "status": "blocked-no-pilot",
+      "reviewedAt": null,
+      "evidenceUrl": "/roadmap",
+      "conflict": null,
+      "comments": []
+    },
+    {
+      "area": "protocol",
+      "reviewer": null,
+      "status": "blocked-unassigned",
+      "reviewedAt": null,
+      "evidenceUrl": "/governance/advisory-and-decisions",
+      "conflict": null,
+      "comments": []
+    },
+    {
+      "area": "security",
+      "reviewer": null,
+      "status": "blocked-unassigned",
+      "reviewedAt": null,
+      "evidenceUrl": "/security/threat-model",
+      "conflict": null,
+      "comments": []
+    },
+    {
+      "area": "product",
+      "reviewer": null,
+      "status": "blocked-no-runtime",
+      "reviewedAt": null,
+      "evidenceUrl": "/roadmap",
+      "conflict": null,
+      "comments": []
+    }
+  ],
+  "approvalCount": 0,
+  "requiredApprovalCount": 4,
+  "notice": "Planning record only. No methodology approval or production result is claimed."
+}

@@ -1,0 +1,101 @@
+---
+title: "Methodology and limitations"
+description: "How RampSpec sources rules, executes fixtures, calculates results, preserves evidence, and states what testing cannot prove."
+keywords: ["methodology", "limitations", "coverage", "evidence", "results"]
+---
+
+RampSpec results describe observations from a bounded rule pack, scenario, target, environment, and time. They are reproducible engineering evidence, not certification, legal advice, regulatory approval, security assurance, or proof that an integration will always behave the same way.
+
+<Warning>
+  The methodology contract is documented, but production rule and report models
+  do not yet exist. No pilot, protocol, security, or product approval has been
+  recorded. Current examples are planning artifacts rather than verified run
+  evidence.
+</Warning>
+
+## Reproducibility record
+
+A result is reproducible only when its report or attached manifest identifies:
+
+- runner, backend, rule-pack, schema, contracts, and documentation versions;
+- source commits, immutable tags, artifact hashes, and generator versions;
+- scenario ID and version, fixture IDs, parameters, and expected outcomes;
+- target identifier or privacy-preserving alias, environment, network, region, and mode;
+- configuration digest, allowed capabilities, clock source, and dependency versions;
+- start and completion timestamps, step attempts, raw evidence digests, and redaction policy;
+- scoring policy, gate policy, exclusions, exceptions, and indeterminate results;
+- report signer, signature algorithm, verification material, and superseding advisory where applicable.
+
+Secrets, identity documents, private keys, authentication tokens, unrestricted callback URLs, and unnecessary personal data are never reproducibility inputs. Store hashes, synthetic fixtures, redacted excerpts, or access-controlled references instead.
+
+## Rule sourcing
+
+Every stable rule has an ID, classification, testable assertion, applicability conditions, exclusions, source locator, pinned source revision, source excerpt or precise paraphrase, severity rationale, fixture set, and approval record. `MUST` and `SHOULD` assertions come from pinned normative SEP text. `SECURITY`, `INTEROP`, and `POLICY` assertions name their separate authority and are not described as SEP violations. `EXPERIMENTAL` assertions are opt-in and carry a review or expiry date.
+
+Source drift never silently changes a historical result. A new snapshot produces reviewed rule and fixture changes, migration notes, and a new rule-pack version. See [Standards baseline](/reference/standards-baseline) and [Rule classification](/governance/rule-classification).
+
+## Fixtures and environments
+
+Fixtures are versioned, synthetic where identity or funds would otherwise be involved, and labeled positive, negative, boundary, replay, timeout, cancellation, recovery, or interoperability. Each fixture records provenance, expected observation, setup, cleanup, supported environments, and whether it mutates remote state.
+
+| Environment                | What it can support                                             | What it cannot establish by itself                                   |
+| -------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Static validation          | Schema, syntax, navigation, deterministic transformation        | Runtime behavior or network interoperability                         |
+| Mocked/local               | Orchestration logic and controlled edge cases                   | Remote service, ledger, or production behavior                       |
+| Local Anchor Platform      | Version-specific integration and callback behavior              | Public reachability, testnet completion, or partner use              |
+| Stellar testnet            | Bounded network journeys with synthetic assets and accounts     | Pubnet readiness, real-customer operation, or sustained reliability  |
+| Stellar pubnet observation | Public read-only facts at a timestamp                           | Authorization to submit transactions or operate a production service |
+| Stellar pubnet submission  | Explicitly approved live mutation and resulting ledger evidence | Legal compliance, business correctness, or future reliability        |
+
+Results from different rows are not interchangeable. The report states every dependency outage or unavailable prerequisite and uses `indeterminate` rather than assigning a target failure.
+
+## Scoring and gates
+
+The rule engine records individual outcomes before calculating summaries. Supported outcome classes are pass, fail, skipped, not applicable, indeterminate, and error. A score discloses its numerator, denominator, weighting, excluded classes, rule-pack version, and rounding. Coverage discloses applicable rules, executed rules, unexecuted rules, and reasons.
+
+A gate is a named policy evaluated over results; it is not the result itself. The gate record includes selected severities and classifications, exception handling, freshness, environment, and fail-open or fail-closed behavior. Critical unknowns, invalid signatures, stale incompatible artifacts, and required indeterminate checks fail closed unless an approved policy explicitly says otherwise.
+
+Do not compare scores across different rule packs, environments, target scopes, or exception sets without a normalization method. A high score cannot cancel a critical failure.
+
+## Exceptions and exclusions
+
+An exception names the rule, target, justification, approver, creation and expiry dates, compensating controls, and affected gates. It does not rewrite the underlying result. Expired, missing, or scope-mismatched exceptions are ignored. Exclusions are declared before execution when possible and remain visible in coverage.
+
+Known exclusions include behavior outside the pinned SEP set, business and legal obligations, undisclosed target systems, real-customer identity flows, clients or assets that are not configured, unsupported networks, inaccessible private infrastructure, and dependencies not represented by controlled fixtures.
+
+## Evidence integrity
+
+Reports bind normalized findings, event order, source and artifact digests, environment metadata, redaction metadata, and verification instructions. Verification checks schema validity, digests, signatures, signer authorization at the relevant time, compatible release metadata, and any advisory or revocation state. A valid signature proves integrity and signer possession; it does not prove the observations were complete, unbiased, lawfully obtained, or correct.
+
+Raw evidence is retained under the documented classification and deletion policy. Redaction creates a new derivative with its own digest and relationship to the source; it never changes signed source evidence in place. Missing evidence, broken verification, or an unknown signer makes the affected claim unverifiable.
+
+## False positives and disputes
+
+A disputed finding preserves the original report. The reporter provides the rule ID, pinned source, target scope, fixture, minimal redacted evidence, and proposed alternate interpretation. Maintainers reproduce the result, review applicability and severity separately, and resolve it as confirmed, narrowed, reclassified, deprecated, or corrected. Sensitive disputes follow private disclosure rules.
+
+Corrections ship through an advisory and replacement release. Historical reports remain available with their original interpretation and a link to the advisory. See [Advisory and decision operations](/governance/advisory-and-decisions).
+
+## Threat boundaries
+
+The runner assumes its host, release artifacts, trust roots, and configured secret provider are administered according to the documented threat model. Testing cannot rule out a compromised host, malicious dependency, falsified external service, undisclosed target behavior, social engineering, insider action, future protocol change, or vulnerability outside executed paths.
+
+Network access, signing, callback delivery, browser interaction, identity data, and multi-tenant storage each add separate trust boundaries. A test covers only the declared boundary and capabilities. It does not authorize broader probing or transactions.
+
+## What results do not prove
+
+A RampSpec result does not prove:
+
+- SDF, SCF, regulator, auditor, wallet, anchor, or partner endorsement;
+- legal, licensing, sanctions, KYC, AML, privacy, or regulatory compliance;
+- absence of vulnerabilities or fraud;
+- correctness of untested clients, assets, corridors, roles, or states;
+- production readiness from local, mocked, or testnet execution;
+- continued behavior after configuration, dependency, rule, or protocol changes;
+- adoption, transaction volume, time saved, or ecosystem impact without separate measured evidence;
+- complete conformance when checks were skipped, excluded, indeterminate, or outside the pinned rule inventory.
+
+## Review and current status
+
+Pilot, protocol, security, and product reviewers must each approve the exact public wording and scope. The [planned methodology review](/examples/reports/methodology-review.planned.json) records those independent decisions, conflicts, comments, and evidence. No role is silently replaced by repository administration.
+
+The documentation-side methodology is implemented. Its exit check remains blocked until production rule/report artifacts exist and all four named review areas approve the wording.
