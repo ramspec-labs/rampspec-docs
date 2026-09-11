@@ -1,0 +1,28 @@
+---
+title: "Redaction incident"
+description: "Stop and remediate sensitive data that crossed the runner, artifact, report, telemetry, export, or sharing boundary."
+---
+
+<Warning>
+  No dated redaction incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on prohibited-data/canary finding, raw secret/PII/private target in artifact/report/export/log/trace/screenshot/notification/publication, redaction-policy mismatch, or scanner/filter failure. Impact may include tenant/customer exposure and invalid evidence/public commitments.
+
+## Containment
+
+Stop affected capture/upload/report/export/share/telemetry pipeline, revoke URLs/grants/caches and contaminated credentials, quarantine exact objects under privacy role, disable public indexing/notifications/evidence publication, preserve safe digests/lineage/access logs, and identify downstream derivatives/recipients/backups.
+
+## Recovery
+
+Fix and version redaction/scanner/schema, reprocess only from authorized source or rerun with synthetic data, create new report/export IDs rather than mutate signed evidence, delete contaminated copies or apply legal hold, rotate secrets, notify recipients to delete, and supersede/revoke on-chain reference when policy requires.
+
+## Verification
+
+Scan source and all artifacts/derivatives/caches/CDN/search/notifications/telemetry/support/backups, prove access denial/deletion or hold, validate exact/transformed/nested/image/archive canaries, verify new report/signature/digest, review public/partner downloads, and confirm no raw fallback path.
+
+## Communication, owner, and exercise
+
+Privacy lead commands with security, data owner, report/runner/observability and legal. Notices state data class/time/recipients/actions without reproducing data; follow contractual/regulatory deadlines. Exercise quarterly for HTTP, screenshot, trace, export, and public-share cases; status: **not exercised**.

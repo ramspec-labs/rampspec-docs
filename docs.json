@@ -205,6 +205,30 @@
             ]
           },
           {
+            "group": "Incident Runbooks",
+            "pages": [
+              "operations/incidents/index",
+              "operations/incidents/api",
+              "operations/incidents/database",
+              "operations/incidents/workflow",
+              "operations/incidents/runner",
+              "operations/incidents/duplicate-journey",
+              "operations/incidents/pubnet-attempt",
+              "operations/incidents/signing-key",
+              "operations/incidents/secret-exposure",
+              "operations/incidents/redaction",
+              "operations/incidents/tenant-isolation",
+              "operations/incidents/abuse",
+              "operations/incidents/callback",
+              "operations/incidents/stellar-network",
+              "operations/incidents/evidence",
+              "operations/incidents/spec-sync",
+              "operations/incidents/dependency",
+              "operations/incidents/github",
+              "operations/incidents/regional-restore"
+            ]
+          },
+          {
             "group": "Integrations",
             "pages": [
               "guides/integrations/github-ci",

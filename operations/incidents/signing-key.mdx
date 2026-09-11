@@ -1,0 +1,28 @@
+---
+title: "Report-signing key incident"
+description: "Contain report-signing key compromise, misuse, outage, or trust-set errors and review affected signatures."
+---
+
+<Warning>
+  No dated signing-key incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on unauthorized KMS use, key export/exposure, wrong tenant/purpose/digest signing, abnormal rate, unknown key-set change, failed signature surge, key disable/loss, or provider compromise. Reports may be forged, unverifiable, or unavailable for signing.
+
+## Containment
+
+Disable signing and publication, baseline updates, and gates that require it; deny affected key/workload policies, revoke sessions/credentials, preserve KMS/audit/report digest evidence, publish a safe verifier warning through an independent trusted channel, and keep unsigned reports clearly unverified. Do not delete key history.
+
+## Recovery
+
+Determine affected key/time/scope/reports, rotate under dual control, update signed trust set/release manifest, fix workload/purpose policy, reverify reports/artifacts, and apply documented revocation cutoff. Re-sign only from verified canonical bytes with a new signature record; never mutate the old report/signature invisibly.
+
+## Verification
+
+Test old-key denial, new-key purpose/scope, valid rotation-history verification, revoked/unknown/bad signatures, cross-tenant/wrong-state signing denial, verifier offline trust refresh, affected public/share/baseline/evidence status, and audit completeness.
+
+## Communication, owner, and exercise
+
+Security/cryptography owner leads with report, privacy/legal, product, and evidence owners. Advisory states key ID/fingerprint, affected signing interval/releases/report IDs or discovery method, verification impact, replacement trust-set digest, required action, and next update. Exercise semiannually and on KMS/signing changes; status: **not exercised**.

@@ -1,0 +1,28 @@
+---
+title: "Workflow incident"
+description: "Recover Temporal workflows, workers, queues, timers, and activities without duplicating side effects."
+---
+
+<Warning>
+  No dated workflow incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on Temporal unavailability/history errors, nondeterministic replay, task backlog/age, stuck timers, incompatible worker build, repeated activity failures, or cancellation/cleanup failure. Runs may be delayed, blocked, indeterminate, or have unknown external effects.
+
+## Containment
+
+Pause new admissions/schedules for affected task queues, freeze worker/deploy/config changes, retain compatible workers, stop retry for unknown side-effect activities, preserve history/task evidence, and keep safe cleanup/report access. Do not reset/terminate histories broadly or mark target failures.
+
+## Recovery
+
+Restore service/capacity or deploy the verified compatible worker; use released workflow versioning/reset procedure only for named histories. Reconcile every pending payment/customer/callback/sign/evidence activity against target/ledger/delivery state before retry, then drain backlog with tenant fairness and dependency limits.
+
+## Verification
+
+Replay affected histories deterministically, verify sequence/state/idempotency/timers/signals/cancellation/cleanup, compare report/run state, prove no duplicate side effect, run long-wait/callback/restart synthetic cases, and confirm queue age/objectives recover.
+
+## Communication, owner, and exercise
+
+Workflow owner leads with affected protocol/runner/database teams. Updates identify delayed run classes, safe cancellation/retry guidance, unknown actions, cleanup status, backlog estimate, and next update. Exercise quarterly and for worker/Temporal/workflow compatibility changes; status: **not exercised**.

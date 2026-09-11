@@ -1,0 +1,28 @@
+---
+title: "API incident"
+description: "Contain and recover RampSpec API availability, latency, correctness, authentication, and authorization incidents."
+---
+
+<Warning>
+  No dated API incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on objective burn, elevated 5xx/timeouts/latency, auth/policy mismatch, rate-limit failure, malformed responses, or edge/API release regression. Impact includes unavailable or incorrect tenant operations, delayed runs, and possible authorization/integrity risk; target conformance is not inferred.
+
+## Containment
+
+Freeze deploy/config/migration changes, identify edge/API/dependency and release/config scope, block affected write routes or shift to read-only maintenance, revoke suspect identity/session paths, preserve report reads/cleanup/cancellation, and rate-limit abusive traffic. Never bypass auth, tenant checks, validation, or WAF to restore availability.
+
+## Recovery
+
+Correct edge routing/capacity/dependency or roll back only to schema/workflow-compatible verified artifacts; otherwise forward-fix. Reconcile idempotency records and accepted run/report/integration writes before replay. Restore canary then bounded traffic while monitoring errors/latency/saturation.
+
+## Verification
+
+Pass health/readiness, authenticated/unauthenticated/forbidden/two-tenant API tests, OpenAPI/problem/pagination/idempotency checks, synthetic create/cancel/report path, redaction/audit checks, and objective recovery. Confirm no duplicate run or lost accepted request.
+
+## Communication, owner, and exercise
+
+Platform API owner leads; identity, database, workflow, security/privacy, and customer support review as applicable. Updates state affected routes/regions/time, read/write mode, delayed/failed requests, safe retry guidance, and next update. Exercise quarterly after release and on auth/edge/API-major change; status: **not exercised**.

@@ -1,0 +1,28 @@
+---
+title: "Dependency and supply-chain incident"
+description: "Contain compromised, vulnerable, unavailable, or substituted source, package, action, image, toolchain, provider, or build artifact."
+---
+
+<Warning>
+  No dated dependency incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on advisory/malware, signature/provenance/SBOM/digest mismatch, registry/source compromise, malicious update, look-alike package, CI action change, reproducibility failure, provider outage, or deployed artifact not in manifest. Impact may include code execution, secrets/data exposure, false evidence, or unavailable builds/runtime.
+
+## Containment
+
+Block builds/releases/deploy/import and affected runtime feature, quarantine artifacts/caches/runners, revoke credentials/tokens/signing keys that touched compromised systems, pin/deny dependency/digest/provider, preserve manifests/SBOM/provenance/log digests, and assess every repository/environment/tenant. Do not rebuild from the same untrusted cache.
+
+## Recovery
+
+Obtain reviewed clean source, patch/remove/replace and lock dependency, rotate exposed credentials, reproduce artifacts on clean builders, issue signed new release/manifest/advisory, redeploy compatible components, scan data/actions, and use alternate provider only through reviewed identity/config/integrity path.
+
+## Verification
+
+Verify source/tag/commit/signatures, lock graph, licenses/advisories/malware, SBOM/provenance, two clean builds (WASM byte-identical), image/package/schema/binding/docs digests, secret canaries, tests, deployed manifests, and old artifact denial/removal.
+
+## Communication, owner, and exercise
+
+Security/release owner leads with all affected repository/service owners and legal. Advisory lists dependency/artifact/version/digest, impact/prerequisites, affected/safe releases, credential/user actions, evidence, and disclosure coordination. Exercise annually and after build/registry/provider changes; status: **not exercised**.

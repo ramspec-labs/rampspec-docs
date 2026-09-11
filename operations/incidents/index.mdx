@@ -1,0 +1,56 @@
+---
+title: "Incident runbooks"
+description: "Owned containment, recovery, verification, communication, and exercise requirements for RampSpec operational incidents."
+keywords: ["incident", "runbook", "response", "exercise"]
+---
+
+Use these runbooks only with the released deployment inventory, dashboards, access paths, and change procedures. Safety, evidence integrity, tenant isolation, cleanup, report reads, and audit preservation take priority over quickly restoring all writes.
+
+<Warning>
+  No production deployment, on-call roster, alert routing, or dated exercise
+  evidence exists. Every runbook is **Planned** and must be rehearsed before
+  production use.
+</Warning>
+
+## Common command structure
+
+1. acknowledge the alert and open one incident record with UTC timeline;
+2. assign incident commander, technical lead, communications lead, scribe, and security/privacy/legal roles as needed;
+3. verify environment, tenant scope, release/config/region, affected dependency, and whether evidence/side effects are trustworthy;
+4. freeze deploys, migrations, key/config changes, and risky retries that could expand impact;
+5. apply the runbook's narrow containment with actor/reason/time and preserve cleanup/report/revocation access when safe;
+6. recover through reviewed artifacts/procedures, reconciling unknown side effects before retry;
+7. pass explicit technical, security/privacy, tenant, evidence, and user-journey verification before restoring traffic;
+8. communicate confirmed impact and next update without secrets, personal data, private targets, or unsupported assurances;
+9. close temporary access/holds/overrides, capture measured outcomes, and create owned corrective actions.
+
+Severity is based on confirmed/potential customer, security/privacy, financial/pubnet, integrity, availability, and blast-radius impact. Anyone may escalate; only the incident commander lowers severity with recorded evidence.
+
+## Runbook set
+
+| Incident                                 | Primary purpose                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------- |
+| [API](./api)                             | Restore safe API operation without bypassing authorization/rate limits    |
+| [Database](./database)                   | Contain corruption/unavailability and recover consistent relational state |
+| [Workflow](./workflow)                   | Preserve deterministic durable workflows and reconcile activities         |
+| [Runner](./runner)                       | Quarantine compromised/unhealthy runner capacity and evidence             |
+| [Duplicate journey](./duplicate-journey) | Stop and reconcile repeated payment/customer/signing side effects         |
+| [Pubnet attempt](./pubnet-attempt)       | Stop unauthorized live-network observation/submission                     |
+| [Signing key](./signing-key)             | Suspend forged-report risk and rotate/review trust history                |
+| [Secret exposure](./secret-exposure)     | Revoke exposed credentials and prove downstream cleanup                   |
+| [Redaction](./redaction)                 | Stop sensitive artifact/telemetry propagation and delete/quarantine       |
+| [Tenant isolation](./tenant-isolation)   | Deny cross-tenant access and assess every affected data path              |
+| [Abuse](./abuse)                         | Stop unauthorized scanning, load, or target harm                          |
+| [Callback](./callback)                   | Handle forgery/replay/loss/reordering without duplicate state             |
+| [Stellar network](./stellar-network)     | Separate Horizon/RPC/network failures from target results                 |
+| [Evidence](./evidence)                   | Stop incorrect Soroban claims/writes and preserve ledger truth            |
+| [Spec synchronization](./spec-sync)      | Quarantine bad upstream snapshots/rules and affected suites/reports       |
+| [Dependency](./dependency)               | Contain compromised/unavailable build or runtime dependency               |
+| [GitHub](./github)                       | Disable forged/mis-scoped triggers/checks and revoke App access           |
+| [Regional restore](./regional-restore)   | Fence the old region and restore a consistent control plane               |
+
+## Exercise record
+
+Each rehearsal records runbook/version, date, environment/release/config, scenario/fault injection, participants/roles, detection/acknowledgement/containment/recovery/verification times, objective result, communications sent, access/override cleanup, gaps/manual steps, evidence links/digests, and corrective owners/dates. "Tabletop only" is distinct from a technical recovery exercise.
+
+The release gate requires a dated passing record for every page and no undocumented critical step. Until then, the corresponding production capability remains blocked or explicitly risk-accepted by authorized governance.

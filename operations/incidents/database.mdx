@@ -1,0 +1,28 @@
+---
+title: "Database incident"
+description: "Contain corruption or unavailability and restore consistent RampSpec relational state."
+---
+
+<Warning>
+  No dated database incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on availability/replication/connection objective breach, corruption/checksum/constraint failure, accidental mutation/deletion, storage exhaustion, or migration drift/failure. Impact may include unavailable control operations, inconsistent tenant/run/report state, or data loss; caches are not authoritative substitutes.
+
+## Containment
+
+Stop deploys/migrations and unsafe writers/schedules, revoke suspect database access, preserve read-only access only if integrity is known, capture logs/replication/backup markers, and identify earliest bad transaction plus affected tables/tenants/workflows/objects. Do not fail over or restore until split-brain and consistency risks are understood.
+
+## Recovery
+
+Fix capacity/connection for integrity-safe outages; otherwise follow [database recovery](/operations/database-backup-and-disaster-recovery) into isolation, select a point-in-time/snapshot, restore and reconcile Temporal/objects/ledger, then fence old writer. Use published migration rollback only when compatible; otherwise forward-fix.
+
+## Verification
+
+Verify engine/schema/migration checksums, constraints/count/digest samples, tenant links, report/artifact/signature relationships, active workflow/side-effect reconciliation, backup resumption, two-tenant tests, and synthetic SEP-1. Measure actual data loss and recovery time.
+
+## Communication, owner, and exercise
+
+Database owner leads with workflow, application, security/privacy, and incident commander. State affected window/tenants/functions, confirmed versus possible loss/duplicates, service mode, recovery point, user action, and next update. Exercise quarterly and before supporting a new database/migration path; status: **not exercised**.

@@ -1,0 +1,28 @@
+---
+title: "Regional restore incident"
+description: "Fence a failed region and restore consistent RampSpec control, workflow, object, key, runner, and evidence state."
+---
+
+<Warning>
+  No dated regional-restore exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on regional cloud/network/store/KMS/cluster loss or integrity event requiring failover. Impact may include unavailable control plane, delayed/unknown workflows and side effects, stale replicas, lost writes/artifacts, and risk of two active writers.
+
+## Containment
+
+Declare disaster; freeze deploy/migration/config/key changes; stop admissions/schedules/integrations/evidence/pubnet; fence old-region ingress, identities, queues, database writes, workflow namespace, object writes, signers, runners, and DNS changes; preserve report reads/cleanup only if trusted; establish last consistent component points.
+
+## Recovery
+
+Follow [disaster recovery](/operations/database-backup-and-disaster-recovery): select point under incident/database/workflow/security approval, rebuild isolated infrastructure, restore KMS access then PostgreSQL/Temporal/objects, rebuild Redis/indexes/ledger view, reconcile every unknown external effect, verify, enable read-only then bounded writes/testnet, and shift DNS gradually.
+
+## Verification
+
+Prove old-region fencing/no split brain, selected point and measured loss, tenant/auth/privacy/integrity, schema/workflow replay, object/report/signature, keys/secrets, schedules/deliveries disabled, runner/network isolation, no duplicate side effects, backup/replication resumed, synthetic SEP-1, and measured recovery time.
+
+## Communication, owner, and exercise
+
+Incident commander leads with infrastructure, database, workflow, security/privacy, product/support/legal and providers. Updates state regions/service modes, confirmed/possible data loss/duplicates, recovery point/time, delayed runs and user action without unsupported assurances. Exercise quarterly in production-like staging; status: **not exercised**.

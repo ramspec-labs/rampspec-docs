@@ -1,0 +1,29 @@
+---
+title: "Horizon, RPC, and Stellar network incident"
+description: "Separate Stellar provider or network failure from target behavior and recover safe observation or submission."
+---
+
+<Warning>
+  No dated Stellar-network incident exercise exists; this runbook is
+  **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on Horizon/RPC availability/latency/errors, stale/divergent ledger, wrong passphrase/network, malformed XDR, simulation/submission uncertainty, ingestion gap/reorganization, or provider compromise. Ledger correlation/evidence may be delayed or untrusted; target results become infrastructure-indeterminate where required.
+
+## Containment
+
+Stop new submissions/evidence writes and affected workflows/schedules, activate pubnet kill switch when relevant, remove suspect endpoint from allowlist, preserve request/response digests/ledger/provider/release context, and prevent automatic failover across network/passphrase. Continue verified report reads.
+
+## Recovery
+
+Confirm network health from independent trusted sources/endpoints, verify passphrase/genesis/provider identity and latest finalized ledger, reconcile every unknown transaction by hash/source sequence/state, restore from reviewed endpoint/config, backfill bounded ledger range, and resume observation before simulation/submission.
+
+## Verification
+
+Compare independent ledger headers/transactions/events, validate XDR/network/code hash, prove no duplicate submission, fill index gaps without duplicate events, run synthetic testnet observe/simulate/submit under caps, and confirm failure classifications/reports/objectives.
+
+## Communication, owner, and exercise
+
+Stellar/platform owner leads with protocol/evidence/security and target owners. Updates distinguish provider, network, RampSpec, and target impact; state networks/ledgers/transactions safely, submission disablement, and user retry guidance. Exercise semiannually and on provider/SDK/network config changes; status: **not exercised**.

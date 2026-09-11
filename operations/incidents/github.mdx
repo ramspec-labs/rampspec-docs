@@ -1,0 +1,29 @@
+---
+title: "GitHub integration incident"
+description: "Contain GitHub App compromise, forged events, permission drift, wrong mappings, leaked keys, or incorrect checks."
+---
+
+<Warning>
+  No dated GitHub integration incident exercise exists; this runbook is
+  **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on App/private/webhook key exposure, invalid/replay webhook accepted, permission/event drift, unauthorized installation/mapping, fork secret/stateful run, wrong repository/commit check, duplicate/missing check, API abuse/rate outage, or compromised action. Release gates and target runs may be unsafe or misleading.
+
+## Containment
+
+Disable integration triggers/check writes and affected mappings, revoke App/install/service tokens and rotate private/webhook keys, uninstall/suspend affected installations when needed, stop queued stateful/pubnet work, remove compromised workflow/action, preserve delivery/mapping/check/run/audit digests, and keep reports explicitly separate from GitHub status.
+
+## Recovery
+
+Verify App owner/ID/manifest/permissions/events/installations/repositories, re-register/rotate through controlled setup, correct immutable mapping/workflow/action pins, reconcile each delivery/run/report/check without duplicate work, republish accurate check result, and require installation-owner approval for permission changes.
+
+## Verification
+
+Pass valid/tampered/replay/rotation webhooks, selected-repo and role binding, fork/untrusted-code isolation, protected environment, one suite/commit check, annotation paging and duplicate removal, rate/outage retry, indeterminate mapping, old-token/key denial, removal/uninstall/deletion, and reference repositories.
+
+## Communication, owner, and exercise
+
+Integration/security owner leads with repository/target owners and release/support. State affected App/installations/repos/commits/check names/time, whether secrets or runs were exposed, safe gate/manual verification action, rotation/removal, and next update. Exercise quarterly and after App/workflow/permission changes; status: **not exercised**.

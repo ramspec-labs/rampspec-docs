@@ -1,0 +1,28 @@
+---
+title: "Abuse and unauthorized scanning incident"
+description: "Stop target scanning, resource abuse, denial of service, malicious fixtures, or policy circumvention."
+---
+
+<Warning>
+  No dated abuse incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on ownership/policy bypass attempts, high destination/domain/port fan-out, SSRF/rebinding/redirect signal, quota evasion, credential stuffing, malicious fixture/scenario, target complaint, unexpected traffic/value, or platform saturation. Impact includes third-party harm, data/secret exposure, cost, and availability loss.
+
+## Containment
+
+Activate global/tenant/target/mode kill switch, stop leases/schedules/integrations, revoke actor/service/runner credentials, block destinations/egress/IP/account safely, retain rate/policy/network/audit evidence, protect cleanup/report reads, and contact target/security/legal as severity requires. Avoid broad blocking that hides an active compromise.
+
+## Recovery
+
+Verify target ownership and actor history, enumerate destinations/actions/value/data, reconcile target/ledger side effects, correct auth/policy/SSRF/rate/runner controls, clean fixtures, restore capacity with stricter quotas, and re-enable only after the owner approves again. Do not convert blocked scans into findings about the target.
+
+## Verification
+
+Run ownership expiry/challenge, two-tenant quota, IPv4/IPv6/private/metadata/redirect/rebinding, port/scheme, destination mutation, schedule/parallel/burst, runner egress, pubnet/value, and kill-switch tests; confirm complaint/action closure and no queued retry.
+
+## Communication, owner, and exercise
+
+Abuse/security owner leads with platform, target owner, privacy/legal/support. State observed sources/destinations/actions/window/containment and contact path without enabling bypass or exposing targets. Exercise quarterly and after ownership/policy/egress changes; status: **not exercised**.

@@ -1,0 +1,28 @@
+---
+title: "Runner incident"
+description: "Quarantine compromised, isolated, unavailable, or incorrect RampSpec runners and their evidence."
+---
+
+<Warning>
+  No dated runner incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on sandbox/egress/policy escape, wrong image/identity/capability, secret canary, cross-job residue, compromised host, heartbeat/capacity failure, unexpected destination, or malformed evidence. Affected runs/evidence are untrusted or delayed; target conformance is indeterminate.
+
+## Containment
+
+Stop new leases to runner/pool/image/cluster, terminate/quarantine jobs and evidence, revoke workload/pairing credentials and artifact access, block egress, preserve node/job/image/network/audit digests, and notify local-runner owner. Continue cleanup only from a separately trusted path.
+
+## Recovery
+
+Replace compromised nodes/images/credentials from verified release, remove persistent state, patch admission/network/policy, re-register local runner, and reconcile side effects. Never return a quarantined runner to service by restart alone. Rerun only after target/ledger state and fixture cleanup are known.
+
+## Verification
+
+Verify image signature/digest, non-root/read-only/no-host privileges, namespace/system-call/resource/network limits, per-job identity/storage, secret isolation/redaction, residue/escape/egress tests, two-tenant leases, synthetic run/report/cleanup, and capacity/objectives.
+
+## Communication, owner, and exercise
+
+Runner/platform security owner leads; local operator and protocol/privacy owners participate. State affected runner/image/time/runs, evidence trust, credential rotation, side-effect/cleanup status, and rerun guidance without private network details. Exercise quarterly and on runtime/cluster/image change; status: **not exercised**.

@@ -1,0 +1,28 @@
+---
+title: "Tenant-isolation incident"
+description: "Contain suspected cross-organization authorization, storage, cache, queue, artifact, or integration access."
+---
+
+<Warning>
+  No dated tenant-isolation exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on cross-tenant object response, identifier/enumeration leak, wrong organization in job/cache/event/artifact/check/webhook, row-policy failure, unauthorized access alert, or mismatched audit context. Treat potential data/control exposure as security-critical until bounded.
+
+## Containment
+
+Disable affected endpoint/worker/cache/integration/share path, revoke relevant sessions/service/runner credentials, stop queues and cache reads/writes in scope, preserve access/query/object/job/audit digests, apply broad read-only mode if scope is unknown, and prevent logs/support from exposing another tenant.
+
+## Recovery
+
+Identify authorization/data-layer root cause and all resources/tenants/time/actors, purge or partition caches, cancel/move misrouted jobs without replay, correct ownership keys/policies, rotate exposed secrets/links, restore objects/rows from verified source if mutated, and deploy reviewed fix with no insecure compatibility fallback.
+
+## Verification
+
+Run exhaustive two-tenant read/write/list/search/cache/job/SSE/artifact/report/integration/runner tests, direct database/object policy checks, audit correlation, negative ID enumeration, affected access review, deletion/rotation, and synthetic end-to-end runs for both tenants.
+
+## Communication, owner, and exercise
+
+Security incident commander and authorization owner lead with privacy/legal/data/product. Notify affected organizations separately with confirmed data/actions/time/user steps; never reveal another tenant's identity/data. Exercise quarterly and after auth/data/cache changes; status: **not exercised**.

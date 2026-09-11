@@ -1,0 +1,28 @@
+---
+title: "Duplicate journey incident"
+description: "Stop and reconcile duplicate customer, transaction, payment, payout, callback, or signing effects."
+---
+
+<Warning>
+  No dated duplicate-journey exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on reused/parallel logical run, duplicate idempotency key failure, repeated transaction/payment/payout/customer operation, callback replay effect, or unknown timeout followed by retry. Impact may include funds movement, repeated identity records, rate/fee cost, target harm, and invalid evidence.
+
+## Containment
+
+Stop affected run/schedule/queue/credential and all automatic retries, enable value/network kill switches as needed, preserve cleanup and read/reconciliation access, identify logical action/idempotency/attempt/target/ledger IDs, and notify target/payment owner. Do not delete duplicates before evidence is captured.
+
+## Recovery
+
+Query authenticated target state and Horizon/RPC transaction/account state, classify each attempt as applied/not applied/unknown, complete provider-approved cancel/refund/reversal or SEP-12 cleanup, correct idempotency/retry/lease logic, and create a new run only after final state. Never submit another payment to “test” uncertainty.
+
+## Verification
+
+Prove one intended terminal business effect, balances/fees/destinations, customer/transaction state, callback history, cleanup/refund, no queued retry, corrected parallel/timeout/replay tests, report marked corrected/indeterminate as appropriate, and affected baselines/public evidence reviewed.
+
+## Communication, owner, and exercise
+
+Protocol journey owner leads with target owner, Stellar/payments, security, finance/legal as required. State amounts/assets/network/transactions/customers using restricted channels, confirmed/unknown effects, remediation and next update; public updates omit private identifiers. Exercise semiannually and after idempotency/workflow changes; status: **not exercised**.

@@ -1,0 +1,29 @@
+---
+title: "Soroban evidence incident"
+description: "Contain wrong deployment, attestor, commitment, transaction, event, status, TTL, admin, or upgrade behavior."
+---
+
+<Warning>
+  No dated Soroban-evidence incident exercise exists; this runbook is
+  **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on code/spec/manifest hash mismatch, unauthorized/disabled attestor, wrong commitment/count/status/network, unknown/failed duplicate transaction, event/index divergence, TTL risk, admin/key compromise, unsafe upgrade, or incorrect public claim. On-chain history may be permanent even when wrong.
+
+## Containment
+
+Disable evidence publication and attestor signer access, pause contract writes when authorized/safe, preserve reads/revocation, activate pubnet/network gate, freeze upgrade/admin/TTL changes, record verified ledger/transaction/event/state/code-hash evidence, and stop public display as verified on mismatch.
+
+## Recovery
+
+Verify release/deployment/code/network, reconcile transactions and report digests, rotate/disable compromised attestor/admin credentials, revoke or supersede incorrect records with controlled reason hash, repair/rebuild index from events, restore TTL maintenance, and use reviewed rollback only if storage-compatible; otherwise forward-fix/new deployment.
+
+## Verification
+
+Verify live code/schema/admin/pause/attestors, report/signature versus commitment, events/state/index continuity, active/superseded/revoked invariants, no duplicate/cycle, TTL/resource budget, old credential denial, public links/disclaimer, and local/testnet regression suite.
+
+## Communication, owner, and exercise
+
+Contracts/security owner leads with evidence/report/privacy/legal/product. Advisory identifies network/contract/code hash/evidence and transaction IDs, affected report digests/status, permanence, verifier/user action, and replacement/revocation without private preimages. Exercise semiannually and before/after contract upgrade; status: **not exercised**.

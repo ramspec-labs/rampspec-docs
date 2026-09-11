@@ -1,0 +1,29 @@
+---
+title: "Specification synchronization incident"
+description: "Quarantine an incorrect, incomplete, or malicious SEP snapshot, rule pack, generated diff, or suite lock."
+---
+
+<Warning>
+  No dated specification-sync incident exercise exists; this runbook is
+  **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on upstream commit/content hash mismatch, incomplete SEP inventory, parser/classification drift, malicious source/import, rule fixture regression, wrong draft/active state, generated-artifact drift, or suite/report referencing an invalid snapshot. Results/gates may be incorrect but historical signed bytes remain immutable.
+
+## Containment
+
+Stop sync/import/release and suite locking against affected snapshot, quarantine source/artifacts, disable affected new runs/gates/baselines/public claims, preserve upstream bytes/URL/commit/hash and generated diffs, identify all rules/suites/runs/reports/docs/releases, and do not rewrite published artifacts.
+
+## Recovery
+
+Re-fetch from pinned authoritative source through clean path, verify full SEP inventory/hashes, correct parser/classification/rules/fixtures with protocol review, publish a new snapshot/rule/suite version and migration/deprecation notice, rerun affected reference fixtures, and link corrected reports rather than mutate old ones.
+
+## Verification
+
+Pass source provenance, complete inventory, deterministic generation, normative pointer/classification/severity, valid/invalid branch fixtures, snapshot diff, suite-lock digest, historical report verification, docs generated-reference checks, and affected end-to-end protocol cases.
+
+## Communication, owner, and exercise
+
+Protocol/spec maintainer leads with backend/docs/security/release owners. Notice states affected snapshot/rule/suite/report versions, interpretation error, safe versions, rerun/baseline action, and draft status without overstating target failures. Exercise annually and after importer/schema changes; status: **not exercised**.

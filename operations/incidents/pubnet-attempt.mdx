@@ -1,0 +1,28 @@
+---
+title: "Unauthorized pubnet attempt"
+description: "Stop unauthorized Stellar public-network observation or submission and reconcile any possible ledger effect."
+---
+
+<Warning>
+  No dated pubnet-attempt exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on pubnet endpoint/passphrase use without approval, kill-switch bypass/change, unauthorized signing/simulation/submission, wrong network/destination/asset/amount, or pubnet credential access. Potential impact includes irreversible transaction/fees, target harm, credential compromise, and policy breach.
+
+## Containment
+
+Activate global/tenant pubnet kill switches, stop runs/schedules/evidence workers, revoke signer/fixture/service credentials and approvals, block pubnet egress at runner/gateway, preserve request/simulation/sign/transaction/audit evidence, and page security/Stellar/owner. Keep testnet distinct.
+
+## Recovery
+
+Determine whether signing/submission occurred; query transaction hash, source sequence/account, destination and target state through verified endpoints. Rotate compromised identities, fund-move/recover only through authorized policy, coordinate with affected target/recipient, correct authorization/network binding, and clean fixtures. Never retry an unknown submission.
+
+## Verification
+
+Prove kill switch at API/policy/runner/signer/egress layers, old credential failure, no active/queued pubnet work, exact ledger outcomes/balances/fees, two-person approval enforcement, wrong-network mutation tests, testnet still safe, and reports/evidence/public communication corrected.
+
+## Communication, owner, and exercise
+
+Security incident commander leads with Stellar, target owner, finance/legal/privacy. State network/time/addresses/transactions/amounts in restricted channels, confirmed versus attempted action, containment, user/partner action, and next update. Exercise quarterly without real submission using blocked fixtures; status: **not exercised**.

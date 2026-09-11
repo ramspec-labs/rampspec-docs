@@ -1,0 +1,28 @@
+---
+title: "Callback incident"
+description: "Handle missing, forged, replayed, duplicated, reordered, expired, or misrouted protocol callbacks safely."
+---
+
+<Warning>
+  No dated callback incident exercise exists; this runbook is **Planned**.
+</Warning>
+
+## Trigger and impact
+
+Trigger on signature/timestamp/schema/replay failures, callback timeout/loss, duplicate/reordered/gap events, wrong run/tenant/route, oversized body, queue handoff failure, or target state mismatch. Journeys may stall or have unknown side effects; callback content alone is not authoritative success.
+
+## Containment
+
+Disable/revoke affected callback route/secret, pause related workflow retries/schedules, reject invalid/expired/oversized/replay inputs before action, reserve delivery/event IDs, preserve exact-body digest/header decision and safe routing metadata, and keep bounded authenticated target polling/reconciliation.
+
+## Recovery
+
+Rotate route secret if compromised, correct edge/parser/queue/routing, replay only verified retained callback through authorized audited tool, and reconcile target transaction plus Horizon/RPC state before transition/retry. Create new route for a new run; never extend an expired route silently.
+
+## Verification
+
+Pass valid/tampered/stale/future/replay/duplicate/reorder/gap/wrong-tenant/oversized/schema/queue-failure vectors, exact-byte signature checks, idempotent handoff, polling fallback, one business transition, cleanup, audit, and workflow report correctness.
+
+## Communication, owner, and exercise
+
+Callback/integration owner leads with protocol/workflow/target/security. Updates identify affected protocol/routes/runs/window, delayed/unknown states, safe target action and next update without payload/signature/secret. Exercise quarterly and after callback/signature/edge changes; status: **not exercised**.
