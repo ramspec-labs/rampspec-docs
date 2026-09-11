@@ -1,0 +1,112 @@
+---
+title: "CI gate quickstart"
+description: "Design a fail-closed CI gate around pinned RampSpec targets, suites, baselines, exit meanings, and retained reports."
+keywords:
+  ["CI gate", "service account", "baseline", "exit codes", "GitHub Actions"]
+---
+
+A CI gate turns a completed RampSpec report into an allow, block, warn, or review-required release decision. The gate consumes immutable evidence; it does not infer success from a run request, dashboard score, missing report, or infrastructure error.
+
+<Warning>
+  No backend CLI, offline verifier, service-account API, or published CI action
+  exists. Action references, command flags, numeric exit codes, and screenshots
+  must come from a compatible tagged release. This guide defines the integration
+  and acceptance contract and is currently **Planned**.
+</Warning>
+
+## 1. Create a CI service account
+
+Create one non-human identity for one repository and deployment environment. Assign an owner, expiration, rotation schedule, and these minimal capabilities:
+
+- read the mapped project, target, suite, and approved baseline;
+- request only the selected safe run mode;
+- read that run's status and canonical report;
+- verify the report and evaluate the named gate policy.
+
+Do not grant organization administration, membership changes, secret management, target ownership, suite editing, baseline approval, active-pubnet approval, exception approval, or public evidence publication. Separate identities must be used for scheduled monitoring and local runners.
+
+## 2. Map repository context
+
+The integration record binds an exact source repository and deployment environment to:
+
+| Input                    | Required binding                                                                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Organization and project | Opaque stable identifiers; never selected from untrusted pull-request input.                                   |
+| Target                   | Verified target identifier and expected network.                                                               |
+| Suite                    | Immutable suite version or lock digest; never a floating latest selector.                                      |
+| Policy                   | Versioned gate policy with selected severities, classifications, and coverage requirements.                    |
+| Baseline                 | Approved report identifier and digest for the same target, network, suite compatibility line, and environment. |
+| Runner                   | Allowed runner class and minimum compatible version.                                                           |
+
+Pull requests from forks must not receive a service token or run stateful tests. Treat target, suite, policy, runner, and baseline values as protected repository configuration.
+
+## 3. Store secrets
+
+Store the short-lived token exchange credential in the CI platform's encrypted secret store and expose it only to the gate job. Pin third-party actions by full commit, restrict workflow permissions to read repository contents, and grant check-write permission only when annotations are required.
+
+Mask credentials and disable shell tracing around authentication. Never place tokens in command arguments, job summaries, cache keys, artifacts, reports, or debug bundles. Prefer identity federation or expiring tokens over a long-lived API key; rotate and revoke on ownership or repository changes.
+
+## 4. Gate job contract
+
+The released workflow must perform these steps in order:
+
+1. check out the exact commit under review;
+2. install the pinned RampSpec CLI and offline verifier after digest validation;
+3. exchange the CI identity for a short-lived project-scoped token;
+4. resolve protected mapping values and confirm target ownership and network;
+5. materialize and verify the immutable suite lock;
+6. start once with a unique idempotency key derived from trusted run context;
+7. wait by run identifier, reconnecting without creating a duplicate;
+8. download the canonical report and verification material;
+9. verify schema, suite-lock digest, artifacts, trusted key, and signature offline;
+10. evaluate the pinned policy against the report and approved baseline;
+11. upload the report, lock, manifest, and verifier result under the retention policy;
+12. revoke temporary credentials and require cleanup evidence.
+
+The job must use the tagged CLI's documented syntax. Until that tag exists, a guessed command block would be unsafe and is intentionally omitted.
+
+## 5. Stable exit meanings
+
+The released CLI assigns stable, documented numeric values to these distinct meanings:
+
+| Meaning                | CI behavior                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| Success                | Pass only after report integrity and policy evaluation both succeed.             |
+| Conformance failure    | Fail the check and link the blocking findings.                                   |
+| Policy block           | Fail without attributing a protocol failure to the target.                       |
+| Invalid configuration  | Fail before execution and identify the invalid protected input.                  |
+| Infrastructure failure | Mark indeterminate and fail closed; do not report conformance success.           |
+| Authentication failure | Fail, revoke or rotate the credential, and inspect audit events.                 |
+| Cancellation           | Report cancelled and fail unless an explicit higher-level policy says otherwise. |
+
+Do not implement numeric mappings until the CLI release publishes them. Wrapper scripts must preserve the CLI status rather than collapsing every nonzero result into one diagnosis.
+
+## 6. Baseline policy
+
+Approve a baseline only from an independently verified report with the same target, environment, network, compatible suite line, and standards snapshot. Baseline updates require a Maintainer or Owner who is not the CI service account, a reason, an audit event, and an expiry or replacement rule.
+
+The default release gate blocks critical normative or security findings, high normative findings, missing required coverage, signature failure, artifact mismatch, and new regressions at configured blocking severity. Infrastructure errors remain indeterminate. A score cannot override a blocking finding, and a changed suite cannot silently reset the baseline.
+
+## 7. Reports and retention
+
+Upload the canonical JSON report, suite lock, release manifest, offline verification result, and optional derived JUnit or SARIF output. Record SHA-256 digests and the CI run URL. Use encrypted restricted artifacts, a defined retention deadline, no shared cache, and logs that contain only redacted identifiers.
+
+Do not retain bearer tokens, private keys, raw customer traffic, synthetic identity files beyond their teardown window, or unredacted HTTP archives. Derived summaries must link back to the canonical report digest.
+
+## Failure diagnosis
+
+| Signal                        | Likely boundary                                                        | Response                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| No run identifier             | Authentication, mapping, ownership, policy, or invalid configuration.  | Inspect the machine-readable error and audit event; do not retry blindly. |
+| Repeated run identifiers      | Idempotency or retry handling.                                         | Stop duplicate work and preserve all attempt records.                     |
+| Lost event stream             | Observation channel, not necessarily execution.                        | Query the existing run and resume from the event cursor.                  |
+| Indeterminate report          | Runner, target, network, callback, ledger, or artifact infrastructure. | Fail closed and diagnose infrastructure separately from findings.         |
+| Invalid signature or digest   | Artifact transfer, trust key, canonicalization, or tampering.          | Quarantine and reject the report.                                         |
+| Unexpected baseline mismatch  | Target, network, suite, spec, policy, or environment drift.            | Require an explicit reviewed remapping or baseline update.                |
+| High regression did not block | Wrong policy, classification, baseline, or wrapper status handling.    | Treat the CI integration as unsafe and prevent release.                   |
+
+## Acceptance record
+
+Before publishing an executable workflow, run it twice in a clean controlled repository. A pinned passing fixture must produce a verified report and passing check. A second fixture with one seeded new high-severity normative regression must produce a valid report and blocking check. Record CLI/action commits, exact numeric exit values, report and baseline digests, target and suite mapping, artifact retention, and cleanup evidence.
+
+The workflow remains **Planned** until both cases pass. Use [First SEP-1 run](/guides/first-sep1-run) for report verification and [Rule classification](/governance/rule-classification) for gate semantics.

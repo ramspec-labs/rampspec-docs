@@ -125,7 +125,8 @@
             "pages": [
               "guides/organization-setup",
               "guides/target-onboarding",
-              "guides/first-sep1-run"
+              "guides/first-sep1-run",
+              "guides/ci-gate"
             ]
           },
           {
