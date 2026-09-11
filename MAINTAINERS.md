@@ -11,6 +11,8 @@
 
 Until additional maintainers are assigned, repository administration owns final decisions but must not bypass required owning-repository review for generated API, schema, or contract changes.
 
+Protocol and security decisions that require an unassigned reviewer remain pending. The [advisory and decision operations](governance/advisory-and-decisions.mdx) define appointment, dispute, recusal, publication, and deprecation requirements.
+
 ## Becoming a maintainer
 
 Maintainers are selected from contributors with sustained, technically accurate reviews in the relevant area. Appointments and removals are recorded in pull requests that update this file. Inactive or conflicted maintainers must recuse themselves from affected decisions.

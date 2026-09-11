@@ -1,0 +1,75 @@
+---
+title: "Advisory and decision operations"
+description: "How RampSpec records governance decisions, protocol interpretation disputes, conflicts, and deprecations."
+keywords: ["governance", "ADR", "protocol advisory", "disputes", "deprecation"]
+---
+
+RampSpec governance uses reviewable records rather than private interpretation. This page defines the intended public process while the repositories remain private. A record is not public merely because an example exists in this repository.
+
+## Current decision authority
+
+The [roadmap](/roadmap) records delivery status. Architecture and policy decisions use an ADR with a stable identifier, context, considered options, decision, consequences, owners, approvals, and a public URL. Protocol disputes use a separate record so the original finding and its resolution remain distinguishable.
+
+| Area                                            | Accountable maintainer | Required consultation                                |
+| ----------------------------------------------- | ---------------------- | ---------------------------------------------------- |
+| Repository administration and licensing         | `@Hallab7`             | Affected repository maintainers                      |
+| Documentation architecture and evidence wording | `@Hallab7`             | Owning runtime maintainer when behavior is described |
+| Protocol interpretation and client fixtures     | Unassigned             | Protocol advisory members and backend maintainer     |
+| Security severity and disclosure                | Unassigned             | Security reviewer and affected repository maintainer |
+
+Unassigned areas cannot receive final approval. Repository administration may coordinate the record, but it cannot substitute for a missing protocol or security reviewer.
+
+## Contribution-license decision
+
+RampSpec uses Apache-2.0 with an inbound-equals-outbound contribution model. Contributors affirm that they have the right to submit their work. There is currently no separate contributor license agreement and no Developer Certificate of Origin sign-off requirement. Changing this decision requires an ADR, contributor notice, repository-template updates, and legal review where appropriate.
+
+## Protocol advisory group
+
+The advisory group is a review body for protocol interpretation, not a certification authority. Membership should represent anchor, wallet, Stellar protocol, security, and client-integration experience. A membership record must name each member, represented perspective, term, conflicts, and appointment or removal decision.
+
+No advisory members are appointed yet. Until membership and the protocol-maintainer role are recorded, protocol disputes can be opened and investigated but cannot be marked finally approved.
+
+The group reviews:
+
+- disputed SEP interpretations and applicability;
+- severity changes and security-sensitive wording;
+- real-client interoperability fixtures;
+- deprecation or replacement of rules and fixtures;
+- evidence language that could be mistaken for certification, compliance, or production approval.
+
+The group does not grant regulatory approval, certify an anchor, replace upstream SEP maintainers, or make private agreements authoritative.
+
+## Decision record workflow
+
+1. Open an ADR with one decision, an accountable owner, affected repositories, and source links.
+2. Record alternatives, compatibility effects, security and evidence implications, and the intended publication location.
+3. Obtain approvals from every owning area. An unassigned required role leaves the ADR pending.
+4. Merge the record without rewriting its history. Superseding decisions link both directions.
+5. Publish the record and set its immutable public URL only when repository access permits public verification.
+
+Use the [planned decision record](/examples/governance/decision-record.planned.json) as a shape example, not as evidence of an approved decision.
+
+## Interpretation dispute workflow
+
+1. Preserve the original report and open a record containing the rule ID, pinned source, affected versions, redacted evidence, and competing interpretations.
+2. Mark the result `under-review`; do not silently change a signed report or stable rule.
+3. Route sensitive material through the [security policy](/SECURITY.md). Publish only a redacted coordination record when disclosure permits.
+4. Collect protocol, runtime, security, and documentation reviews required by the disputed scope.
+5. Resolve as confirmed, narrowed, reclassified, deprecated, or corrected. Link the replacement rule, fixture, advisory, and release when applicable.
+6. Publish the resolution and any migration guidance. A private issue or null public URL does not satisfy the public-record requirement.
+
+The [planned dispute record](/examples/governance/dispute-record.planned.json) demonstrates the required ownership and status fields.
+
+## Severity, fixtures, and deprecation
+
+Severity is justified from reproducible impact and prerequisites, independently of rule classification. A severity change names the affected reports and whether gates must be reevaluated. Client fixtures identify the client version, test boundary, consent to publish, provenance, expected result, and redaction status; a single client result is not universal interoperability evidence.
+
+A deprecation record includes the last supported rule-pack version, replacement, reason, affected report interpretation, migration window, and removal release. Reports remain immutable. Corrections are distributed through an advisory and a new compatible release.
+
+## Conflicts and recusals
+
+Authors disclose employment, financial, implementation, customer, and prior-review interests relevant to a decision. A conflicted reviewer may provide evidence but cannot be the sole approver. The record names the recusal and replacement reviewer. If no independent qualified reviewer is available, the decision remains pending.
+
+## Publication status
+
+The repository is private, advisory membership is unassigned, and no public ADR or dispute URL exists. The operating model and examples are implemented; the exit requirement for named owners **and public records** remains unavailable until records are published and the required reviewer roles are filled.

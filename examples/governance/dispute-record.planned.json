@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "protocol-interpretation-dispute",
+  "id": "DISPUTE-EXAMPLE-0001",
+  "status": "planned",
+  "accountableOwner": "@Hallab7",
+  "ruleId": null,
+  "pinnedSource": null,
+  "affectedVersions": [],
+  "redactedEvidence": [],
+  "interpretations": [],
+  "requiredReviews": [
+    {
+      "area": "protocol-documentation",
+      "assignee": null,
+      "status": "blocked-unassigned"
+    },
+    {
+      "area": "security-and-privacy",
+      "assignee": null,
+      "status": "blocked-unassigned"
+    },
+    {
+      "area": "documentation-architecture",
+      "assignee": "@Hallab7",
+      "status": "pending"
+    }
+  ],
+  "conflicts": [],
+  "resolution": null,
+  "replacementRule": null,
+  "advisoryUrl": null,
+  "publicationStatus": "planned",
+  "publicUrl": null,
+  "notice": "Template data only. This is not evidence of a resolved protocol dispute."
+}

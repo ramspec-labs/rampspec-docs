@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "architecture-decision",
+  "id": "ADR-EXAMPLE-0001",
+  "title": "Example decision record only",
+  "status": "planned",
+  "accountableOwner": "@Hallab7",
+  "requiredApprovals": [
+    {
+      "area": "documentation-architecture",
+      "assignee": "@Hallab7",
+      "status": "pending"
+    },
+    {
+      "area": "protocol-documentation",
+      "assignee": null,
+      "status": "blocked-unassigned"
+    }
+  ],
+  "affectedRepositories": ["rampspec-docs"],
+  "sourceLinks": [],
+  "alternatives": [],
+  "decision": null,
+  "consequences": [],
+  "conflicts": [],
+  "supersedes": null,
+  "supersededBy": null,
+  "publicationStatus": "planned",
+  "publicUrl": null,
+  "notice": "Template data only. This is not an approved or public RampSpec decision."
+}
