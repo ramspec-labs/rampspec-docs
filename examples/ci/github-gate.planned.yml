@@ -1,0 +1,70 @@
+name: RampSpec planned gate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rampspec-${{ github.repository_id }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: <protected-environment>
+    steps:
+      - name: Check out the reviewed commit
+        uses: actions/checkout@<full-commit-sha>
+        with:
+          persist-credentials: false
+
+      - name: Install the verified RampSpec CLI
+        run: <install-verified-cli-from-release-manifest>
+
+      - name: Start the mapped run
+        env:
+          RAMPSPEC_IDENTITY: ${{ secrets.RAMPSPEC_IDENTITY }}
+          RAMPSPEC_MAPPING: ${{ vars.RAMPSPEC_MAPPING }}
+        run: >-
+          rampspec run start
+          --mapping "$RAMPSPEC_MAPPING"
+          --commit "${{ github.sha }}"
+          --wait
+          --output json
+          --output-file .rampspec/run.json
+
+      - name: Download the canonical report
+        run: >-
+          rampspec report download
+          --run-file .rampspec/run.json
+          --output-file .rampspec/report.json
+          --manifest-file .rampspec/release-manifest.json
+
+      - name: Verify the canonical report
+        run: >-
+          rampspec report verify
+          .rampspec/report.json
+          --manifest .rampspec/release-manifest.json
+          --offline
+          --output json
+
+      - name: Evaluate the protected policy
+        env:
+          RAMPSPEC_MAPPING: ${{ vars.RAMPSPEC_MAPPING }}
+        run: >-
+          rampspec ci gate
+          --report .rampspec/report.json
+          --mapping "$RAMPSPEC_MAPPING"
+          --output json
+
+      - name: Retain verified evidence
+        if: always()
+        uses: actions/upload-artifact@<full-commit-sha>
+        with:
+          name: rampspec-evidence
+          path: .rampspec/
+          retention-days: <approved-retention-days>
+          if-no-files-found: error

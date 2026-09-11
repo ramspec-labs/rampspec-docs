@@ -177,6 +177,10 @@
             ]
           },
           {
+            "group": "Integrations",
+            "pages": ["guides/integrations/github-ci"]
+          },
+          {
             "group": "Maintainers",
             "pages": ["guides/maintainers/spec-synchronization"]
           }

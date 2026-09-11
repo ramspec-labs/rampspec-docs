@@ -1,0 +1,262 @@
+---
+title: "GitHub and CI integration"
+description: "Install a least-privilege GitHub App, map repositories and environments, trigger safe runs, publish checks and annotations, and enforce verified release gates."
+keywords:
+  ["GitHub App", "CI gate", "check run", "annotations", "SARIF", "JUnit"]
+---
+
+The RampSpec GitHub integration will connect trusted repository and deployment events to an immutable target, suite, runner, policy, and baseline mapping. It publishes one check per suite only after the resulting canonical report has been independently verified.
+
+<Warning>
+  No RampSpec GitHub App, installation URL, webhook endpoint, CI action, service
+  account exchange, or tagged integration release exists. This guide is
+  **Planned**; do not create an App from these intended permissions or use the
+  workflow skeleton as a working integration.
+</Warning>
+
+## Source and current GitHub constraints
+
+GitHub Apps start with no selected permissions, and GitHub recommends choosing the minimum permissions needed. Permission choices control both API access and which webhook events an App can subscribe to. See [Choosing permissions for a GitHub App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/choosing-permissions-for-a-github-app).
+
+The Checks API is available to GitHub Apps; writing check runs requires `checks:write`. GitHub limits check-run annotations to 50 per update, so a larger set must be sent through additional updates. See [Using the REST API to interact with checks](https://docs.github.com/en/rest/guides/using-the-rest-api-to-interact-with-checks) and [Check run endpoints](https://docs.github.com/en/rest/checks/runs).
+
+GitHub signs webhook payloads with an HMAC SHA-256 value in `X-Hub-Signature-256` when a webhook secret is configured. Verification uses the exact payload bytes and a constant-time comparison. See [Validating webhook deliveries](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries).
+
+These external behaviors are verified as of the page update, but the future App manifest and tagged integration tests must pin the GitHub API version and recheck them.
+
+## Trust boundary
+
+Keep five identities distinct:
+
+| Identity                    | Scope                                                               |
+| --------------------------- | ------------------------------------------------------------------- |
+| GitHub App                  | Verifies webhooks and manages check runs for selected repositories. |
+| App installation            | Binds the App permissions to one account and selected repositories. |
+| Installation access token   | Short-lived GitHub API credential for that installation.            |
+| RampSpec CI service account | Starts permitted runs and reads/verifies their reports.             |
+| Human maintainer or owner   | Installs, maps, approves baselines/policy, and removes integration. |
+
+Installing an App is not the same as authorizing it to act as a user. The release-gate path should use installation identity and a narrowly scoped RampSpec service account; it does not need broad user authorization.
+
+Pull-request authors, commit messages, branch names, workflow inputs, check rerun requests, target responses, and report content are untrusted. They cannot select organization, project, target, runner, suite, policy, baseline, credential, or network.
+
+## Intended App permissions
+
+The tagged App manifest is authoritative. Its default intended repository permissions are:
+
+| Permission      | Level        | Purpose and boundary                                                            |
+| --------------- | ------------ | ------------------------------------------------------------------------------- |
+| Metadata        | Read         | Identify installation, repository, and immutable commit.                        |
+| Checks          | Read & write | Create and update one check run per mapped suite.                               |
+| Contents        | None         | Enable read only if a released mapping reads reviewed repository files.         |
+| Pull requests   | None         | Enable read only if PR metadata is required by a released trigger.              |
+| Deployments     | None         | Enable read only for environment/deployment mappings.                           |
+| Actions         | None         | Enable read only only if workflow-run correlation is released.                  |
+| Commit statuses | None         | Checks are the primary surface; do not duplicate unless compatibility needs it. |
+| Administration  | None         | App must not change repository settings or branch protection.                   |
+| Workflows       | None         | App does not edit workflow files.                                               |
+| Issues          | None         | Findings remain in reports and checks unless a separate opt-in is released.     |
+| Members/secrets | None         | App does not enumerate members or read/write repository secrets.                |
+
+If reviewed configuration files are required, prefer the narrowest supported single-file or contents-read permission and publish the exact paths. The App never needs contents write, workflows write, administration, or secrets access for a conformance gate.
+
+A permission increase creates a new App manifest version and requires installation-owner approval. Installations that have not approved it remain on their old compatible feature set; the backend must not assume the new permission exists.
+
+## Intended webhook subscriptions
+
+Subscribe only to events required by released trigger modes and their minimum permissions. The planned core set covers installation lifecycle, selected-repository changes, check rerun requests, and optionally trusted deployment or workflow completion events. A pull-request or push event is added only when a corresponding mapping mode is released.
+
+Do not subscribe to broad organization, member, secret, issue, or code events. Store delivery ID, App and installation IDs, repository numeric ID, event/action, sender fingerprint, commit or deployment identifier, received time, body digest, signature decision, mapping decision, and processing result. Retain the raw body only under the restricted webhook window.
+
+## Register the App
+
+The RampSpec service operator registers the App under the controlled RampSpec organization, with a verified public name, support and privacy links, exact callback/setup URLs when user authorization is truly needed, active webhook URL, strong generated secret, and the reviewed permission/event manifest.
+
+The App's private key belongs in an approved KMS or secret manager and is accessible only to the token-minting component. Record key ID, fingerprint, creation, activation, retirement, and revocation. Never store it in a repository, CI secret, image, environment file, support bundle, or frontend.
+
+Before public installation, verify App ownership, requested permissions, webhook TLS, signature test vectors, key rotation, rate limits, suspension behavior, data retention, deletion, and incident contact. A private development App remains distinct from the production App.
+
+## Install for selected repositories
+
+An organization owner should:
+
+1. open the verified App listing from the RampSpec integration page;
+2. compare owner, App ID, manifest version, requested permissions, and callback host;
+3. select only the repositories that need a RampSpec gate, not all repositories by default;
+4. complete GitHub installation and return through a state- and nonce-bound setup flow;
+5. verify installation account, numeric ID, selected repository IDs, permissions, events, actor, and time in RampSpec;
+6. map repositories and environments before enabling any trigger;
+7. run a read-only installation check and one controlled check-run test;
+8. review the GitHub and RampSpec audit events.
+
+The setup callback cannot accept organization/project selection from unsigned query input. A user who can install the GitHub App but lacks RampSpec Owner authority can create a pending installation record but cannot bind it to targets or policies.
+
+Adding or removing repository access updates eligibility immediately. A webhook for a repository outside the current installation selection is acknowledged safely and ignored with an audit decision.
+
+## Repository and environment mapping
+
+Map by immutable GitHub account and repository numeric IDs plus an explicit environment key. Names and URLs are display data because repositories can be renamed or transferred.
+
+| Protected input       | Required binding                                                                |
+| --------------------- | ------------------------------------------------------------------------------- |
+| RampSpec organization | One tenant matching the installation approval.                                  |
+| Project               | Exact project ID; no selection from event payload text.                         |
+| Target                | Verified target ID, network, ownership expiry, and runner mode.                 |
+| Suite                 | Immutable suite version or suite-lock policy.                                   |
+| Gate policy           | Version/digest with severity, coverage, draft, cleanup, and exception rules.    |
+| Baseline              | Optional verified report ID/digest for same target/environment/compatibility.   |
+| Source selectors      | Allowed protected branches, tags, deployment environments, or trusted workflow. |
+| Runner                | Allowed class, version floor, capabilities, value and destination limits.       |
+| Trigger modes         | Explicit manual, push, pull request, deployment, or workflow completion modes.  |
+
+One repository can map different protected environments to different targets, but every event must resolve exactly one mapping. Ambiguous, missing, disabled, expired, or incompatible mappings create a non-success check without starting a target run.
+
+Mapping changes require Maintainer or Owner authority, show a complete diff, revoke queued old work when needed, invalidate incompatible baselines, and create an audit event. The CI service account and GitHub App cannot approve their own mapping.
+
+## Trigger safety
+
+Supported trigger designs are:
+
+- explicit dispatch from a trusted protected workflow;
+- selected protected-branch or tag update;
+- approved pull request using read-only or non-destructive scenarios;
+- deployment or deployment-status event for a named environment;
+- trusted workflow completion correlated to an immutable commit.
+
+Every trigger binds installation, repository ID, commit SHA, source/ref class, environment, mapping version, suite/policy/baseline digest, and delivery or workflow identity into one idempotency key. Duplicate delivery, redelivery, check rerun, or workflow retry attaches to the existing logical run unless an authorized new-run action is explicit.
+
+Fork pull requests and untrusted branches receive no RampSpec secret or stateful target credential. They may use public, read-only checks only when policy permits. GitHub warns that workflows combining privileged triggers such as `pull_request_target` or `workflow_run` with checkout of untrusted pull-request code can expose a repository; see [Secure use reference](https://docs.github.com/en/actions/reference/security/secure-use). RampSpec mappings must never take protected configuration or commands from that code.
+
+Stateful, browser, customer, signing, payment, fault-injection, private-runner, or pubnet work runs only from a trusted protected workflow or deployment context after mapping and policy approval.
+
+## CI workflow skeleton
+
+{/* example: examples/ci/github-gate.planned.yml */}
+
+The stored [planned workflow](/examples/ci/github-gate.planned.yml) demonstrates read-only repository permission, immutable action placeholders, protected mapping variables, secret isolation, report verification, artifact retention, and concurrency. It is intentionally named `.planned.yml`, contains no real action commit or CLI release, and cannot run.
+
+The release workflow must pin every action by full commit, limit job permissions, disable persistence of checkout credentials where possible, use an ephemeral runner, prevent caches from containing credentials or reports, and validate all downloaded artifacts before gate evaluation.
+
+## Service accounts and token flow
+
+The GitHub App backend authenticates as the App with a short-lived signed assertion, requests an installation token scoped to the exact installation, repositories, and required permissions, performs the check operation, and discards the token. It does not return installation tokens to the browser or workflow.
+
+The CI workflow authenticates separately to RampSpec through a short-lived workload identity or expiring service-account exchange released by the backend. Scope it to read one mapping, start the selected safe suite, observe that run, download its evidence, and evaluate the named policy. Deny member, secret, target, suite, baseline, exception, pubnet, publication, and runner-administration scopes.
+
+Token audiences, repository/branch/environment claims, workflow identity, issue/expiry time, and replay nonce are validated before exchange. A self-hosted runner does not gain a broader token because it sits inside a private network.
+
+## Secret handling
+
+Repository or environment secrets contain only the minimum bootstrap material when workload federation is unavailable. Use environment protection for stateful contexts and expose the secret to one gate job. Mask it, disable shell tracing, never pass it as a command argument, and revoke it on workflow, mapping, repository, or ownership changes.
+
+App private keys and webhook secrets remain backend-managed. Target credentials and local-runner secrets stay in RampSpec secret providers; they never enter GitHub. Reports and artifacts must already be redacted and access-scoped before upload.
+
+Pull requests cannot print protected configuration, infer secret presence through branching, upload environment dumps, or choose an artifact destination. Automatic masking is not sufficient evidence that transformed secrets cannot leak.
+
+## Webhook verification
+
+At the edge, retain exact request bytes under a strict size limit. Require the configured `X-Hub-Signature-256` form, compute HMAC SHA-256 with the active webhook secret over those bytes, and compare in constant time before JSON parsing or event dispatch.
+
+After signature success, validate media type, JSON without duplicate keys, event name/action, App and installation IDs, repository ID, sender class, delivery ID, and schema. Atomically reserve the delivery ID to prevent replay. Unknown or unsubscribed events are acknowledged without action and retained only as a safe audit digest.
+
+During rotation, accept current and one explicitly overlapping previous secret for a bounded interval, test a delivery, then retire the old one. Missing, malformed, wrong-secret, modified-body, replayed, oversized, or schema-invalid requests cause no check or run. Proxies must not change body bytes before verification.
+
+## Check-run lifecycle
+
+Create one check run per suite and commit using an installation token. Its external identity binds RampSpec run ID, mapping version, suite lock, and report destination. Planned states are queued, in progress, and completed; every update is idempotent and scoped to the same repository and commit.
+
+Completion mapping must preserve meaning:
+
+| RampSpec result     | Required check behavior                                                   |
+| ------------------- | ------------------------------------------------------------------------- |
+| Verified pass       | Success with scope, coverage, report digest, and immutable report link.   |
+| Conformance failure | Blocking failure with finding summary and verified report link.           |
+| Policy blocked      | Non-success explaining the denied policy, not target nonconformance.      |
+| Indeterminate       | Non-success for a required gate; never neutralized into success.          |
+| Cancelled           | Cancelled/non-success with cleanup status.                                |
+| Cleanup failed      | Blocking non-success even if protocol assertions passed.                  |
+| Integrity failure   | Blocking failure; quarantine evidence and omit unverified finding claims. |
+
+Exact GitHub conclusion strings come from the released integration mapping. Branch protection should require stable check names tied to a compatibility line; renaming a required check needs coordinated migration so it cannot bypass protection.
+
+The check summary includes target/environment display identity, network, suite and standards snapshot, gate policy, baseline, counts, coverage/skips, terminal state, cleanup, report digest, and disclaimer. It contains no secret, raw traffic, private target address, customer data, or unverified report link.
+
+## Finding annotations
+
+Annotate only when a verified finding maps to a real file path and line in the exact checked commit, such as a reviewed RampSpec configuration file. Protocol endpoint, remote response, ledger, security-boundary, or report-only findings belong in the check summary and report, not on an invented source line.
+
+Normalize and validate paths inside the repository; reject absolute paths, traversal, symlinks that escape the checkout, binary files, mismatched commit content, or line ranges outside the blob. Titles and messages use stable finding code, severity, concise observed behavior, remediation, and report reference without untrusted Markdown or secrets.
+
+Send at most 50 annotations per check-run update as required by GitHub, paginate further updates deterministically, cap total annotations, and summarize omitted items by severity. Delivery retries cannot append duplicate annotations.
+
+## Baselines and regressions
+
+Approve a baseline only from a verified canonical report for the same organization, project, target, environment, network, compatible suite line, standards snapshot policy, and runner/evidence class. Record report and lock digests, approver, reason, time, and expiry or replacement rule.
+
+The App and CI service account can read but cannot create, approve, replace, or delete baselines. A target, network, suite major, mapping, ownership, or evidence-integrity change makes the baseline ineligible until a human reviews a replacement.
+
+Regression output distinguishes new, resolved, unchanged, reclassified, skipped, and indeterminate rules. A high score or fewer total findings cannot hide one new blocking finding or missing required coverage.
+
+## JUnit export
+
+JUnit is a derived CI view. Map one selected rule or scenario assertion to one stable test case, suite to a stable group, elapsed time to measured duration, skipped only to an explicit documented skip, and blocking/non-blocking findings to the released failure/error policy.
+
+Include report digest, rule ID, classification, severity, source pointer, and safe remediation in properties or messages within size limits. Do not embed raw exchanges, customer fields, tokens, private URLs, or binary evidence. The canonical JSON report remains authoritative when JUnit consumers collapse result categories.
+
+Validate XML, cap cases and message sizes, use deterministic ordering, and compare counts with the canonical report. An indeterminate required run cannot be emitted as a passing test suite.
+
+## SARIF export
+
+SARIF is also derived and is useful only for findings with a valid repository location and rule metadata. Use stable rule IDs, help text tied to the pinned standard, severity mapping, exact commit paths/regions, safe fingerprints for de-duplication, and a report-digest property.
+
+Remote protocol findings without source locations remain in checks/report rather than using a fake file. Validate SARIF schema and limits and strip secrets or private evidence. If uploading SARIF requires additional code-scanning permission, make that a separate reviewed opt-in; the core App does not request it by default.
+
+Derived JUnit and SARIF digests appear in the artifact inventory. Neither can be used to verify the canonical report signature.
+
+## Reference repository strategy
+
+Maintain separate controlled repositories for integration acceptance:
+
+| Repository fixture       | Purpose                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| Passing protected branch | Verified SEP-1 report and successful required check.                         |
+| Seeded regression        | One new high-severity normative finding blocks merge.                        |
+| Fork pull request        | Proves no protected secret or stateful target action is available.           |
+| Deployment environment   | Maps trusted deployment event to exact target and suite.                     |
+| Annotation fixture       | Tests valid paths, more than 50 findings, invalid paths, and de-duplication. |
+| Indeterminate fixture    | Runner or dependency failure blocks without a false target finding.          |
+| Removal fixture          | Repository access removal and uninstall revoke all new activity.             |
+
+Pin each repository commit, workflow/action commits, mapping, report/baseline digests, App manifest, backend/CLI releases, and cleanup evidence. The repositories contain synthetic public test data only.
+
+## Failure and indeterminate handling
+
+Webhook loss, GitHub API outage, rate limit, runner failure, target reachability, report upload failure, signature failure, missing artifact, event-stream gap, or mapping ambiguity cannot produce a success check. Reconcile delivery, run, report, and check identities idempotently before retry.
+
+A target conformance failure requires a valid report and evidence. Infrastructure and integration faults are labeled indeterminate. If GitHub is unavailable after a report completes, retain the pending check update and deliver it later without creating another RampSpec run.
+
+Rate-limit handling honors GitHub response metadata and bounded backoff. A required gate remains pending or non-success until the update is confirmed; it never bypasses protection because the integration could not post.
+
+## Disable and remove
+
+To disable one mapping, stop new triggers, cancel or let approved active runs finish under policy, preserve cleanup, complete pending check updates, revoke its RampSpec CI credential, remove schedules and webhook routing, expire cached installation tokens, and record the mapping audit event. Historical reports and checks follow retention policy.
+
+To uninstall completely:
+
+1. inventory installations, selected repositories, mappings, baselines, active runs, schedules, service accounts, keys, secrets, and retained artifacts;
+2. drain triggers and resolve active runs and cleanup;
+3. revoke RampSpec service accounts and environment secrets;
+4. uninstall the GitHub App from the account or selected repositories;
+5. invalidate installation tokens, webhook secret versions, and mapping state;
+6. remove App private-key access when no installation remains, following key-retention policy;
+7. delete GitHub-derived data and artifacts at the documented deadline while retaining required audit digests;
+8. send test redeliveries and API attempts and prove no new run/check is accepted;
+9. record actor, time, reason, affected resources, deletion result, and exceptions.
+
+Uninstall does not erase existing Git commit history or historical check records controlled by GitHub. RampSpec must not leave a check pending indefinitely; finalize or explicitly cancel it before losing permission when possible.
+
+## Acceptance gate
+
+Before publication, a tagged App/backend/CLI integration must pass installation for selected repositories, denied unauthorized installation binding, permission minimization, webhook valid/tampered/replay/rotation cases, all trigger modes, duplicate delivery, fork isolation, mapping ambiguity, one check per suite, more-than-50 annotation pagination, JUnit/SARIF validation, passing and seeded-regression repositories, baseline approval separation, indeterminate dependencies, rate limits, token/key rotation, repository removal, full uninstall, data deletion, and secret/redaction scanning.
+
+The current repository can validate this guide, link the stored workflow, and check official-source links. It cannot install or exercise a nonexistent App, so the operational exit check remains unavailable and the integration must stay Planned.
