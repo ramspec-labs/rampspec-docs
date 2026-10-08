@@ -37,7 +37,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "cspell": "10.3.0",
-    "mintlify": "4.2.884",
+    "mintlify": "4.2.986",
     "prettier": "3.9.6",
     "typescript": "5.9.2"
   }
