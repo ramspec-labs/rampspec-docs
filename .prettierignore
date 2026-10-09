@@ -5,3 +5,4 @@ package-lock.json
 implementation.md
 tests/quality/fixtures
 generated
+vercel.json
