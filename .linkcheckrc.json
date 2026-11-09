@@ -3,6 +3,9 @@
   "retries": 2,
   "ignore": [
     "https://github.com/rampspec-labs/rampspec-docs/security/advisories/new",
-    "https://github.com/rampspec-labs/rampspec-docs/blob/main/CONTRIBUTING.md"
+    "https://github.com/rampspec-labs/rampspec-docs/blob/main/CONTRIBUTING.md",
+    "http://127.0.0.1:4000",
+    "http://127.0.0.1:4000/v1/reference-runs",
+    "https://approved-anchor.example"
   ]
 }

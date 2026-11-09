@@ -9,6 +9,7 @@
     "assets/images/*.svg",
     "assets/diagrams/*.svg",
     "generated/**",
+    "out/**",
     "tests/quality/fixtures/**"
   ],
   "words": [
