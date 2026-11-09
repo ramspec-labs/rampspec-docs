@@ -2,6 +2,7 @@
   "version": "0.2",
   "language": "en,en-GB",
   "useGitignore": true,
+  "ignoreRegExpList": ["/\\b[CG][A-Z2-7]{55}\\b/g"],
   "files": ["**/*.{md,mdx,json,yml,yaml,mjs}"],
   "ignorePaths": [
     "implementation.md",

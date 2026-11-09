@@ -4,13 +4,12 @@ description: "Publish, verify, look up, supersede, and revoke compact RampSpec r
 keywords: ["Soroban", "evidence", "attestor", "supersede", "revoke"]
 ---
 
-The planned evidence registry stores a compact commitment to a finalized RampSpec report. It does not store the report or certify its subject. A verified lookup proves only that a reviewed contract at a known code hash returned the recorded commitment at a stated ledger.
+The evidence registry stores a compact commitment to a finalized RampSpec report. It does not store the report or certify its subject. A verified lookup proves only that a contract at a known code hash returned the recorded commitment at a stated ledger.
 
 <Warning>
-  No evidence-registry WASM, generated specification, binding, deployment
-  manifest, attestor, local deployment, or testnet deployment exists. All method
-  names and transaction procedures here are **Planned**; do not submit the
-  fixture to a network.
+  Release `v0.2.1` is deployed on Stellar testnet but has not completed an
+  independent security audit. Use only the contract ID and hashes in its
+  verified manifest, and do not treat testnet evidence as production approval.
 </Warning>
 
 ## Decide whether to publish

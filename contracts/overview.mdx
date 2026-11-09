@@ -4,10 +4,22 @@ description: "The entry point for RampSpec Soroban evidence and fixture contract
 keywords: ["Soroban", "evidence registry", "fixture contracts", "WASM"]
 ---
 
-RampSpec contracts are planned Soroban interfaces for compact evidence commitments and controlled authentication fixtures. Production evidence contracts and test fixtures are separate classifications and must be labeled in every generated reference and deployment record.
+RampSpec contracts provide a Soroban evidence registry and controlled authentication fixtures. Production evidence contracts and test fixtures are separate classifications and are labeled in every deployment record.
 
 ## Status
 
-No contract specification, WASM hash, network address, or deployment manifest is released yet. Contract pages are generated from tagged artifacts rather than copied from implementation prose.
+Release `v0.2.1` publishes reproducible WASM, generated specifications and bindings, and an RPC-verified Stellar testnet deployment manifest. The evidence registry is available for testnet evaluation; the policy-account and web-auth contracts are test-only fixtures.
 
-The [contract storage reference](/reference/contract-storage) defines the import, verification, privacy, and deployment boundary until the contracts repository publishes its first compatible release. The [release manifest](/reference/release-manifest) will bind that artifact to compatible backend and docs versions.
+| Contract          | Testnet contract ID                                        | Classification            |
+| ----------------- | ---------------------------------------------------------- | ------------------------- |
+| Evidence registry | `CCM73G2Q5A5MVRZHYW3WRCAL6SVG6WLVE3H476N3OJDSG65BR4XMXVPN` | Testnet evidence registry |
+| Policy account    | `CCI45FLB47JHLHZF4Y4EQC3JPQRT7NQQAXIEZHE6GCDYCAXYPPALFMZ5` | Test-only fixture         |
+| Web auth          | `CDS5V7X45CXGUVYAYXEWS4MCPUZRNKSFVMTJ5QYWNE2U4TGRV77ITHO6` | Test-only fixture         |
+
+The [v0.2.1 release](https://github.com/rampspec-labs/rampspec-contracts/releases/tag/v0.2.1) includes `deployments/testnet/manifest.v0.2.0.json`, which binds those IDs to the canonical WASM hashes and source revision. The [contract storage reference](/reference/contract-storage) defines the verification and privacy boundary.
+
+<Warning>
+  This release has not completed an independent security audit. Testnet evidence
+  does not imply pubnet availability, production readiness, certification, or
+  security approval.
+</Warning>

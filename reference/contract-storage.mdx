@@ -9,9 +9,9 @@ Contract storage is the on-chain representation of a compact evidence commitment
 
 ## Availability
 
-The storage schema, TTL policy, methods, types, events, errors, and deployment addresses are not released. `generated/contract-specs/contracts.json` is intentionally absent. This page describes how a future tagged artifact is admitted without presenting planned method names as released interfaces.
+The contracts repository released generated specifications, bindings, canonical WASM, and a verified testnet manifest in `v0.2.1`. The docs-side generated contract bundle remains absent, so the tagged contracts repository is authoritative for method, type, event, and error inventories.
 
-Until then, keep complete reports off-chain, redact sensitive evidence, and do not infer certification from a future commitment.
+Keep complete reports off-chain, redact sensitive evidence, and do not infer certification from an on-chain commitment. The current deployment is testnet-only and has not completed an independent security audit.
 
 ## Release bundle
 
@@ -39,7 +39,7 @@ npm run import:contracts -- `
   --sha256 <64-character-digest>
 ```
 
-The values above are placeholders. After a real import, `npm run lint:contracts` detects missing methods or artifact classes, unknown spec or WASM hashes, malformed deployment records, and any byte-level drift from the source release.
+After a generated bundle import, `npm run lint:contracts` detects missing methods or artifact classes, unknown spec or WASM hashes, malformed deployment records, and any byte-level drift from the source release.
 
 ## Evidence and privacy boundary
 
