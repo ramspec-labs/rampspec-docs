@@ -1,0 +1,8 @@
+{
+  "repository": "rampspec-backend",
+  "tag": "v0.2.0",
+  "commit": "5f403c280c133e3c7fbd9796070fcba1fa4147a6",
+  "source": "https://raw.githubusercontent.com/ramspec-labs/rampspec-backend/v0.2.0/generated/openapi/openapi.json",
+  "sha256": "b41917cf1874c49f66beb498a3298df69e19bd4b0434c6377bfd8e7e5d448842",
+  "importedAt": "2026-11-09T17:31:04.874Z"
+}

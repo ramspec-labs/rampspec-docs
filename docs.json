@@ -3,7 +3,7 @@
   "name": "RampSpec",
   "description": "Continuous SEP conformance, interoperability testing, and verifiable evidence for Stellar anchors.",
   "theme": "maple",
-  "public": false,
+  "public": true,
   "colors": {
     "primary": "#22d3ee",
     "light": "#67e8f9",
@@ -54,7 +54,7 @@
     "indexing": "navigable",
     "trailingSlash": false,
     "metatags": {
-      "robots": "noindex, nofollow",
+      "robots": "index, follow",
       "referrer": "strict-origin-when-cross-origin"
     }
   },
@@ -167,7 +167,11 @@
         "groups": [
           {
             "group": "Guides",
-            "pages": ["guides/getting-started", "guides/test-modes"]
+            "pages": [
+              "guides/getting-started",
+              "guides/reviewer-quickstart",
+              "guides/test-modes"
+            ]
           },
           {
             "group": "Onboarding",

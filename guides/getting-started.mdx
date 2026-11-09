@@ -1,18 +1,15 @@
 ---
 title: "Guided setup path"
-description: "The safe setup sequence for a future released RampSpec environment."
+description: "Choose the implemented reviewer workflow or a deeper repository-specific path."
 ---
 
-The guided setup path will take a contributor from a clean checkout to a verified synthetic test run.
+Use the [reviewer quickstart](/guides/reviewer-quickstart) for the shortest executable path through the backend and frontend.
 
-## Planned sequence
+For repository work, install each pinned toolchain and run its complete verification command before changing behavior:
 
-1. Pin compatible repository tags from the release manifest.
-2. Install locked dependencies and run focused checks.
-3. Configure a synthetic, authorized testnet target.
-4. Lock a rule and scenario suite.
-5. Run a non-destructive discovery check and verify its report.
+- backend: `pnpm check`;
+- frontend: `pnpm verify` and `pnpm build`;
+- contracts: `cargo test --locked --workspace` plus the Node script tests;
+- docs: `npm test` and `npm run build`.
 
-The exact commands are intentionally withheld until the backend publishes the API, CLI, schema, and report artifacts they must target.
-
-Return to [Getting started](/getting-started) for the current evidence boundary.
+Generated OpenAPI and contract artifacts remain owned by their source repositories. Documentation imports them with commit and digest provenance rather than redefining them.

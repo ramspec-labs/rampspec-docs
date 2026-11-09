@@ -1,0 +1,47 @@
+---
+title: "Reviewer quickstart"
+description: "Run one real SEP-1 reference check through the RampSpec backend and frontend."
+keywords: ["reviewer", "SEP-1", "reference run", "local setup"]
+---
+
+This path demonstrates the implemented cross-repository slice without requiring credentials, customer data, or a public-network transaction.
+
+## Start the API
+
+In `rampspec-backend`, install the pinned dependencies and allow only the target you intend to probe:
+
+```shell
+pnpm install --frozen-lockfile
+pnpm build
+RAMPSPEC_REFERENCE_TARGETS=https://approved-anchor.example pnpm start:api
+```
+
+The API listens on `http://127.0.0.1:4000`. Production startup fails closed when the target allowlist is absent.
+
+## Submit a reference run
+
+Replace the example origin with the same approved origin configured above:
+
+```shell
+curl --fail-with-body http://127.0.0.1:4000/v1/reference-runs \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Idempotency-Key: reviewer-reference-run-0001" \
+  --header "X-RampSpec-Organization: organization_00000000-0000-4000-8000-000000000001" \
+  --data '{"projectId":"project_00000000-0000-4000-8000-000000000002","suiteId":"suite_00000000-0000-4000-8000-000000000003","suiteVersion":"1.0.0","targetId":"target_00000000-0000-4000-8000-000000000004","targetOrigin":"https://approved-anchor.example"}'
+```
+
+The response contains the normalized origin, capability probe, report summary, evidence-manifest hash, and durable run identifier. Repeating the request with the same organization and idempotency key returns the same run.
+
+## Open the frontend
+
+In `rampspec-frontend`, set `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:4000`, then run `pnpm dev`. Open `/runs/new/submit`, enter the allowlisted origin, and compare the displayed run ID and summary with the API response.
+
+## Verify the implementation
+
+Run `pnpm check` in the backend and `pnpm verify && pnpm build` in the frontend. The backend gate validates the OpenAPI contract and the durable idempotent workflow; the frontend gate validates tenant headers, error normalization, submission behavior, and the production route build.
+
+<Warning>
+  A completed reference run is a scoped observation, not certification, a
+  security audit, or permission to test an unrelated system.
+</Warning>

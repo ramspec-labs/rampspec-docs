@@ -9,11 +9,13 @@ The API endpoint reference is generated from a tagged `rampspec-backend` OpenAPI
 
 ## Availability
 
-No backend OpenAPI release exists yet, so `generated/openapi/openapi.json` is intentionally absent. Do not infer request paths, authentication, pagination, events, or error shapes from this page.
+The `v0.2.0` backend OpenAPI artifact is imported at `generated/openapi/openapi.json` with its source commit and SHA-256 in `generated/openapi/source.json`.
+
+The executable reviewer surface is deliberately smaller than the control-plane design: `GET /health`, `GET /version`, `POST /v1/reference-runs`, and `GET /v1/reference-runs/{runId}` are implemented. Other control-plane operations in the document remain interface contracts for later runtime work and must not be presented as deployed.
 
 ## Import and integrity
 
-The synchronization workflow uses a read-only organization secret to download `openapi.json` from the named private backend release. It requires the backend release tag, verifies that tag's full commit SHA, and checks the expected SHA-256. The import rejects an invalid document or digest mismatch, preserves the released bytes, and records provenance in `generated/openapi/source.json`. CI then recomputes the digest so manual changes fail.
+The synchronization workflow downloads `openapi.json` from the named public backend release. It requires the backend release tag, verifies that tag's full commit SHA, and checks the expected SHA-256. The import rejects an invalid document or digest mismatch, preserves the released bytes, and records provenance in `generated/openapi/source.json`. CI then recomputes the digest so manual changes fail.
 
 ```powershell
 npm run import:openapi -- `
@@ -23,11 +25,11 @@ npm run import:openapi -- `
   --sha256 <64-character-digest>
 ```
 
-These placeholders are intentional and the command is not evidence of a released backend.
+The committed provenance file supplies these values for the imported release.
 
 ## Authentication
 
-The generated OpenAPI `components.securitySchemes` and each operation's `security` field are authoritative. A guide may describe token acquisition and scopes only after those definitions exist. Examples must use synthetic credentials and must not embed bearer tokens.
+The reference-run operation is public but requires the synthetic `X-RampSpec-Organization` tenant header and an idempotency key. The broader control-plane design declares bearer authentication, but no hosted authentication service is claimed by this release. Examples must use synthetic identifiers and must not embed bearer tokens.
 
 ## Errors
 
